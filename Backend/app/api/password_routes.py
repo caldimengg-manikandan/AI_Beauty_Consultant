@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, validator
 from app.mongodb.user_collection import user_collection
 from app.auth.security import hash_password, verify_password
-from app.api.routes import get_current_user
+from app.auth.jwt_handler import get_current_user
 from datetime import datetime
 import re
 

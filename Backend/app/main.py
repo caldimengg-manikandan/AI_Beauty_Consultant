@@ -26,16 +26,15 @@ app = FastAPI(
     version="1.0"
 )
 
-# 2️⃣ ADD MIDDLEWARE AFTER app IS DEFINED
+# 2️⃣ ADD MIDDLEWARE AFTER app IS DEFINED - PERMISSIVE CORS FOR DEVELOPMENT
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
-    ],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600  # Cache preflight requests for 1 hour
 )
 
 # 3️⃣ IMPORT ROUTERS AFTER app EXISTS
@@ -47,6 +46,10 @@ from app.api.twofa_routes import router as twofa_router
 from app.api.premium_routes import router as premium_router
 from app.api.appointment_routes import router as appointment_router
 from app.api.virtual_routes import router as virtual_router
+from app.api.admin_routes import router as admin_router
+from app.api.expert_routes import router as expert_router
+from app.api.routine_routes import router as routine_router
+from app.api.progress_routes import router as progress_router
 
 # 4️⃣ REGISTER ROUTERS
 app.include_router(auth_router)
@@ -57,6 +60,10 @@ app.include_router(twofa_router)
 app.include_router(premium_router)
 app.include_router(appointment_router)
 app.include_router(virtual_router)
+app.include_router(admin_router)
+app.include_router(expert_router)
+app.include_router(routine_router)
+app.include_router(progress_router)
 
 # 5️⃣ SERVE STATIC FILES (Images)
 from fastapi.staticfiles import StaticFiles

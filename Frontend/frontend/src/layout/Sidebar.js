@@ -1,4 +1,6 @@
 import { NavLink, Link } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 import {
   FaHome,
   FaCamera,
@@ -8,10 +10,15 @@ import {
   FaCut,
   FaPaintBrush,
   FaSpa,
-  FaUserCircle
+  FaUserCircle,
+  FaShieldAlt,
+  FaStethoscope
 } from "react-icons/fa";
 
 const Sidebar = () => {
+  const { user } = useContext(AuthContext);
+  const role = user?.role || "user";
+
   return (
     <aside className="w-72 bg-white/80 backdrop-blur-xl shadow-2xl hidden md:flex flex-col z-20 font-sans border-r border-white/50 animate-slide-in-left">
 
@@ -95,39 +102,69 @@ const Sidebar = () => {
           </NavLink>
         </div>
 
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 mb-2 mt-2 animate-fade-in-up animation-delay-200">
+        {/* --- SYSTEM ADMINISTRATION (Admin Only) --- */}
+        {role === "admin" && (
+          <>
+            <div className="text-xs font-semibold text-red-500 uppercase tracking-wider px-4 mb-2 mt-6 animate-fade-in-up">
+              Management
+            </div>
+            <div className="animate-fade-in-up">
+              <NavItem to="/dashboard/admin" icon={<FaShieldAlt />} label="Admin Console" badge="SYS" />
+            </div>
+          </>
+        )}
+
+        {/* --- EXPERT PANEL (Expert & Admin) --- */}
+        {(role === "expert" || role === "admin") && (
+          <>
+            <div className="text-xs font-semibold text-blue-500 uppercase tracking-wider px-4 mb-2 mt-6 animate-fade-in-up">
+              Professional Panel
+            </div>
+            <div className="animate-fade-in-up">
+              <NavItem to="/dashboard/expert" icon={<FaStethoscope />} label="Review Queue" badge="DOC" />
+            </div>
+          </>
+        )}
+
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 mb-2 mt-6 animate-fade-in-up">
           Analysis
         </div>
-        <div className="animate-fade-in-up animation-delay-300">
+        <div className="animate-fade-in-up">
           <NavItem to="/dashboard/analyze" icon={<FaMagic />} label="Face Analysis" />
         </div>
-        <div className="animate-fade-in-up animation-delay-400">
+        <div className="animate-fade-in-up">
           <NavItem to="/dashboard/live-analyze" icon={<FaCamera />} label="Live Camera" />
         </div>
-        <div className="animate-fade-in-up animation-delay-500">
+        <div className="animate-fade-in-up">
           <NavItem to="/dashboard/services" icon={<FaSpa />} label="Spa Services" badge="HOT" />
         </div>
 
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 mb-2 mt-6 animate-fade-in-up animation-delay-600">
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 mb-2 mt-6 animate-fade-in-up">
           Styling Studio
         </div>
-        <div className="animate-fade-in-up animation-delay-700">
+        <div className="animate-fade-in-up">
           <NavItem to="/dashboard/hair-styling" icon={<FaCut />} label="Hair Styling" badge="NEW" />
         </div>
-        <div className="animate-fade-in-up animation-delay-800">
+        <div className="animate-fade-in-up">
           <NavItem to="/dashboard/nail-styling" icon={<FaPaintBrush />} label="Nail Studio" badge="NEW" />
         </div>
-        <div className="animate-fade-in-up animation-delay-850">
+        <div className="animate-fade-in-up">
           <NavItem to="/dashboard/virtual-studio" icon={<FaUserCircle />} label="Vision Studio" badge="AR" />
         </div>
 
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 mb-2 mt-6 animate-fade-in-up animation-delay-900">
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 mb-2 mt-6 animate-fade-in-up">
           Insights
         </div>
-        <div className="animate-fade-in-up animation-delay-1000">
+        <div className="animate-fade-in-up">
           <NavItem to="/dashboard/trends" icon={<FaChartLine />} label="Skin Trends" />
         </div>
-        <div className="animate-fade-in-up animation-delay-1100">
+        <div className="animate-fade-in-up">
+          <NavItem to="/dashboard/evolution" icon={<FaMagic />} label="Evolution" badge="PRO" />
+        </div>
+        <div className="animate-fade-in-up">
+          <NavItem to="/dashboard/routine" icon={<FaStethoscope />} label="Routine" badge="AI" />
+        </div>
+        <div className="animate-fade-in-up">
           <NavItem to="/dashboard/history" icon={<FaHistory />} label="History" />
         </div>
       </nav>

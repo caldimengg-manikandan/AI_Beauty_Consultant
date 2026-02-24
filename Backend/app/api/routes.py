@@ -13,17 +13,9 @@ import uuid
 from datetime import datetime
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    payload = verify_access_token(token)
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return payload
+from app.auth.jwt_handler import verify_access_token, get_current_user, oauth2_scheme
+from app.mongodb.collections import analysis_collection
 
 @router.post("/analyze")
 async def analyze_face(image: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
@@ -51,6 +43,18 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
         
         if img is None:
              return {"error": "Failed to decode image. Please upload a valid image file."}
+
+        # --- PROFESSIONAL QUALITY VALIDATION (NEW) ---
+        from app.pipeline.preprocess import ImageQualityValidator
+        quality = ImageQualityValidator.validate(img)
+        if not quality["passed"]:
+            return {
+                "success": False,
+                "error": "Quality Check Failed",
+                "message": quality["errors"][0],
+                "details": quality["details"],
+                "professional_tip": "For precise analysis, ensure you are in a well-lit area and hold the camera still."
+            }
 
         faces = detect_faces(img)
 
@@ -107,12 +111,16 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
         undereye_data = detect_undereye_concerns(img, landmarks)
         hair_props = detect_hair_properties(img, landmarks)
 
-        # 4. Generate Consultant Recommendations (Pass all color data)
+        # 4. Generate Consultant Recommendations (Pass all data including environment)
+        from app.utils.weather_utils import get_weather_intelligence
+        weather_info = get_weather_intelligence() # Can be enhanced with user location later
+
         recommendations = generate_consultation(
             shape_name, skin_scores, gender, img, landmarks,
             skin_tone=skin_tone, undertone=undertone,
             eye_color=eye_color, hair_color=hair_color,
-            season=season, hair_properties=hair_props
+            season=season, hair_properties=hair_props,
+            weather_data=weather_info
         )
 
         # 5. Generate AI-Powered Personalized Tips (NEW)

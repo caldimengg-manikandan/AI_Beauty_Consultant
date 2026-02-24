@@ -4,7 +4,7 @@ Settings API routes
 from fastapi import APIRouter, HTTPException, Depends, status
 from app.schemas.settings import UserSettings, SettingsUpdate
 from app.mongodb.settings_collection import settings_collection
-from app.api.routes import get_current_user
+from app.auth.jwt_handler import get_current_user
 from datetime import datetime
 
 router = APIRouter(prefix="/api/settings", tags=["Settings"])

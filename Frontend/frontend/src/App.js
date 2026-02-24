@@ -19,6 +19,11 @@ import VirtualStudio from "./features/styling/VirtualStudio";
 import ServicesPage from "./features/services/ServicesPage";
 import SettingsPage from "./pages/SettingsPage";
 import PremiumPage from "./pages/PremiumPage";
+import ProgressDashboard from "./features/styling/ProgressDashboard";
+import RoutineBuilder from "./features/styling/RoutineBuilder";
+
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import ExpertDashboard from "./pages/expert/ExpertDashboard";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layout/DashboardLayout";
@@ -55,8 +60,22 @@ function App() {
             <Route path="hair-styling" element={<HairStyling />} />
             <Route path="nail-styling" element={<NailStyling />} />
             <Route path="virtual-studio" element={<VirtualStudio />} />
+            <Route path="evolution" element={<ProgressDashboard />} />
+            <Route path="routine" element={<RoutineBuilder />} />
             <Route path="services" element={<ServicesPage />} />
             <Route path="settings" element={<SettingsPage />} />
+
+            {/* Role-Based Routes */}
+            <Route path="admin" element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="expert" element={
+              <ProtectedRoute allowedRoles={["expert", "admin"]}>
+                <ExpertDashboard />
+              </ProtectedRoute>
+            } />
           </Route>
 
           {/* Catch-all redirect */}

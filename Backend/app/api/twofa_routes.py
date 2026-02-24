@@ -4,7 +4,7 @@ Two-Factor Authentication API routes
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
 from app.mongodb.user_collection import user_collection
-from app.api.routes import get_current_user
+from app.auth.jwt_handler import get_current_user
 from app.auth.twofa import (
     generate_2fa_secret,
     generate_qr_code,

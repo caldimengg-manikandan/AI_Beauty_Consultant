@@ -11,7 +11,7 @@ from app.auth.rbac import (
     PREMIUM_FEATURES,
     NORMAL_FEATURES
 )
-from app.api.routes import get_current_user
+from app.auth.jwt_handler import get_current_user
 from pydantic import BaseModel
 from datetime import datetime
 

@@ -58,7 +58,7 @@
 
 
 from fastapi import APIRouter, HTTPException, Depends
-from app.api.routes import get_current_user
+from app.auth.jwt_handler import get_current_user
 from app.mongodb.user_collection import user_collection
 from app.auth.security import hash_password, verify_password
 from app.auth.jwt_handler import create_access_token
@@ -100,22 +100,37 @@ def signup(user: UserAuth):
 
 @router.post("/login")
 def login(user: UserAuth):
-    db_user = user_collection.find_one({"email": user.email})
-    if not db_user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    try:
+        print(f"DEBUG: Login attempt for {user.email}")
+        db_user = user_collection.find_one({"email": user.email})
+        if not db_user:
+            print(f"DEBUG: User {user.email} not found")
+            raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    if not verify_password(user.password, db_user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        # Strip password on login to match signup behavior
+        raw_password = user.password.strip()
 
-    token = create_access_token({
-        "sub": db_user["email"],
-        "role": db_user["role"]
-    })
+        if not verify_password(raw_password, db_user["password"]):
+            print(f"DEBUG: Password mismatch for {user.email}")
+            raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    return {
-        "access_token": token,
-        "token_type": "bearer"
-    }
+        token = create_access_token({
+            "sub": db_user["email"],
+            "role": db_user["role"]
+        })
+
+        print(f"DEBUG: Login successful for {user.email}")
+        return {
+            "access_token": token,
+            "token_type": "bearer"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"CRITICAL ERROR IN LOGIN: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/delete-account")
 def delete_account(current_user: dict = Depends(get_current_user)):

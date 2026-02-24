@@ -3,7 +3,7 @@ import axios from 'axios';
 import {
     FaCamera, FaUpload, FaMagic, FaSyncAlt, FaDownload,
     FaPalette, FaHistory, FaCheck, FaEye, FaWind, FaSun, FaAdjust,
-    FaFingerprint, FaSparkles, FaBan, FaMoon, FaBolt
+    FaFingerprint, FaSparkles, FaBan, FaMoon, FaBolt, FaMicrophone
 } from 'react-icons/fa';
 import { getHistory } from '../../services/api';
 
@@ -51,6 +51,35 @@ const VirtualStudio = () => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [isCameraActive, setIsCameraActive] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+
+    const handleVoiceCommand = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Voice recognition is not supported in this browser.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.onstart = () => setIsListening(true);
+        recognition.onresult = (event) => {
+            const command = event.results[0][0].transcript.toLowerCase();
+            console.log("🎙️ Voice Command:", command);
+
+            if (command.includes('lips') || command.includes('lipstick')) setCurrentTab('lipstick');
+            if (command.includes('blush')) setCurrentTab('blush');
+            if (command.includes('shadow')) setCurrentTab('eyeshadow');
+            if (command.includes('hair')) setCurrentTab('hair');
+            if (command.includes('skin') || command.includes('foundation')) setCurrentTab('foundation');
+
+            if (command.includes('red')) updateEffect(currentTab, 'color', '#FF0000');
+            if (command.includes('pink')) updateEffect(currentTab, 'color', '#FB7185');
+
+            if (command.includes('capture') || command.includes('photo')) captureImage();
+        };
+        recognition.onend = () => setIsListening(false);
+        recognition.start();
+    };
 
     useEffect(() => {
         const checkAnalysis = async () => {
@@ -201,6 +230,12 @@ const VirtualStudio = () => {
                             className="px-8 py-4 bg-indigo-600 text-white font-black rounded-2xl flex items-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-100 text-xs uppercase tracking-widest"
                         >
                             <FaCamera /> {isCameraActive ? "Syncing..." : "Live Feed"}
+                        </button>
+                        <button
+                            onClick={handleVoiceCommand}
+                            className={`px-8 py-4 ${isListening ? 'bg-rose-500 animate-pulse' : 'bg-slate-900'} text-white font-black rounded-2xl flex items-center gap-3 transition-all shadow-xl text-xs uppercase tracking-widest`}
+                        >
+                            <FaMicrophone /> {isListening ? "Listening..." : "Voice Control"}
                         </button>
                     </div>
                 </header>

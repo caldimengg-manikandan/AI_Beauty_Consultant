@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.schemas.appointment import AppointmentCreate
 from app.mongodb.collections import appointments_collection
-from app.api.routes import get_current_user
+from app.auth.jwt_handler import get_current_user
 from datetime import datetime
 import uuid
 

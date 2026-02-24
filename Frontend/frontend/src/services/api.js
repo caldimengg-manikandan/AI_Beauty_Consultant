@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "http://127.0.0.1:8000";
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -94,6 +94,48 @@ export const disable2FA = async (code) => {
 
 export const get2FAStatus = async () => {
   const res = await api.get("/api/auth/2fa/status");
+  return res.data;
+};
+
+// --- ADMIN ENDPOINTS ---
+export const getAdminStats = async () => {
+  const res = await api.get("/api/admin/stats");
+  return res.data;
+};
+
+export const getAllUsers = async () => {
+  const res = await api.get("/api/admin/users");
+  return res.data;
+};
+
+export const updateUserRole = async (email, role) => {
+  const res = await api.post(`/api/admin/update-role?target_email=${encodeURIComponent(email)}&new_role=${role}`);
+  return res.data;
+};
+
+export const updateUserStatus = async (email, status) => {
+  const res = await api.post(`/api/admin/update-status?target_email=${encodeURIComponent(email)}&status=${status}`);
+  return res.data;
+};
+
+export const getAuditLogs = async () => {
+  const res = await api.get("/api/admin/audit-logs");
+  return res.data;
+};
+
+export const broadcastAnnouncement = async (message) => {
+  const res = await api.post(`/api/admin/broadcast?message=${encodeURIComponent(message)}`);
+  return res.data;
+};
+
+// --- EXPERT ENDPOINTS ---
+export const getReviewQueue = async () => {
+  const res = await api.get("/api/expert/review-queue");
+  return res.data;
+};
+
+export const submitExpertReview = async (reviewData) => {
+  const res = await api.post("/api/expert/submit-review", reviewData);
   return res.data;
 };
 

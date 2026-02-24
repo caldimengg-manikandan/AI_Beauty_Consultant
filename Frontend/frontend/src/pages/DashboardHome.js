@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { FaCamera, FaMagic, FaCut, FaPaintBrush, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaCrown, FaArrowUp } from 'react-icons/fa';
+import { FaCamera, FaMagic, FaCut, FaPaintBrush, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaCrown, FaArrowUp, FaShieldAlt, FaStethoscope } from 'react-icons/fa';
 import { getUserRole, getUserStats } from '../services/premiumApi';
 import { getHistory } from '../services/api';
 
@@ -78,6 +78,23 @@ const DashboardHome = () => {
       gradient: 'from-blue-600 to-cyan-600',
       badge: 'New'
     },
+    // --- ROLE BASED QUICK ACTIONS ---
+    ...(userRole?.role === "admin" ? [{
+      title: 'Admin Console',
+      desc: 'Manage users, view analytics and system health',
+      icon: <FaShieldAlt className="text-4xl" />,
+      link: '/dashboard/admin',
+      gradient: 'from-red-600 to-rose-700',
+      badge: 'Admin'
+    }] : []),
+    ...(userRole?.role === "expert" || userRole?.role === "admin" ? [{
+      title: 'Review Queue',
+      desc: 'Dermatologist portal for AI scan validation',
+      icon: <FaStethoscope className="text-4xl" />,
+      link: '/dashboard/expert',
+      gradient: 'from-indigo-600 to-blue-700',
+      badge: 'Expert'
+    }] : []),
     {
       title: 'Hair Styling',
       desc: 'Get personalized hairstyle recommendations',

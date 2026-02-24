@@ -69,7 +69,7 @@ const HistoryPage = () => {
                   {/* Safe Label Extraction */}
                   <div>
                     <h3 className="font-bold text-lg text-gray-800">
-                      {scan.face_shape || "Unknown"} <span className="text-xs font-normal text-gray-400">Face</span>
+                      {typeof scan.face_shape === 'string' ? scan.face_shape : (scan.face_shape?.value || (Array.isArray(scan.face_shape) ? scan.face_shape[0] : "Unknown"))} <span className="text-xs font-normal text-gray-400">Face</span>
                     </h3>
                     <div className="flex gap-2 mt-1">
                       <Badge

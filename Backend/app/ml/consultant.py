@@ -1,6 +1,6 @@
 def generate_consultation(face_shape, skin_scores, gender="Female", image=None, landmarks=None,
                          skin_tone=None, undertone=None, eye_color=None, hair_color=None, 
-                         season=None, hair_properties=None):
+                         season=None, hair_properties=None, weather_data=None):
     """
     Acts as a Beauty Consultant to generate personalized advice.
     Now includes comprehensive color analysis.
@@ -202,5 +202,10 @@ def generate_consultation(face_shape, skin_scores, gender="Female", image=None, 
         except Exception as e:
             print(f"⚠️ Foundation matching error: {e}")
             pass
+
+    # 7. ENVIRONMENT INTELLIGENCE (NEW)
+    if weather_data and weather_data.get("advice"):
+        final_recs.append(f"\n🌍 **Environment Intelligence ({weather_data.get('city', 'Local')})**:")
+        final_recs.append(f"- {weather_data['advice']}")
 
     return final_recs
