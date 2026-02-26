@@ -4,40 +4,9 @@ import { Outlet } from "react-router-dom";
 import ConsultantChat from "../features/chat/ConsultantChat";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { translationService } from "../services/translationService";
 
 const DashboardLayout = () => {
   const { i18n } = useTranslation();
-
-  // Handle RTL and AI Translation Persistence
-  useEffect(() => {
-    const isRtl = i18n.language === 'ar';
-    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
-    document.documentElement.lang = i18n.language;
-
-    // Trigger AI translation if we're not in English
-    const performInitialTranslation = async () => {
-      if (i18n.language !== 'en') {
-        const langNames = {
-          'hi': 'hindi',
-          'ta': 'tamil',
-          'es': 'spanish',
-          'fr': 'french',
-          'ar': 'arabic'
-        };
-        const fullName = langNames[i18n.language];
-        if (fullName) {
-          try {
-            await translationService.translateWholePage(fullName);
-          } catch (err) {
-            console.error("Initial AI translation failed", err);
-          }
-        }
-      }
-    };
-
-    performInitialTranslation();
-  }, [i18n.language]);
 
   return (
     <div className={`flex h-screen bg-gradient-to-br from-purple-50 via-teal-50 to-blue-50 relative overflow-hidden ${i18n.language === 'ar' ? 'font-arabic' : ''}`} dir={document.documentElement.dir}>

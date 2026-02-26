@@ -21,35 +21,24 @@ import {
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { toast } from "react-toastify";
-import { translationService } from "../services/translationService";
-
 const Sidebar = () => {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { user } = useContext(AuthContext);
   const role = user?.role || "user";
 
-  const changeLanguage = async (lng) => {
+  const changeLanguage = (lng) => {
     i18n.changeLanguage(lng);
 
-    // Map code to full name for AI engine
-    const langNames = {
-      'en': 'english',
-      'hi': 'hindi',
-      'ta': 'tamil',
-      'es': 'spanish',
-      'fr': 'french'
-    };
+    // Handle RTL
+    document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lng;
 
-    const fullName = langNames[lng] || 'english';
-
-    try {
-      toast.info(`AI is translating the entire page to ${fullName}...`, { autoClose: 2000 });
-      await translationService.translateWholePage(fullName);
-      toast.success(`Page translated to ${fullName} successfully!`);
-    } catch (err) {
-      console.error("AI Translation failed:", err);
-      // Fallback: Static translation is already handled by i18n
+    // Trigger Google Translate Widget
+    const googleSelect = document.querySelector('.goog-te-combo');
+    if (googleSelect) {
+      googleSelect.value = lng;
+      googleSelect.dispatchEvent(new Event('change'));
     }
   };
 
@@ -210,7 +199,7 @@ const Sidebar = () => {
       <div className="p-4 mx-4 mb-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl space-y-3 dark:border dark:border-white/5 transition-all">
         <div className="flex items-center justify-between gap-2">
           <div className="flex gap-1">
-            {['en', 'hi', 'ta', 'es', 'fr'].map(lng => (
+            {['en', 'hi', 'ta', 'es', 'fr', 'ar'].map(lng => (
               <button
                 key={lng}
                 onClick={() => changeLanguage(lng)}

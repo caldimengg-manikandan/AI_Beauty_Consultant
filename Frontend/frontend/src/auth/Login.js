@@ -4,6 +4,7 @@ import { AuthContext } from "../context/AuthContext";
 import { login as apiLogin } from "../services/api";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import illustration from "../assets/auth_illustration.png";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 const Login = () => {
   const { login } = useContext(AuthContext);
@@ -40,6 +41,12 @@ const Login = () => {
 
       {/* LEFT SIDE - FORM */}
       <div className="flex flex-col justify-center px-8 sm:px-16 lg:px-24 py-12 relative z-10 animate-fade-in-left">
+
+        {/* Global Action Bar */}
+        <div className="absolute top-6 left-6 right-6 flex justify-between items-center md:hidden lg:flex">
+          <div>{/* Logo or back button */}</div>
+          <LanguageSwitcher variant="minimal" />
+        </div>
 
         {/* Logo Area */}
         <div className="mb-12">

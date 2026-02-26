@@ -28,8 +28,19 @@ import ExpertDashboard from "./pages/expert/ExpertDashboard";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layout/DashboardLayout";
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 function App() {
+  const { i18n } = useTranslation();
+
+  // Handle Global RTL for the ENTIRE website
+  useEffect(() => {
+    const isRtl = i18n.language === 'ar';
+    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
+
   return (
     <BrowserRouter>
       <Routes>

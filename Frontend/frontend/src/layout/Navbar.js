@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaBell, FaCog, FaSignOutAlt, FaCircle, FaInfoCircle, FaMagic, FaUserAstronaut } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 const Navbar = () => {
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -134,6 +135,9 @@ const Navbar = () => {
 
             {/* Right - Notification Center & Actions */}
             <div className="flex items-center gap-4">
+
+                {/* AI LANGUAGE ENGINE */}
+                <LanguageSwitcher />
 
                 {/* NOTIFICATION HUB */}
                 <div className="relative" ref={notificationRef}>

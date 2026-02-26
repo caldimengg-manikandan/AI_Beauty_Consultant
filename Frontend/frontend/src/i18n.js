@@ -71,6 +71,19 @@ i18n
                     "logout": "Déconnexion",
                     "language": "Langue"
                 }
+            },
+            ar: {
+                translation: {
+                    "welcome": "مرحباً بعودتك",
+                    "skin_analysis": "تحليل البشرة",
+                    "dashboard": "لوحة القيادة",
+                    "settings": "الإعدادات",
+                    "start_scan": "بدء مسح جديد",
+                    "premium": "انتقل للنسخة المميزة",
+                    "history": "السجل",
+                    "logout": "تسجيل الخروج",
+                    "language": "اللغة"
+                }
             }
         },
         fallbackLng: 'en',

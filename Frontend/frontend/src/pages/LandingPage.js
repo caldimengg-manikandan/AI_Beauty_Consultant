@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import DemoModal from '../components/DemoModal';
 import { getDemoResultById } from '../data/demoData';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 const LandingPage = () => {
     const navigate = useNavigate();
@@ -19,7 +20,12 @@ const LandingPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-teal-50 to-blue-50">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-teal-50 to-blue-50 relative">
+            {/* Top Right Actions */}
+            <div className="absolute top-6 right-6 z-50">
+                <LanguageSwitcher />
+            </div>
+
             {/* Hero Section */}
             <section className="relative overflow-hidden py-20 px-4">
                 {/* Animated Background Elements */}
