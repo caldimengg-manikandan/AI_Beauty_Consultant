@@ -19,11 +19,14 @@ from app.mongodb.collections import analysis_collection
 
 @router.post("/analyze")
 async def analyze_face(image: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    import time
+    start_total = time.time()
     try:
         user_email = current_user.get('sub')
         print(f"🔍 STARTING ANALYSIS for user: {user_email}")
         
         # Check usage limits (RBAC)
+        t_usage = time.time()
         from app.auth.rbac import check_usage_limit, increment_usage, get_user_role
         
         usage_check = check_usage_limit(user_email, "analysis_per_month")
@@ -35,18 +38,31 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
                 "limit": usage_check["limit"],
                 "upgrade_required": True
             }
+        print(f"⏱️ Usage check took: {time.time() - t_usage:.3f}s")
         
-        print(f"✅ Usage check passed: {usage_check['message']}")
-        
+        t_read = time.time()
         img_bytes = await image.read()
         img = read_image(img_bytes)
+        print(f"⏱️ Image read & decode took: {time.time() - t_read:.3f}s")
         
         if img is None:
              return {"error": "Failed to decode image. Please upload a valid image file."}
 
-        # --- PROFESSIONAL QUALITY VALIDATION (NEW) ---
+        # --- HIGH-RES DOWNSAMPLING (For speed) ---
+        t_resize = time.time()
+        h_orig, w_orig = img.shape[:2]
+        max_dim = 1024
+        if max(h_orig, w_orig) > max_dim:
+            scale = max_dim / max(h_orig, w_orig)
+            img = cv2.resize(img, (0,0), fx=scale, fy=scale)
+            print(f"⚡ DOWNSAMPLED large image ({w_orig}x{h_orig}) to ({img.shape[1]}x{img.shape[0]}) for performance")
+        print(f"⏱️ Resizing check took: {time.time() - t_resize:.3f}s")
+
+        # --- PROFESSIONAL QUALITY VALIDATION ---
+        t_qual = time.time()
         from app.pipeline.preprocess import ImageQualityValidator
         quality = ImageQualityValidator.validate(img)
+        print(f"⏱️ Quality validation took: {time.time() - t_qual:.3f}s")
         if not quality["passed"]:
             return {
                 "success": False,
@@ -56,7 +72,9 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
                 "professional_tip": "For precise analysis, ensure you are in a well-lit area and hold the camera still."
             }
 
+        t_det = time.time()
         faces = detect_faces(img)
+        print(f"⏱️ Face detection took: {time.time() - t_det:.3f}s")
 
         if len(faces) == 0:
             return {
@@ -75,17 +93,20 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
         x, y, w, h = bbox
         
         # 1. Face Shape & Gender Analysis
+        t_shape = time.time()
         from app.ml.analysis_cv import classify_gender_geometric
-        
-        # Unpack tuple (Shape, Confidence, Fallback)
         shape_name, shape_conf, _ = calculate_face_shape(landmarks, img.shape[1], img.shape[0], img)
         gender = classify_gender_geometric(landmarks, img.shape[1], img.shape[0], img, face_shape=shape_name)
+        print(f"⏱️ Shape & Gender detection took: {time.time() - t_shape:.3f}s")
 
         # 2. Skin Analysis (OpenCV)
-        face_img = img[y:y+h, x:x+w]
-        skin_scores = analyze_skin_cv(face_img, landmarks) 
+        t_skin = time.time()
+        # FIX: Passing the full resized image to ensure landmarks match relative coordinates
+        skin_scores = analyze_skin_cv(img, landmarks) 
+        print(f"⏱️ Skin analysis (CV) took: {time.time() - t_skin:.3f}s")
 
-        # 3. COLOR ANALYSIS (NEW) - Skin Tone, Eye Color, Hair Color
+        # 3. COLOR ANALYSIS
+        t_color = time.time()
         from app.ml.color_analysis import (
             detect_skin_tone, 
             detect_eye_color, 
@@ -97,8 +118,10 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
         eye_color, eye_hex = detect_eye_color(img, landmarks)
         hair_color, hair_hex = detect_hair_color(img, landmarks)
         season, palette = get_seasonal_color_palette(skin_tone, undertone, eye_color, hair_color)
+        print(f"⏱️ Color analysis took: {time.time() - t_color:.3f}s")
         
-        # 3.5 ADVANCED DIAGNOSTICS (MATHEMATICAL)
+        # 3.5 ADVANCED DIAGNOSTICS
+        t_adv = time.time()
         from app.ml.analysis_cv import (
             calculate_facial_symmetry, 
             analyze_eyebrows, 
@@ -110,50 +133,65 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
         eyebrow_data = analyze_eyebrows(landmarks, img.shape[1], img.shape[0], shape_name)
         undereye_data = detect_undereye_concerns(img, landmarks)
         hair_props = detect_hair_properties(img, landmarks)
+        print(f"⏱️ Advanced diagnostics took: {time.time() - t_adv:.3f}s")
 
-        # 4. Generate Consultant Recommendations (Pass all data including environment)
+        # 4. PARALLEL GENERATION (Weather, Tips, Consultation)
+        import asyncio
         from app.utils.weather_utils import get_weather_intelligence
-        weather_info = get_weather_intelligence() # Can be enhanced with user location later
-
-        recommendations = generate_consultation(
-            shape_name, skin_scores, gender, img, landmarks,
-            skin_tone=skin_tone, undertone=undertone,
-            eye_color=eye_color, hair_color=hair_color,
-            season=season, hair_properties=hair_props,
-            weather_data=weather_info
-        )
-
-        # 5. Generate AI-Powered Personalized Tips (NEW)
         from app.ml.personalized_tips import generate_personalized_tips
+
+        print("🚀 Launching Parallel AI Generations...")
+        t_parallel = time.time()
         
-        personalized_tips = generate_personalized_tips(
-            face_shape=shape_name,
-            gender=gender,
-            skin_scores=skin_scores,
-            skin_tone=skin_tone,
-            undertone=undertone,
-            eye_color=eye_color,
-            hair_color=hair_color,
-            season=season,
-            hair_properties=hair_props
-        )
-        print(f"✨ Generated {len(personalized_tips)} personalized tips for user")
+        async def run_parallel():
+            loop = asyncio.get_running_loop()
+            # Wrap synchronous functions to run in a thread pool
+            tasks = [
+                loop.run_in_executor(None, get_weather_intelligence),
+                loop.run_in_executor(None, lambda: generate_consultation(
+                    shape_name, skin_scores, gender, img, landmarks,
+                    skin_tone=skin_tone, undertone=undertone,
+                    eye_color=eye_color, hair_color=hair_color,
+                    season=season, hair_properties=hair_props,
+                    weather_data={}
+                )),
+                loop.run_in_executor(None, lambda: generate_personalized_tips(
+                    face_shape=shape_name, gender=gender, skin_scores=skin_scores,
+                    skin_tone=skin_tone, undertone=undertone,
+                    eye_color=eye_color, hair_color=hair_color,
+                    season=season, hair_properties=hair_props
+                ))
+            ]
+            return await asyncio.gather(*tasks)
+
+        try:
+            weather_info, recommendations, personalized_tips = await run_parallel()
+            
+            # Merge weather advice into recommendations
+            if weather_info and weather_info.get("advice"):
+                 recommendations.append(f"\n🌍 **Environment Intelligence**: {weather_info['advice']}")
+        except Exception as parallel_err:
+            print(f"⚠️ Parallel AI Error: {parallel_err}")
+            # Fallbacks if parallel execution fails
+            weather_info = {}
+            recommendations = []
+            personalized_tips = ["AI insights are momentarily unavailable. Please check your network."]
+
+        print(f"⏱️ Parallel AI Logic took: {time.time() - t_parallel:.3f}s")
 
         # --- GENERATE ANNOTATED IMAGE ---
+        t_anno = time.time()
         annotated_img = generate_annotated_image(img, landmarks, gender)
+        print(f"⏱️ Annotation took: {time.time() - t_anno:.3f}s")
         
         # --- SAVE TO DB & DISK ---
+        t_save = time.time()
         try:
-            # 1. Save Original Image
-            import uuid
             filename = f"{uuid.uuid4().hex}.jpg"
             file_path = os.path.join("static/uploads", filename)
-            
-            # Write original bytes
             with open(file_path, "wb") as f:
                 f.write(img_bytes)
 
-            # 2. Save Annotated Image
             annotated_filename = f"annotated_{filename}"
             annotated_path = os.path.join("static/uploads", annotated_filename)
             cv2.imwrite(annotated_path, annotated_img)
@@ -162,7 +200,6 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
             image_url = f"{base_url}/static/uploads/{filename}"
             annotated_image_url = f"{base_url}/static/uploads/{annotated_filename}"
 
-            # 3. Save Result to DB
             analysis_doc = {
                 "user_email": current_user.get("sub"),
                 "image_url": image_url,
@@ -171,14 +208,12 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
                 "face_shape_conf": shape_conf,
                 "gender": gender,
                 "skin_scores": skin_scores,
-                # Color Analysis Data
                 "skin_tone": skin_tone,
                 "undertone": undertone,
                 "eye_color": eye_color,
                 "hair_color": hair_color,
                 "season": season,
                 "hair_properties": hair_props,
-                # New Metrics
                 "symmetry": symmetry_data,
                 "eyebrows": eyebrow_data,
                 "undereye": undereye_data,
@@ -187,16 +222,14 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
                 "created_at": datetime.utcnow()
             }
             analysis_collection.insert_one(analysis_doc)
-            print(f"✅ Saved analysis for user {current_user.get('sub')}")
-            
-            # Increment usage counter
             increment_usage(user_email, "analysis")
-            print(f"📊 Usage incremented for {user_email}")
-
         except Exception as db_err:
             print(f"⚠️ DB Save Failed: {db_err}")
             image_url = None
             annotated_image_url = None
+        print(f"⏱️ DB/Disk Save took: {time.time() - t_save:.3f}s")
+
+        print(f"🏁 TOTAL ANALYSIS TIME: {time.time() - start_total:.3f}s")
 
         # --- RETURN RESPONSE ---
         return {

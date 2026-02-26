@@ -12,12 +12,46 @@ import {
   FaSpa,
   FaUserCircle,
   FaShieldAlt,
-  FaStethoscope
+  FaStethoscope,
+  FaMicroscope,
+  FaMoon,
+  FaSun,
+  FaGlobe
 } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "../context/ThemeContext";
+import { toast } from "react-toastify";
+import { translationService } from "../services/translationService";
 
 const Sidebar = () => {
+  const { t, i18n } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
   const { user } = useContext(AuthContext);
   const role = user?.role || "user";
+
+  const changeLanguage = async (lng) => {
+    i18n.changeLanguage(lng);
+
+    // Map code to full name for AI engine
+    const langNames = {
+      'en': 'english',
+      'hi': 'hindi',
+      'ta': 'tamil',
+      'es': 'spanish',
+      'fr': 'french'
+    };
+
+    const fullName = langNames[lng] || 'english';
+
+    try {
+      toast.info(`AI is translating the entire page to ${fullName}...`, { autoClose: 2000 });
+      await translationService.translateWholePage(fullName);
+      toast.success(`Page translated to ${fullName} successfully!`);
+    } catch (err) {
+      console.error("AI Translation failed:", err);
+      // Fallback: Static translation is already handled by i18n
+    }
+  };
 
   return (
     <aside className="w-72 bg-white/80 backdrop-blur-xl shadow-2xl hidden md:flex flex-col z-20 font-sans border-r border-white/50 animate-slide-in-left">
@@ -80,7 +114,7 @@ const Sidebar = () => {
                 {/* Text */}
                 <div className="flex-1">
                   <div className={`font-bold text-base ${isActive ? 'text-white' : 'text-purple-700'}`}>
-                    Dashboard
+                    {t('dashboard')}
                   </div>
                   <div className={`text-xs ${isActive ? 'text-white/80' : 'text-purple-500'}`}>
                     Home & Overview
@@ -136,6 +170,9 @@ const Sidebar = () => {
           <NavItem to="/dashboard/live-analyze" icon={<FaCamera />} label="Live Camera" />
         </div>
         <div className="animate-fade-in-up">
+          <NavItem to="/dashboard/scan" icon={<FaMicroscope />} label="Ingredient Scan" badge="NEW" />
+        </div>
+        <div className="animate-fade-in-up">
           <NavItem to="/dashboard/services" icon={<FaSpa />} label="Spa Services" badge="HOT" />
         </div>
 
@@ -165,9 +202,35 @@ const Sidebar = () => {
           <NavItem to="/dashboard/routine" icon={<FaStethoscope />} label="Routine" badge="AI" />
         </div>
         <div className="animate-fade-in-up">
-          <NavItem to="/dashboard/history" icon={<FaHistory />} label="History" />
+          <NavItem to="/dashboard/history" icon={<FaHistory />} label={t('history')} />
         </div>
       </nav>
+
+      {/* Theme & Language Controls */}
+      <div className="p-4 mx-4 mb-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl space-y-3 dark:border dark:border-white/5 transition-all">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-1">
+            {['en', 'hi', 'ta', 'es', 'fr'].map(lng => (
+              <button
+                key={lng}
+                onClick={() => changeLanguage(lng)}
+                className={`w-7 h-7 flex items-center justify-center rounded-lg text-[10px] font-black uppercase transition-all ${i18n.language === lng ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+              >
+                {lng}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={toggleTheme}
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 text-slate-600 dark:text-indigo-400 shadow-sm border border-slate-100 dark:border-slate-700 hover:scale-110 active:scale-95 transition-all"
+          >
+            {theme === 'dark' ? <FaSun /> : <FaMoon />}
+          </button>
+        </div>
+        <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest pl-1">
+          <FaGlobe className="animate-spin-slow" /> {t('language')} Mode
+        </div>
+      </div>
     </aside>
   );
 };

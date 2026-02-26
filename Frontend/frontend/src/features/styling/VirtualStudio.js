@@ -51,6 +51,7 @@ const VirtualStudio = () => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [isCameraActive, setIsCameraActive] = useState(false);
+    const [cameraStream, setCameraStream] = useState(null);
     const [isListening, setIsListening] = useState(false);
 
     const handleVoiceCommand = () => {
@@ -89,6 +90,14 @@ const VirtualStudio = () => {
             } catch (err) { console.error(err); }
         };
         checkAnalysis();
+
+        // Cleanup: Ensure camera is turned off if user leaves page
+        return () => {
+            if (videoRef.current && videoRef.current.srcObject) {
+                const tracks = videoRef.current.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+        };
     }, []);
 
     const updateEffect = (type, key, value) => {
@@ -136,12 +145,42 @@ const VirtualStudio = () => {
         }
     };
 
+    // Fix: Attach stream to video ref once the element is rendered in DOM
+    useEffect(() => {
+        if (isCameraActive && cameraStream && videoRef.current) {
+            videoRef.current.srcObject = cameraStream;
+        }
+    }, [isCameraActive, cameraStream]);
+
     const startCamera = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert("🔒 Secure Context Required: Your browser has blocked camera access either because the connection is not secure (HTTPS) or the browser is out of date.");
+            return;
+        }
+
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            videoRef.current.srcObject = stream;
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: "user",
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            });
+
+            setCameraStream(stream);
             setIsCameraActive(true);
-        } catch (err) { alert("Camera access denied"); }
+        } catch (err) {
+            console.error("Camera Error:", err);
+            if (err.name === 'NotAllowedError') {
+                alert("🚫 Camera Access Denied: Please check your browser's site settings and click 'Allow' for the camera.");
+            } else if (err.name === 'NotFoundError') {
+                alert("📷 No Camera Found: We couldn't detect a camera device connected to your system.");
+            } else if (err.name === 'NotReadableError') {
+                alert("⚠️ Camera Busy: Another application (like Zoom or Teams) is currently using your camera. Please close it and try again.");
+            } else {
+                alert(`❌ Imaging Error: ${err.message}`);
+            }
+        }
     };
 
     const captureImage = () => {
@@ -430,7 +469,7 @@ const VirtualStudio = () => {
                             <div className="relative w-full aspect-[14/9] xl:aspect-[16/10] bg-white rounded-[4.5rem] shadow-3xl overflow-hidden border border-slate-100 flex items-center justify-center">
                                 {isCameraActive ? (
                                     <div className="w-full h-full relative">
-                                        <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover mirror" />
+                                        <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover mirror" />
                                         <div className="absolute inset-x-0 bottom-12 flex justify-center">
                                             <button
                                                 onClick={captureImage}

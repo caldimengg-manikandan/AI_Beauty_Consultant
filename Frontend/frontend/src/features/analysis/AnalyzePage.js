@@ -27,16 +27,59 @@ const AnalyzePage = () => {
     setResult(null);
   };
 
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Max dimension 1200px
+          const MAX_DIM = 1200;
+          if (width > height) {
+            if (width > MAX_DIM) {
+              height *= MAX_DIM / width;
+              width = MAX_DIM;
+            }
+          } else {
+            if (height > MAX_DIM) {
+              width *= MAX_DIM / height;
+              height = MAX_DIM;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            resolve(blob);
+          }, 'image/jpeg', 0.85); // 85% quality is perfect balance
+        };
+      };
+    });
+  };
+
   const analyze = async () => {
     if (!image) return alert("Please select an image first.");
 
-    const formData = new FormData();
-    formData.append("image", image);
-
     try {
       setLoading(true);
-      setError(null); // Clear previous errors
-      setResult(null); // Clear previous results
+      setError(null);
+      setResult(null);
+
+      // --- CLIENT-SIDE COMPRESSION ---
+      console.log("⚡ Compressing image for faster upload...");
+      const compressedBlob = await compressImage(image);
+
+      const formData = new FormData();
+      formData.append("image", compressedBlob, "upload.jpg");
 
       const res = await analyzeImage(formData);
       console.log("Analysis Result:", res);

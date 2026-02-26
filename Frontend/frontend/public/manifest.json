@@ -1,25 +1,27 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "AI Beauty",
+  "name": "AI Beauty Consultant — Pro Facial Intelligence",
+  "description": "Professional AI-driven skin analysis and beauty consultancy platform.",
   "icons": [
     {
-      "src": "images/consultant_avatar.png",
+      "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
     },
     {
-      "src": "images/consultant_avatar.png",
+      "src": "logo192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "images/consultant_avatar.png",
+      "src": "logo512.png",
       "type": "image/png",
       "sizes": "512x512"
     }
   ],
-  "start_url": ".",
+  "start_url": "/dashboard",
   "display": "standalone",
-  "theme_color": "#A855F7",
-  "background_color": "#ffffff"
+  "theme_color": "#4F46E5",
+  "background_color": "#F8FAFC",
+  "orientation": "portrait"
 }

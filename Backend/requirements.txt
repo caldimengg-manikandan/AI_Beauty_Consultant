@@ -42,9 +42,14 @@ python-dotenv
 tqdm
 requests
 matplotlib
+reportlab
 
 # ========================
 # SECURITY & 2FA
 # ========================
-pyotp
-qrcode[pil]
+ pyotp
+ qrcode[pil]
+ transformers
+ sentencepiece
+ 
+ 

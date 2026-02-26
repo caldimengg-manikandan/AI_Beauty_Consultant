@@ -118,11 +118,29 @@ const LiveAnalyzePage = () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    ctx.drawImage(videoRef.current, 0, 0);
+    // Cap dimensions at 1024px for faster processing
+    let width = videoRef.current.videoWidth;
+    let height = videoRef.current.videoHeight;
+    const MAX_DIM = 1024;
 
-    const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.95));
+    if (width > height) {
+      if (width > MAX_DIM) {
+        height *= MAX_DIM / width;
+        width = MAX_DIM;
+      }
+    } else {
+      if (height > MAX_DIM) {
+        width *= MAX_DIM / height;
+        height = MAX_DIM;
+      }
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(videoRef.current, 0, 0, width, height);
+
+    // Compress to 85% for balanced speed/accuracy
+    const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.85));
 
     if (!blob) {
       setError("Image capture sequence failed.");

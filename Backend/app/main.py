@@ -50,6 +50,13 @@ from app.api.admin_routes import router as admin_router
 from app.api.expert_routes import router as expert_router
 from app.api.routine_routes import router as routine_router
 from app.api.progress_routes import router as progress_router
+from app.api.report_routes import router as report_router
+from app.api.onboarding_routes import router as onboarding_router
+from app.api.affiliate_routes import router as affiliate_router
+from app.api.notification_routes import router as notification_router
+from app.api.gamification_routes import router as gamification_router
+from app.api.ingredient_routes import router as ingredient_router
+from app.api.translation_routes import router as translation_router
 
 # 4️⃣ REGISTER ROUTERS
 app.include_router(auth_router)
@@ -64,6 +71,13 @@ app.include_router(admin_router)
 app.include_router(expert_router)
 app.include_router(routine_router)
 app.include_router(progress_router)
+app.include_router(report_router)
+app.include_router(onboarding_router)
+app.include_router(affiliate_router)
+app.include_router(notification_router)
+app.include_router(gamification_router)
+app.include_router(ingredient_router)
+app.include_router(translation_router)
 
 # 5️⃣ SERVE STATIC FILES (Images)
 from fastapi.staticfiles import StaticFiles

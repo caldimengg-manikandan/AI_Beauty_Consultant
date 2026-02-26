@@ -119,10 +119,10 @@ def generate_personalized_tips(face_shape, gender, skin_scores, skin_tone=None, 
     
     # Models to try (prioritize faster, reliable ones)
     models_to_try = [
-        "meta-llama/llama-3.1-8b-instruct:free",
-        "google/gemini-2.0-flash-exp:free",
-        "microsoft/phi-3-mini-128k-instruct:free",
+        "google/gemini-2.0-flash-exp:free",  # Ultra-fast, high quality
+        "meta-llama/llama-3.1-8b-instruct:free", # Fast fallback
         "mistralai/mistral-7b-instruct:free",
+        "microsoft/phi-3-mini-128k-instruct:free",
     ]
     
     for model in models_to_try:
@@ -141,10 +141,10 @@ def generate_personalized_tips(face_shape, gender, skin_scores, skin_tone=None, 
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}
                     ],
-                    "temperature": 0.8,  # Slightly creative but consistent
-                    "max_tokens": 800
+                    "temperature": 0.8,
+                    "max_tokens": 500 # Reduced tokens for speed
                 },
-                timeout=15
+                timeout=8 # Reduced timeout to avoid hanging
             )
             
             if response.status_code == 200:

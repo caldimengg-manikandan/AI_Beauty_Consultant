@@ -96,6 +96,33 @@
         background-attachment: fixed;
     }
 
+    /* RTL Support */
+    [dir="rtl"] body {
+        font-family: 'Noto Sans Arabic', 'Inter', sans-serif;
+    }
+
+    [dir="rtl"] .flex-row {
+        flex-direction: row-reverse;
+    }
+
+    [dir="rtl"] .text-left {
+        text-align: right;
+    }
+
+    [dir="rtl"] .text-right {
+        text-align: left;
+    }
+
+    [dir="rtl"] .ml-auto {
+        margin-left: initial;
+        margin-right: auto;
+    }
+
+    [dir="rtl"] .mr-auto {
+        margin-right: initial;
+        margin-left: auto;
+    }
+
     h1,
     h2,
     h3 {
@@ -103,6 +130,10 @@
         @apply font-bold;
         color: var(--text-primary);
     }
+}
+
+.font-arabic {
+    font-family: 'Noto Sans Arabic', serif !important;
 }
 
 @layer components {

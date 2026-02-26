@@ -4,6 +4,7 @@ import {
     FaCalendarAlt, FaStar, FaShieldAlt, FaMagic
 } from 'react-icons/fa';
 import axios from 'axios';
+import ComparisonSlider from './ComparisonSlider';
 
 const ProgressDashboard = () => {
     const [progress, setProgress] = useState(null);
@@ -103,6 +104,11 @@ const ProgressDashboard = () => {
                                 ))}
                             </div>
                         )}
+
+                        {/* VISUAL EVOLUTION SLIDER */}
+                        <div className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm">
+                            <ComparisonSlider />
+                        </div>
 
                         {/* TIMELINE CHART PLACEHOLDER (PREMIUM LOOK) */}
                         <div className="bg-slate-900 p-10 rounded-[3rem] shadow-2xl relative overflow-hidden group">

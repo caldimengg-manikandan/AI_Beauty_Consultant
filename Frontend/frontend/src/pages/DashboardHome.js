@@ -2,23 +2,36 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { FaCamera, FaMagic, FaCut, FaPaintBrush, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaCrown, FaArrowUp, FaShieldAlt, FaStethoscope } from 'react-icons/fa';
 import { getUserRole, getUserStats } from '../services/premiumApi';
-import { getHistory } from '../services/api';
+import { getHistory, getOnboardingStatus } from '../services/api';
+import OnboardingWizard from '../components/OnboardingWizard';
+import SkinScoreCard from '../components/SkinScoreCard';
+import { useTranslation } from 'react-i18next';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 const DashboardHome = () => {
+  const { t } = useTranslation();
   const [userRole, setUserRole] = useState(null);
   const [userStats, setUserStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const [role, stats, history] = await Promise.all([
+        const [role, stats, history, onboarding] = await Promise.all([
           getUserRole(),
           getUserStats(),
-          getHistory()
+          getHistory(),
+          getOnboardingStatus()
         ]);
         setUserRole(role);
         setUserStats(stats);
+        setHasCompletedOnboarding(onboarding.completed);
+        if (!onboarding.completed) {
+          setOnboardingOpen(true);
+        }
         // Take top 3 most recent
         const historyArray = Array.isArray(history) ? history : [];
         setRecentAnalyses(historyArray.slice(0, 3));
@@ -96,6 +109,14 @@ const DashboardHome = () => {
       badge: 'Expert'
     }] : []),
     {
+      title: 'Expert Consult',
+      desc: 'Book a 1:1 video call with a skin expert',
+      icon: <FaStethoscope className="text-4xl" />,
+      link: '/dashboard/services',
+      gradient: 'from-purple-900 to-indigo-950',
+      badge: 'PRO'
+    },
+    {
       title: 'Hair Styling',
       desc: 'Get personalized hairstyle recommendations',
       icon: <FaCut className="text-4xl" />,
@@ -112,12 +133,27 @@ const DashboardHome = () => {
     },
   ];
 
+  if (loading) return (
+    <div className="p-10 space-y-10 bg-slate-50 dark:bg-slate-950 min-h-screen">
+      <Skeleton height={200} borderRadius={40} baseColor="rgba(0,0,0,0.05)" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Skeleton height={180} borderRadius={30} baseColor="rgba(0,0,0,0.05)" />
+        <Skeleton height={180} borderRadius={30} baseColor="rgba(0,0,0,0.05)" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Skeleton height={150} borderRadius={30} baseColor="rgba(0,0,0,0.05)" />
+        <Skeleton height={150} borderRadius={30} baseColor="rgba(0,0,0,0.05)" />
+        <Skeleton height={150} borderRadius={30} baseColor="rgba(0,0,0,0.05)" />
+      </div>
+    </div>
+  );
+
   return (
-    <div className="space-y-8">
+    <div className="p-6 md:p-10 space-y-10 animate-fade-in bg-slate-50/50 dark:bg-slate-950/50 min-h-screen">
       {/* Premium Status Banner */}
-      {!loading && userRole && (
+      {userRole && (
         userRole.is_premium ? (
-          <div className="glass-card p-6 rounded-3xl bg-gradient-to-r from-yellow-50 via-purple-50 to-pink-50 border-2 border-yellow-300">
+          <div className="glass-card p-6 rounded-3xl bg-gradient-to-r from-yellow-50 via-purple-50 to-pink-50 dark:from-slate-800 dark:to-slate-900 border-2 border-yellow-300 dark:border-yellow-600/30">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 p-4 rounded-2xl">
@@ -168,13 +204,19 @@ const DashboardHome = () => {
       )}
 
       {/* Welcome Section */}
-      <div className="glass-card p-8 rounded-3xl">
-        <h1 className="text-4xl font-bold gradient-text mb-2">
-          Welcome Back! 👋
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-purple-100 dark:border-slate-800 shadow-xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-500/5 to-teal-500/5 rounded-full blur-3xl -mr-48 -mt-48 group-hover:scale-110 transition-transform duration-1000"></div>
+        <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic mb-2 relative z-10">
+          {t('welcome')}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-teal-600">{localStorage.getItem('user_name')?.split(' ')[0] || 'Member'}!</span>
         </h1>
-        <p className="text-gray-600 text-lg">
+        <p className="text-slate-600 dark:text-slate-400 text-lg relative z-10 font-medium">
           Your personalized AI-powered beauty consultant is ready to help you achieve your best look.
         </p>
+      </div>
+
+      {/* SKIN HEALTH SCORE & STREAK (Gamification) */}
+      <div className="animate-fade-in-up">
+        <SkinScoreCard />
       </div>
 
       {/* Skin Health Overview */}
@@ -328,6 +370,15 @@ const DashboardHome = () => {
           )}
         </div>
       </div>
+
+      <OnboardingWizard
+        isOpen={onboardingOpen}
+        onClose={() => setOnboardingOpen(false)}
+        onComplete={() => {
+          setOnboardingOpen(false);
+          setHasCompletedOnboarding(true);
+        }}
+      />
     </div>
   );
 };

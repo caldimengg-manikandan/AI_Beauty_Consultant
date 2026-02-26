@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FaUserAlt, FaChartBar, FaLightbulb, FaCheckCircle, FaExclamationTriangle, FaShieldAlt, FaCamera, FaInfoCircle, FaCalendarAlt, FaFingerprint } from 'react-icons/fa';
+import { FaUserAlt, FaChartBar, FaLightbulb, FaCheckCircle, FaExclamationTriangle, FaShieldAlt, FaCamera, FaInfoCircle, FaCalendarAlt, FaFingerprint, FaDownload } from 'react-icons/fa';
+import { downloadReport, downloadDemoReport } from '../../services/api';
+import ProductRecommendations from './ProductRecommendations';
+import html2canvas from 'html2canvas';
+import { toast } from 'react-toastify';
 
 /**
  * ResultCard - A premium, clinical-grade analysis report component
@@ -9,9 +13,83 @@ const ResultCard = ({ data, image, annotatedImage }) => {
   const [activeSection, setActiveSection] = useState('skin');
   const [isVisible, setIsVisible] = useState(false);
 
+  const [isExporting, setIsExporting] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const reportRef = React.useRef(null);
+
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      let blob;
+      let filenameSuffix;
+
+      if (data.id || data._id) {
+        const analysisId = data.id || data._id;
+        blob = await downloadReport(analysisId);
+        filenameSuffix = analysisId.substring(0, 8);
+      } else {
+        // demo mode
+        toast.info("Exporting Demo Archive...");
+        blob = await downloadDemoReport(data);
+        filenameSuffix = "demo";
+      }
+
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `beauty_report_${filenameSuffix}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      toast.success("PDF Archive Generated!");
+    } catch (err) {
+      console.error("Export failed", err);
+      toast.error("Failed to export PDF. Check backend logs.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!reportRef.current) return;
+    try {
+      setIsSharing(true);
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#f8fafc'
+      });
+
+      const image = canvas.toDataURL("image/png");
+      const blob = await (await fetch(image)).blob();
+      const file = new File([blob], "skin_analysis.png", { type: "image/png" });
+
+      if (navigator.share) {
+        await navigator.share({
+          files: [file],
+          title: 'My AI Skin Analysis Report',
+          text: 'Check out my professional skin analysis from AI Beauty Consultant!',
+        });
+        toast.success("Shared successfully!");
+      } else {
+        // Fallback: Download
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = 'my_beauty_report.png';
+        link.click();
+        toast.info("Sharing not supported. Image downloaded instead.");
+      }
+    } catch (err) {
+      console.error("Sharing failed", err);
+      toast.error("Failed to generate shareable card.");
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   if (!data) return null;
 
@@ -20,19 +98,42 @@ const ResultCard = ({ data, image, annotatedImage }) => {
   if (error) {
     return (
       <div className="mt-8 animate-fade-in-up">
-        <div className="bg-white border-2 border-red-100 p-8 rounded-3xl shadow-xl flex items-start gap-6">
-          <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 text-3xl shrink-0">
+        <div className="bg-white border-2 border-red-100 p-8 rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row items-center md:items-start gap-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
+          <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center text-red-500 text-4xl shrink-0 shadow-inner">
             <FaExclamationTriangle />
           </div>
-          <div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">Analysis Interrupted</h3>
-            <p className="text-gray-600 leading-relaxed mb-4">{error.replace(/"/g, '')}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-2 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-colors"
-            >
-              Try Again
-            </button>
+          <div className="flex-1 text-center md:text-left">
+            <h3 className="text-3xl font-black text-slate-900 mb-3 tracking-tighter">Analysis Interrupted</h3>
+            <p className="text-lg font-bold text-red-600 mb-2">{error.replace(/"/g, '')}</p>
+            {data.message && (
+              <p className="text-slate-600 font-medium mb-4 leading-relaxed">
+                <span className="font-bold text-slate-900">Reason:</span> {data.message}
+              </p>
+            )}
+            {data.professional_tip && (
+              <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl mb-6 flex gap-3 items-start">
+                <div className="text-amber-500 mt-0.5"><FaLightbulb /></div>
+                <p className="text-xs text-amber-900 font-bold leading-relaxed">
+                  <span className="uppercase tracking-widest text-[9px] block mb-1 opacity-70">Professional Tip</span>
+                  {data.professional_tip}
+                </p>
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={() => window.location.reload()}
+                className="px-8 py-3 bg-slate-900 text-white font-black rounded-xl hover:bg-slate-800 transition-all shadow-lg hover:translate-y-[-2px] uppercase tracking-widest text-xs"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => window.history.back()}
+                className="px-8 py-3 bg-white border-2 border-slate-200 text-slate-600 font-black rounded-xl hover:bg-slate-50 transition-all shadow-sm uppercase tracking-widest text-xs"
+              >
+                Go Back
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -49,7 +150,7 @@ const ResultCard = ({ data, image, annotatedImage }) => {
   const analysisDate = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <div className={`max-w-6xl mx-auto transition-all duration-700 transform px-4 pb-12 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+    <div ref={reportRef} className={`max-w-6xl mx-auto transition-all duration-700 transform px-4 pb-12 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
 
       {/* PROFESSIONAL HEADER BAR */}
       <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 mb-8">
@@ -285,6 +386,14 @@ const ResultCard = ({ data, image, annotatedImage }) => {
                 </div>
               )}
 
+              {/* RECOMMENDED PRODUCTS SECTION */}
+              <div className="pt-10 border-t border-slate-100">
+                <ProductRecommendations
+                  skinType={skinScores && Object.keys(skinScores).length > 0 ? Object.keys(skinScores)[0] : 'normal'}
+                  concern={recommendations && recommendations.length > 0 ? recommendations[0].split(' ')[0] : ''}
+                />
+              </div>
+
             </div>
           </div>
         </div>
@@ -300,11 +409,31 @@ const ResultCard = ({ data, image, annotatedImage }) => {
             </div>
           </div>
           <div className="flex gap-4 w-full sm:w-auto">
-            <button className="flex-1 sm:flex-none px-8 py-3 bg-slate-800 text-white font-black rounded-xl hover:bg-slate-700 transition-all text-xs tracking-widest uppercase border border-slate-700">
-              SHARE ASSET
+            <button
+              onClick={handleShare}
+              disabled={isSharing}
+              className="flex-1 sm:flex-none px-8 py-3 bg-slate-800 text-white font-black rounded-xl hover:bg-slate-700 transition-all text-xs tracking-widest uppercase border border-slate-700 flex items-center justify-center gap-2"
+            >
+              {isSharing ? 'GENERATING...' : 'SHARE ASSET'}
             </button>
-            <button className="flex-1 sm:flex-none px-8 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.4)] text-xs tracking-widest uppercase">
-              EXPORT ARCHIVE PDF
+            <button
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              className={`flex-1 sm:flex-none px-8 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.4)] text-xs tracking-widest uppercase flex items-center justify-center gap-2 ${isExporting ? 'opacity-70 cursor-not-allowed' : ''}`}
+            >
+              {isExporting ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  GENERATING PORTFOLIO...
+                </>
+              ) : (
+                <>
+                  <FaDownload /> EXPORT ARCHIVE PDF
+                </>
+              )}
             </button>
           </div>
         </div>

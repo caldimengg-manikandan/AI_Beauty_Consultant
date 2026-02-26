@@ -26,9 +26,9 @@ class ImageQualityValidator:
         brightness = np.mean(gray)
         results["details"]["brightness"] = round(float(brightness), 2)
         
-        if brightness < 50:
+        if brightness < 40:
             results["passed"] = False
-            results["errors"].append("Image is too dark. Increase lighting.")
+            results["errors"].append("The environment is slightly too dark. Please move to a better-lit area.")
         elif brightness > 230:
             results["passed"] = False
             results["errors"].append("Image is overexposed. Avoid direct harsh light.")
@@ -37,10 +37,10 @@ class ImageQualityValidator:
         blur_score = cv2.Laplacian(gray, cv2.CV_64F).var()
         results["details"]["blur_score"] = round(float(blur_score), 2)
         
-        # A professional threshold is usually around 100 for static portraits
-        if blur_score < 70:
+        # Threshold lowered from 70 to 45 for domestic photo stability
+        if blur_score < 45:
             results["passed"] = False
-            results["errors"].append("Image is blurry. Please hold the camera still.")
+            results["errors"].append("The image is a bit blurry. Please hold your device steady.")
 
         return results
 
