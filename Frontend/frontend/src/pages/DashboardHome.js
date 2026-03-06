@@ -5,7 +5,6 @@ import { getUserRole, getUserStats } from '../services/premiumApi';
 import { getHistory, getOnboardingStatus } from '../services/api';
 import OnboardingWizard from '../components/OnboardingWizard';
 import SkinScoreCard from '../components/SkinScoreCard';
-import GamificationWidget from '../features/styling/GamificationWidget';
 import WeatherSkinTips from '../components/WeatherSkinTips';
 import generateBeautyReport from '../utils/generateBeautyReport';
 import { useTranslation } from 'react-i18next';
@@ -225,9 +224,9 @@ const DashboardHome = () => {
         </p>
       </div>
 
-      {/* SKIN HEALTH SCORE & STREAK (Gamification) */}
+      {/* LIVE WEATHER SKIN TIPS */}
       <div className="animate-fade-in-up">
-        <GamificationWidget />
+        <WeatherSkinTips />
       </div>
 
       {/* Skin Health Overview */}
@@ -391,10 +390,6 @@ const DashboardHome = () => {
         }}
       />
 
-      {/* ── WEATHER SKIN TIPS ── */}
-      <div className="mt-6">
-        <WeatherSkinTips />
-      </div>
 
       {/* ── PDF BEAUTY REPORT ── */}
       <div className="mt-6 bg-gradient-to-r from-purple-600 to-teal-600 rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6">
