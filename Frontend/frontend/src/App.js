@@ -23,6 +23,8 @@ import RoutineBuilder from "./features/styling/RoutineBuilder";
 import IngredientScanner from "./features/styling/IngredientScanner";
 import ProductCatalog from "./pages/ProductCatalog";
 import SkinHealthDashboard from "./features/skin/SkinHealthDashboard";
+import SkinJourney from "./features/skin/SkinJourney";
+import GoalsTracker from "./features/skin/GoalsTracker";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ExpertDashboard from "./pages/expert/ExpertDashboard";
@@ -76,6 +78,8 @@ function App() {
           <Route path="routine" element={<RoutineBuilder />} />
           <Route path="scan" element={<IngredientScanner />} />
           <Route path="lookbook" element={<SkinHealthDashboard />} />
+          <Route path="journey" element={<SkinJourney />} />
+          <Route path="goals" element={<GoalsTracker />} />
           <Route path="products" element={<ProductCatalog />} />
           <Route path="services" element={<ServicesPage />} />
           <Route path="settings" element={<SettingsPage />} />

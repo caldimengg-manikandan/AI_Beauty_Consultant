@@ -2,6 +2,7 @@ import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { Outlet } from "react-router-dom";
 import ConsultantChat from "../features/chat/ConsultantChat";
+import BeautyChatbot from "../components/BeautyChatbot";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -48,7 +49,7 @@ const DashboardLayout = () => {
       </div>
 
       {/* AI Chatbot Widget */}
-      <ConsultantChat />
+      <BeautyChatbot />
     </div>
   );
 };

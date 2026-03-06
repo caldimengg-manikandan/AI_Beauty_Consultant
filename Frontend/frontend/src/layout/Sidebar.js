@@ -17,7 +17,9 @@ import {
   FaPalette,
   FaMoon,
   FaSun,
-  FaGlobe
+  FaGlobe,
+  FaRoute,
+  FaBullseye
 } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
@@ -176,6 +178,12 @@ const Sidebar = ({ onClose }) => {
         </div>
         <div className="animate-fade-in-up">
           <NavItem to="/dashboard/lookbook" icon={<FaChartLine />} label="Skin Health" badge="AI" />
+        </div>
+        <div className="animate-fade-in-up">
+          <NavItem to="/dashboard/journey" icon={<FaRoute />} label="Skin Journey" badge="NEW" />
+        </div>
+        <div className="animate-fade-in-up">
+          <NavItem to="/dashboard/goals" icon={<FaBullseye />} label="Goals Tracker" badge="NEW" />
         </div>
         <div className="animate-fade-in-up">
           <NavItem to="/dashboard/services" icon={<FaSpa />} label="Spa Services" badge="HOT" />
