@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-    FaChartLine, FaHistory, FaArrowUp, FaArrowDown, FaMinus,
-    FaCalendarAlt, FaStar, FaShieldAlt, FaMagic
+    FaChartLine, FaArrowUp, FaArrowDown,
+    FaStar, FaShieldAlt, FaMagic
 } from 'react-icons/fa';
 import axios from 'axios';
 import ComparisonSlider from './ComparisonSlider';
@@ -11,7 +11,7 @@ const ProgressDashboard = () => {
     const [timeline, setTimeline] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const API_URL = "http://localhost:8000/api/progress";
+    const API_URL = `${process.env.REACT_APP_API_URL || "http://localhost:8000"}/api/progress`;
 
     useEffect(() => {
         const fetchData = async () => {

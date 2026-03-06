@@ -14,6 +14,9 @@ from datetime import datetime
 
 router = APIRouter()
 
+# Get Base URL from env (e.g., https://your-backend.onrender.com) for image links
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+
 from app.auth.jwt_handler import verify_access_token, get_current_user, oauth2_scheme
 from app.mongodb.collections import analysis_collection
 
@@ -196,9 +199,8 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
             annotated_path = os.path.join("static/uploads", annotated_filename)
             cv2.imwrite(annotated_path, annotated_img)
 
-            base_url = "http://localhost:8000"
-            image_url = f"{base_url}/static/uploads/{filename}"
-            annotated_image_url = f"{base_url}/static/uploads/{annotated_filename}"
+            image_url = f"{BASE_URL}/static/uploads/{filename}"
+            annotated_image_url = f"{BASE_URL}/static/uploads/{annotated_filename}"
 
             analysis_doc = {
                 "user_email": current_user.get("sub"),
@@ -301,32 +303,13 @@ class ChatRequest(BaseModel):
     message: str
 
 def load_api_key():
-    """Load OpenRouter API key from .env file"""
-    import os
+    """Load OpenRouter API key from environment variable"""
+    key = os.getenv("OPENROUTER_API_KEY")
+    if key:
+        print(f"✅ Loaded OpenRouter API key from environment: {key[:10]}...")
+        return key
     
-    # Try multiple possible locations for .env file
-    possible_paths = [
-        os.path.join(os.path.dirname(__file__), "../../.env"),  # Backend/.env
-        os.path.join(os.path.dirname(__file__), "../../../.env"),  # Root .env
-        ".env",  # Current directory
-        "Backend/.env"  # From root
-    ]
-    
-    for env_path in possible_paths:
-        try:
-            abs_path = os.path.abspath(env_path)
-            if os.path.exists(abs_path):
-                print(f"📄 Found .env file at: {abs_path}")
-                with open(abs_path, "r") as f:
-                    for line in f:
-                        if line.startswith("OPENROUTER_API_KEY"):
-                            key = line.strip().split("=", 1)[1]
-                            print(f"✅ Loaded OpenRouter API key: {key[:20]}...")
-                            return key
-        except Exception as e:
-            continue
-    
-    print("⚠️ No OpenRouter API key found in .env file")
+    print("⚠️ No OPENROUTER_API_KEY found in environment variables")
     return None
 
 

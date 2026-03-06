@@ -76,6 +76,23 @@ INGREDIENT_DB = {
     "ethylhexylglycerin": {"risk": "None", "note": "Conditioning agent and preservative booster.", "type": "Neutral"},
     "polyethylene glycol": {"risk": "Low", "note": "PEG. Solvent and thickener. Generally safe.", "type": "Neutral"},
     "peg-100 stearate": {"risk": "Low", "note": "Emulsifier. Low risk but can be an irritant for sensitive skin.", "type": "Neutral"},
+    "aqua": {"risk": "None", "note": "Purified water. Base for most skincare formulations.", "type": "Neutral"},
+    "water": {"risk": "None", "note": "Purified water. Essential for hydration.", "type": "Neutral"},
+    "propanediol": {"risk": "None", "note": "Corn-derived solvent and humectant. Increases absorption.", "type": "Beneficial"},
+    "decyl glucoside": {"risk": "None", "note": "Extremely gentle, plant-derived surfactant. Great for sensitive skin.", "type": "Beneficial"},
+    "cocamidopropyl hydroxysultaine": {"risk": "None", "note": "Mild conditioning surfactant derived from coconut.", "type": "Beneficial"},
+    "cocamide mipa": {"risk": "Low", "note": "Thickening agent and foam booster derived from coconut.", "type": "Neutral"},
+    "disodium lauryl sulfosuccinate": {"risk": "None", "note": "Gentle surfactant, NOT a sulfate. Great alternative to SLS.", "type": "Beneficial"},
+    "disodium laureth sulfosuccinate": {"risk": "None", "note": "Mild large-molecule surfactant. Non-irritating.", "type": "Beneficial"},
+    "coco betaine": {"risk": "None", "note": "Gentle, coconut-based foaming agent.", "type": "Beneficial"},
+    "sodium methyl cocoyl taurate": {"risk": "None", "note": "Mild surfactant derived from salt of coconut fatty acid.", "type": "Beneficial"},
+    "edta": {"risk": "Low", "note": "Disodium EDTA. Chelating agent to prevent formula degradation.", "type": "Neutral"},
+    "disodium edta": {"risk": "Low", "note": "Synthetic chelating agent commonly used in cosmetics.", "type": "Neutral"},
+    "carbomer": {"risk": "None", "note": "Texturizing agent used to create clear gels.", "type": "Neutral"},
+    "sodium hydroxide": {"risk": "Low", "note": "pH adjuster. Used in small amounts to balance formula.", "type": "Neutral"},
+    "polyquaternium": {"risk": "None", "note": "Conditioning agent that makes skin and hair feel silky.", "type": "Neutral"},
+    "polyquaternium-22": {"risk": "None", "note": "Specific conditioning polymer for moisture retention.", "type": "Neutral"},
+    "fragrance": {"risk": "High", "note": "Common allergen. Can cause contact dermatitis.", "type": "Irritant"},
 }
 
 # Synonyms for better matching

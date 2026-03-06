@@ -14,6 +14,7 @@ import {
   FaShieldAlt,
   FaStethoscope,
   FaMicroscope,
+  FaPalette,
   FaMoon,
   FaSun,
   FaGlobe
@@ -21,7 +22,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { toast } from "react-toastify";
-const Sidebar = () => {
+const Sidebar = ({ onClose }) => {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { user } = useContext(AuthContext);
@@ -43,11 +44,11 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-72 bg-white/80 backdrop-blur-xl shadow-2xl hidden md:flex flex-col z-20 font-sans border-r border-white/50 animate-slide-in-left">
+    <aside className="w-72 h-full bg-white/80 backdrop-blur-xl shadow-2xl flex flex-col z-20 font-sans border-r border-white/50 animate-slide-in-left">
 
-      {/* Logo */}
-      <div className="p-6 border-b border-white/10">
-        <Link to="/dashboard" className="flex items-center gap-3 group">
+      {/* Logo + Mobile Close */}
+      <div className="p-6 border-b border-white/10 flex items-center justify-between">
+        <Link to="/dashboard" className="flex items-center gap-3 group" onClick={onClose}>
           <div className="relative">
             {/* Logo Image with Gradient Border */}
             <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-600 to-teal-600 p-0.5 group-hover:scale-110 transition-transform duration-300">
@@ -69,6 +70,18 @@ const Sidebar = () => {
             <p className="text-xs text-gray-500">Consultant</p>
           </div>
         </Link>
+        {/* Mobile close button */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="md:hidden w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 transition-all"
+            aria-label="Close menu"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
@@ -162,6 +175,9 @@ const Sidebar = () => {
           <NavItem to="/dashboard/scan" icon={<FaMicroscope />} label="Ingredient Scan" badge="NEW" />
         </div>
         <div className="animate-fade-in-up">
+          <NavItem to="/dashboard/lookbook" icon={<FaPalette />} label="Style Lookbook" badge="AI" />
+        </div>
+        <div className="animate-fade-in-up">
           <NavItem to="/dashboard/services" icon={<FaSpa />} label="Spa Services" badge="HOT" />
         </div>
 
@@ -191,7 +207,7 @@ const Sidebar = () => {
           <NavItem to="/dashboard/routine" icon={<FaStethoscope />} label="Routine" badge="AI" />
         </div>
         <div className="animate-fade-in-up">
-          <NavItem to="/dashboard/history" icon={<FaHistory />} label={t('history')} />
+          <NavItem to="/dashboard/history" icon={<FaHistory />} label={t('history')} onClick={onClose} />
         </div>
       </nav>
 

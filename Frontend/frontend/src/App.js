@@ -20,8 +20,9 @@ import SettingsPage from "./pages/SettingsPage";
 import PremiumPage from "./pages/PremiumPage";
 import ProgressDashboard from "./features/styling/ProgressDashboard";
 import RoutineBuilder from "./features/styling/RoutineBuilder";
-import IngredientScanner from "./pages/IngredientScanner";
+import IngredientScanner from "./features/styling/IngredientScanner";
 import ProductCatalog from "./pages/ProductCatalog";
+import StyleLookbookPage from "./pages/StyleLookbookPage";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ExpertDashboard from "./pages/expert/ExpertDashboard";
@@ -74,6 +75,7 @@ function App() {
           <Route path="evolution" element={<ProgressDashboard />} />
           <Route path="routine" element={<RoutineBuilder />} />
           <Route path="scan" element={<IngredientScanner />} />
+          <Route path="lookbook" element={<StyleLookbookPage />} />
           <Route path="products" element={<ProductCatalog />} />
           <Route path="services" element={<ServicesPage />} />
           <Route path="settings" element={<SettingsPage />} />

@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { FaCamera, FaMagic, FaCut, FaPaintBrush, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaCrown, FaArrowUp, FaShieldAlt, FaStethoscope } from 'react-icons/fa';
+import { FaCamera, FaMagic, FaCut, FaPaintBrush, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaCrown, FaArrowUp, FaShieldAlt, FaStethoscope, FaPalette } from 'react-icons/fa';
 import { getUserRole, getUserStats } from '../services/premiumApi';
 import { getHistory, getOnboardingStatus } from '../services/api';
 import OnboardingWizard from '../components/OnboardingWizard';
 import SkinScoreCard from '../components/SkinScoreCard';
+import GamificationWidget from '../features/styling/GamificationWidget';
 import { useTranslation } from 'react-i18next';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
@@ -131,6 +132,14 @@ const DashboardHome = () => {
       gradient: 'from-teal-600 to-cyan-600',
       badge: 'New'
     },
+    {
+      title: 'Style Lookbook',
+      desc: 'Personalized color palette & wardrobe',
+      icon: <FaPalette className="text-4xl" />,
+      link: '/dashboard/lookbook',
+      gradient: 'from-rose-500 to-pink-600',
+      badge: 'AI'
+    },
   ];
 
   if (loading) return (
@@ -216,7 +225,7 @@ const DashboardHome = () => {
 
       {/* SKIN HEALTH SCORE & STREAK (Gamification) */}
       <div className="animate-fade-in-up">
-        <SkinScoreCard />
+        <GamificationWidget />
       </div>
 
       {/* Skin Health Overview */}

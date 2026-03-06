@@ -2,9 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from app.auth.jwt_handler import get_current_user
 from pydantic import BaseModel
 from typing import List, Optional
-import base64
-import requests
 import os
+import io
 
 router = APIRouter(prefix="/api/ingredients", tags=["Ingredient Scanner"])
 
@@ -13,99 +12,127 @@ from app.ml.ingredient_db import INGREDIENT_DB, SYNONYMS
 class IngredientRequest(BaseModel):
     ingredients_text: str
 
-def load_api_key():
-    token = os.getenv("OPENROUTER_API_KEY")
-    if not token:
-        # Fallback to reading .env directly if environment variable isn't set (dev mode)
-        try:
-            with open(".env", "r") as f:
-                for line in f:
-                    if line.startswith("OPENROUTER_API_KEY"):
-                        return line.strip().split("=")[1]
-        except: return None
-    return token
+# --- Tesseract binary path (Windows) ---
+TESSERACT_PATH = None
+for _path in [
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+    r"C:\Users\jasmi\AppData\Local\Programs\Tesseract-OCR\tesseract.exe",
+]:
+    if os.path.exists(_path):
+        TESSERACT_PATH = _path
+        break
+
 
 @router.post("/ocr")
 async def ocr_ingredients(image: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     """
-    AI-Powered OCR using Gemini Flash. 
-    Extracts ingredient names from a product label photo.
+    Offline OCR using Tesseract. No API keys or quotas. Completely free.
     """
-    api_key = load_api_key()
-    if not api_key:
-        raise HTTPException(status_code=500, detail="AI Service Busy: No API Key found.")
-
     try:
-        contents = await image.read()
-        base64_image = base64.b64encode(contents).decode('utf-8')
-        
-        # Call Gemini via OpenRouter
-        response = requests.post(
-            url="https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": "google/gemini-2.0-flash-exp:free",
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": "Extract all skincare ingredients listed in this image. Return ONLY a comma-separated list of ingredient names. If no ingredients are found, return 'None'."
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            timeout=20
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            extracted_text = result['choices'][0]['message']['content']
-            
-            if "none" in extracted_text.lower() and len(extracted_text) < 10:
-                 return {"success": False, "message": "No ingredients detected. Please try a clearer photo."}
-            
-            # Now run the scan logic on the extracted text
-            scan_res = await scan_ingredients(IngredientRequest(ingredients_text=extracted_text), current_user)
-            return {
-                "success": True,
-                "extracted_text": extracted_text,
-                **scan_res
-            }
-        else:
-            print(f"OCR Error: {response.text}")
-            raise HTTPException(status_code=500, detail="AI Extraction failed. Try manual entry.")
+        import pytesseract
+        from PIL import Image, ImageFilter, ImageEnhance
 
+        # Set Tesseract binary path
+        if TESSERACT_PATH:
+            pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+        else:
+            raise Exception("Tesseract not found. Please install from: https://github.com/UB-Mannheim/tesseract/wiki")
+
+        print("[OCR] Running Tesseract on uploaded label..."
+)
+        contents = await image.read()
+
+        # --- IMAGE PREPROCESSING for better OCR accuracy ---
+        img = Image.open(io.BytesIO(contents))
+
+        # Convert to RGB if needed
+        if img.mode not in ['RGB', 'L']:
+            img = img.convert('RGB')
+
+        # Upscale for better character recognition (2x)
+        w, h = img.size
+        img = img.resize((w * 2, h * 2), Image.LANCZOS)
+
+        # Convert to grayscale
+        img = img.convert('L')
+
+        # Sharpen edges
+        img = img.filter(ImageFilter.SHARPEN)
+        img = img.filter(ImageFilter.SHARPEN)
+
+        # Increase contrast
+        enhancer = ImageEnhance.Contrast(img)
+        img = enhancer.enhance(2.5)
+
+        # --- RUN OCR ---
+        # PSM 6 = Assume single uniform block of text (best for ingredient lists)
+        raw_text = pytesseract.image_to_string(img, config='--psm 6 --oem 3')
+        print(f"[OCR] Raw text:\n{raw_text}")
+
+        if not raw_text.strip():
+            return {
+                "success": False,
+                "message": "OCR couldn't read the image. Please upload a clear, well-lit, close-up photo of the ingredient label."
+            }
+
+        # --- CLEAN & EXTRACT ---
+        lines = raw_text.split('\n')
+        ingredient_lines = []
+        for line in lines:
+            line = line.strip()
+            if not line or len(line) < 3:
+                continue
+            if not any(c.isalpha() for c in line):
+                continue
+            ingredient_lines.append(line)
+
+        extracted_text = ', '.join(ingredient_lines)
+        print(f"[OCR] Cleaned text: {extracted_text}")
+
+        if not extracted_text.strip():
+            return {"success": False, "message": "No readable text found. Please try a clearer photo."}
+
+        scan_res = await scan_ingredients(IngredientRequest(ingredients_text=extracted_text), current_user)
+        return {
+            "success": True,
+            "extracted_text": extracted_text,
+            **scan_res
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"⚡ OCR CRASH: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"[OCR] Error: {e}")
+        raise HTTPException(status_code=500, detail=f"OCR Error: {str(e)}")
+
 
 @router.post("/scan")
 async def scan_ingredients(req: IngredientRequest, current_user: dict = Depends(get_current_user)):
     text = req.ingredients_text.lower()
-    
-    # Pre-process text (clean up commas/formatting)
-    raw_list = [i.strip() for i in text.replace(';', ',').replace('\n', ',').replace('.', ',').split(',') if i.strip()]
-    
+
+    # Pre-process text — split on common separators
+    raw_list = [
+        i.strip()
+        for i in text
+            .replace(';', ',')
+            .replace('\n', ',')
+            .replace('&', ',')
+            .replace('(', ',')
+            .replace(')', ',')
+            .split(',')
+        if i.strip() and len(i.strip()) > 1
+    ]
+
     found = []
     found_names = set()
-    
+
     for raw_item in raw_list:
-        match_found = False
-        search_term = raw_item
+        search_term = raw_item.strip()
+
+        # Apply synonym mapping first
         if search_term in SYNONYMS:
-             search_term = SYNONYMS[search_term]
+            search_term = SYNONYMS[search_term]
 
         for ing, data in INGREDIENT_DB.items():
             if ing in search_term or search_term in ing:
@@ -116,30 +143,28 @@ async def scan_ingredients(req: IngredientRequest, current_user: dict = Depends(
                         **data
                     })
                     found_names.add(ing)
-                    match_found = True
                     break
-        
-        if match_found: continue
 
-    # Safety red flags
+    # Safety red flag detection for unlisted ingredients
     red_flags = ["paraben", "sulfate", "phthalate", "dye", "alcohol", "fragrance", "parfum"]
     for raw_item in raw_list:
         if any(flag in raw_item for flag in red_flags):
-             already_caught = any(raw_item.title().lower() in i["name"].lower() for i in found)
-             if not already_caught:
-                 found.append({
-                     "name": raw_item.title(),
-                     "risk": "Medium",
-                     "note": "Potentially contains restricted additives. Review carefully.",
-                     "type": "Irritant"
-                 })
+            already_caught = any(raw_item.lower() in i["name"].lower() for i in found)
+            if not already_caught:
+                found.append({
+                    "name": raw_item.title(),
+                    "risk": "Medium",
+                    "note": "Potentially contains restricted additives. Review carefully.",
+                    "type": "Irritant",
+                    "scanned_as": raw_item.title()
+                })
 
     return {
         "success": True,
         "total_checked": len(raw_list),
         "recognized_count": len(found),
-        "harmful_count": len([i for i in found if i["type"] == "Harmful"]),
-        "beneficial_count": len([i for i in found if i["type"] == "Beneficial"]),
-        "active_count": len([i for i in found if i["type"] == "Active"]),
+        "harmful_count": len([i for i in found if i.get("type") == "Harmful"]),
+        "beneficial_count": len([i for i in found if i.get("type") == "Beneficial"]),
+        "active_count": len([i for i in found if i.get("type") == "Active"]),
         "matches": found
     }

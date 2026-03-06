@@ -3,12 +3,15 @@ import axios from 'axios';
 import {
     FaCamera, FaUpload, FaMagic, FaSyncAlt, FaDownload,
     FaPalette, FaHistory, FaCheck, FaEye, FaWind, FaSun, FaAdjust,
-    FaFingerprint, FaSparkles, FaBan, FaMoon, FaBolt, FaMicrophone
+    FaFingerprint, FaSparkles, FaBan, FaMoon, FaBolt, FaMicrophone,
+    FaRegLightbulb, FaLayerGroup
 } from 'react-icons/fa';
 import { getHistory } from '../../services/api';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const VIRTUAL_STUDIO_API = "http://localhost:8000/tryon";
-const MATCH_API = "http://localhost:8000/tryon/foundation-match";
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const VIRTUAL_STUDIO_API = `${API_BASE}/tryon`;
+const MATCH_API = `${API_BASE}/tryon/foundation-match`;
 
 const COLOR_PRESETS = {
     lipstick: ["#FF0000", "#DC2626", "#BE123C", "#831843", "#DB2777", "#F472B6", "#FB7185", "#E11D48"],
@@ -37,6 +40,8 @@ const VirtualStudio = () => {
     const [lighting, setLighting] = useState(0.2);
     const [backgroundType, setBackgroundType] = useState('None');
     const [compareMode, setCompareMode] = useState(false);
+    const [overlayMode, setOverlayMode] = useState(false);
+    const [tutorialMode, setTutorialMode] = useState('none'); // 'none', 'contour', 'highlight', 'blush'
 
     const ENVIRONMENTS = [
         { id: 'None', label: 'Raw', icon: <FaBan />, color: 'bg-slate-100', desc: 'No processing' },
@@ -238,6 +243,67 @@ const VirtualStudio = () => {
         if (backgroundType === 'Cyber') return 'bg-[#fdf2f8]';
         if (backgroundType === 'Atelier') return 'bg-[#f8fafc]';
         return 'bg-white';
+    };
+
+    // --- HUD & TUTORIAL RENDERER ---
+    const renderHUD = () => {
+        if (!userData || !userData.landmarks) return null;
+
+        // This is a simplified representation. In a real app, we'd scale landmarks to current image size.
+        return (
+            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[4.5rem]">
+                <AnimatePresence>
+                    {overlayMode && (
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="w-full h-full relative"
+                        >
+                            {/* Floating Biometric Labels */}
+                            <div className="absolute top-[20%] left-[15%] p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl">
+                                <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1">Hydration</p>
+                                <p className="text-xs font-black text-white">82% <span className="text-[8px] text-emerald-400">OPTIMAL</span></p>
+                            </div>
+                            <div className="absolute top-[40%] right-[10%] p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl">
+                                <p className="text-[8px] font-black text-rose-400 uppercase tracking-widest mb-1">Sensitivity</p>
+                                <p className="text-xs font-black text-white">LOW</p>
+                            </div>
+                            <div className="absolute bottom-[20%] left-[30%] p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl">
+                                <p className="text-[8px] font-black text-amber-400 uppercase tracking-widest mb-1">Texture</p>
+                                <p className="text-xs font-black text-white">94/100</p>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {tutorialMode !== 'none' && (
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="w-full h-full"
+                        >
+                            {/* SVG Guides anchored to face regions */}
+                            <svg className="w-full h-full" viewBox="0 0 100 100">
+                                {tutorialMode === 'contour' && (
+                                    <path d="M25,45 Q20,55 25,65 M75,45 Q80,55 75,65" fill="none" stroke="#451A03" strokeWidth="2" strokeDasharray="2,2" className="animate-pulse" />
+                                )}
+                                {tutorialMode === 'highlight' && (
+                                    <path d="M40,35 Q50,30 60,35 M50,45 Q50,60 50,75" fill="none" stroke="#FEF9C3" strokeWidth="2" strokeDasharray="2,2" className="animate-pulse" />
+                                )}
+                                {tutorialMode === 'blush' && (
+                                    <>
+                                        <circle cx="28" cy="55" r="5" fill="rgba(251, 113, 133, 0.2)" />
+                                        <circle cx="72" cy="55" r="5" fill="rgba(251, 113, 133, 0.2)" />
+                                    </>
+                                )}
+                            </svg>
+                            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 text-white text-[10px] font-black uppercase tracking-widest">
+                                {tutorialMode === 'contour' && "Apply Contour along the hollows of your cheeks"}
+                                {tutorialMode === 'highlight' && "Apply Highlight to the high points of cheekbones & bridge of nose"}
+                                {tutorialMode === 'blush' && "Apply Blush to the apples of your cheeks"}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        );
     };
 
     return (
@@ -443,6 +509,43 @@ const VirtualStudio = () => {
                                             ))}
                                         </div>
                                     </div>
+
+                                    <div className="space-y-5">
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <div className="w-1 h-1 bg-indigo-500 rounded-full"></div> AR Smart Guides
+                                        </h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                onClick={() => setOverlayMode(!overlayMode)}
+                                                className={`flex items-center gap-4 p-4 rounded-3xl border-2 transition-all ${overlayMode ? 'border-indigo-600 bg-indigo-50/60 shadow-lg' : 'border-slate-100 bg-white shadow-sm'}`}
+                                            >
+                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs ${overlayMode ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-400'}`}>
+                                                    <FaAdjust />
+                                                </div>
+                                                <p className="text-[9px] font-black uppercase tracking-widest">Smart HUD</p>
+                                            </button>
+                                            <div className="relative group/tutorial">
+                                                <button
+                                                    className={`w-full flex items-center gap-4 p-4 rounded-3xl border-2 transition-all ${tutorialMode !== 'none' ? 'border-amber-600 bg-amber-50/60 shadow-lg' : 'border-slate-100 bg-white shadow-sm'}`}
+                                                >
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs ${tutorialMode !== 'none' ? 'bg-amber-600 text-white' : 'bg-slate-50 text-slate-400'}`}>
+                                                        <FaRegLightbulb />
+                                                    </div>
+                                                    <p className="text-[9px] font-black uppercase tracking-widest">Tutorials</p>
+                                                </button>
+                                                <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-slate-100 rounded-2xl shadow-2xl p-2 hidden group-hover/tutorial:block z-50">
+                                                    {['none', 'contour', 'highlight', 'blush'].map(m => (
+                                                        <button
+                                                            key={m} onClick={() => setTutorialMode(m)}
+                                                            className={`w-full text-left p-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 ${tutorialMode === m ? 'text-indigo-600' : 'text-slate-400'}`}
+                                                        >
+                                                            {m}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -507,6 +610,8 @@ const VirtualStudio = () => {
                                                 </div>
                                             </div>
                                         )}
+
+                                        {renderHUD()}
 
                                         {loading && (
                                             <div className="absolute inset-0 bg-white/60 backdrop-blur-xl flex flex-col items-center justify-center gap-6">

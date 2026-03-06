@@ -10,7 +10,7 @@ const RoutineBuilder = () => {
     const [recommendations, setRecommendations] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const API_URL = "http://localhost:8000/api/routine";
+    const API_URL = `${process.env.REACT_APP_API_URL || "http://localhost:8000"}/api/routine`;
 
     useEffect(() => {
         const fetchData = async () => {

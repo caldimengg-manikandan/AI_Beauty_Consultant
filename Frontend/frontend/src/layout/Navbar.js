@@ -3,7 +3,7 @@ import { FaBell, FaCog, FaSignOutAlt, FaCircle, FaInfoCircle, FaMagic, FaUserAst
 import { useLocation, useNavigate } from 'react-router-dom';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
-const Navbar = () => {
+const Navbar = ({ onMenuClick }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [showNotifications, setShowNotifications] = useState(false);
     const notificationRef = useRef(null);
@@ -108,15 +108,26 @@ const Navbar = () => {
     };
 
     return (
-        <nav className="bg-white/80 backdrop-blur-xl border-b border-gray-100 px-8 py-4 sticky top-0 z-50 shadow-sm flex items-center justify-between">
+        <nav className="bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 md:px-8 py-4 sticky top-0 z-50 shadow-sm flex items-center justify-between gap-4">
 
-            {/* Left - Page Title & Brand Identity */}
-            <div className="flex flex-col">
-                <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">{getPageTitle()}</h1>
-                    <span className="animate-pulse w-2 h-2 bg-indigo-500 rounded-full"></span>
+            {/* Hamburger — mobile only */}
+            <button
+                onClick={onMenuClick}
+                className="md:hidden p-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all shrink-0"
+                aria-label="Open menu"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+
+            {/* Left - Page Title */}
+            <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-2">
+                    <h1 className="text-lg md:text-2xl font-black text-slate-900 tracking-tighter uppercase truncate">{getPageTitle()}</h1>
+                    <span className="animate-pulse w-2 h-2 bg-indigo-500 rounded-full shrink-0"></span>
                 </div>
-                <p className="text-[10px] text-slate-400 font-bold tracking-[0.2em] mt-1 uppercase">
+                <p className="text-[10px] text-slate-400 font-bold tracking-[0.2em] mt-0.5 uppercase hidden sm:block">
                     AI Beauty Consultant / Integrated Vision System
                 </p>
             </div>
@@ -151,9 +162,9 @@ const Navbar = () => {
                         )}
                     </button>
 
-                    {/* Notification Dropdown */}
+                    {/* Notification Dropdown — responsive width */}
                     {showNotifications && (
-                        <div className="absolute right-0 mt-4 w-[380px] bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100 overflow-hidden animate-fade-in-up">
+                        <div className="absolute right-0 mt-4 w-[calc(100vw-2rem)] sm:w-[380px] max-w-[420px] bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100 overflow-hidden animate-fade-in-up">
                             <div className="p-6 border-b border-slate-50 flex items-center justify-between">
                                 <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Notification Center</h3>
                                 <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-full">3 Messages</span>
