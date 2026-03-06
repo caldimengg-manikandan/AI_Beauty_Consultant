@@ -26,15 +26,22 @@ app = FastAPI(
     version="1.0"
 )
 
-# 2️⃣ ADD MIDDLEWARE AFTER app IS DEFINED - PERMISSIVE CORS FOR DEVELOPMENT
+# 2️⃣ ADD MIDDLEWARE — allow localhost for dev, Vercel domain for prod
+import os
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://localhost:3000",
+    os.getenv("FRONTEND_URL", "*"),   # set this in Render dashboard
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
-    max_age=3600  # Cache preflight requests for 1 hour
+    max_age=3600,
 )
 
 # 3️⃣ IMPORT ROUTERS AFTER app EXISTS
