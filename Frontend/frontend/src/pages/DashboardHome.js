@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { FaCamera, FaMagic, FaCut, FaPaintBrush, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaCrown, FaArrowUp, FaShieldAlt, FaStethoscope, FaPalette } from 'react-icons/fa';
+import { FaCamera, FaMagic, FaCut, FaPaintBrush, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaCrown, FaArrowUp, FaShieldAlt, FaStethoscope, FaPalette, FaFileDownload } from 'react-icons/fa';
 import { getUserRole, getUserStats } from '../services/premiumApi';
 import { getHistory, getOnboardingStatus } from '../services/api';
 import OnboardingWizard from '../components/OnboardingWizard';
 import SkinScoreCard from '../components/SkinScoreCard';
 import GamificationWidget from '../features/styling/GamificationWidget';
+import WeatherSkinTips from '../components/WeatherSkinTips';
+import generateBeautyReport from '../utils/generateBeautyReport';
 import { useTranslation } from 'react-i18next';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
@@ -388,8 +390,33 @@ const DashboardHome = () => {
           setHasCompletedOnboarding(true);
         }}
       />
+
+      {/* ── WEATHER SKIN TIPS ── */}
+      <div className="mt-6">
+        <WeatherSkinTips />
+      </div>
+
+      {/* ── PDF BEAUTY REPORT ── */}
+      <div className="mt-6 bg-gradient-to-r from-purple-600 to-teal-600 rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="text-white">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-200 mb-1">New Feature</p>
+          <h3 className="text-2xl font-black uppercase italic">Download Your Beauty Report</h3>
+          <p className="text-purple-100 font-medium text-sm mt-1">Export a personalised 3-page PDF with your full seasonal analysis, colour palette, makeup & skincare guide.</p>
+        </div>
+        <button
+          onClick={() => {
+            const email = localStorage.getItem('email') || 'User';
+            const username = email.includes('@') ? email.split('@')[0] : email;
+            generateBeautyReport(recentAnalyses[0] || null, username);
+          }}
+          className="shrink-0 flex items-center gap-3 px-8 py-4 bg-white text-purple-700 font-black text-sm uppercase tracking-widest rounded-2xl hover:bg-purple-50 transition-all shadow-2xl"
+        >
+          <FaFileDownload /> Export PDF Report
+        </button>
+      </div>
     </div>
   );
 };
 
 export default DashboardHome;
+
