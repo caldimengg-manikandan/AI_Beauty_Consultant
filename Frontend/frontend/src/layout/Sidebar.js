@@ -175,7 +175,7 @@ const Sidebar = ({ onClose }) => {
           <NavItem to="/dashboard/scan" icon={<FaMicroscope />} label="Ingredient Scan" badge="NEW" />
         </div>
         <div className="animate-fade-in-up">
-          <NavItem to="/dashboard/lookbook" icon={<FaPalette />} label="Style Lookbook" badge="AI" />
+          <NavItem to="/dashboard/lookbook" icon={<FaChartLine />} label="Skin Health" badge="AI" />
         </div>
         <div className="animate-fade-in-up">
           <NavItem to="/dashboard/services" icon={<FaSpa />} label="Spa Services" badge="HOT" />
