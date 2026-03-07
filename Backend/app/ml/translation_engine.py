@@ -1,5 +1,3 @@
-from transformers import MBartForConditionalGeneration, MBart50TokenizerFast
-import torch
 from typing import List
 import logging
 
@@ -14,16 +12,18 @@ class TranslationEngine:
     def __init__(self):
         logger.info(f"Loading mBART-50 model: {MODEL_NAME}")
         try:
+            from transformers import MBartForConditionalGeneration, MBart50TokenizerFast
+            import torch
             self.tokenizer = MBart50TokenizerFast.from_pretrained(MODEL_NAME)
             self.model = MBartForConditionalGeneration.from_pretrained(MODEL_NAME)
-            
-            # Move to GPU if available
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
             self.model.to(self.device)
             logger.info(f"Model loaded successfully on {self.device}")
         except Exception as e:
             logger.error(f"Failed to load model: {str(e)}")
-            raise
+            self.model = None
+            self.tokenizer = None
+            self.device = "cpu"
 
     def translate_batch(self, texts: List[str], src_lang: str, tgt_lang: str, batch_size: int = 4) -> List[str]:
         """

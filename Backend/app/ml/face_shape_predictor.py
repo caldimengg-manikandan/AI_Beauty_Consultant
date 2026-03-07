@@ -1,13 +1,15 @@
-import torch
-import torch.nn as nn
-from torchvision import models, transforms
+# torch/torchvision imported lazily inside methods to avoid loading on startup
 from PIL import Image
 import os
 import numpy as np
 
 class FaceShapePredictor:
     def __init__(self, model_path=None):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        try:
+            import torch
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        except ImportError:
+            self.device = "cpu"
         self.classes = ["Diamond", "Heart", "Long", "Oval", "Pear", "Round", "Square", "Triangle"]
         
         if model_path is None:
@@ -24,6 +26,9 @@ class FaceShapePredictor:
 
     def _load_model(self):
         try:
+            import torch
+            import torch.nn as nn
+            from torchvision import models
             # Recreate the exact same architecture used in training
             model = models.efficientnet_v2_s(weights=None)
             num_ftrs = model.classifier[1].in_features
