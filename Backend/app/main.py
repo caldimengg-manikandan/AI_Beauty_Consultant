@@ -94,3 +94,11 @@ import os
 os.makedirs("static/uploads", exist_ok=True)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "message": "AI Beauty Consultant Backend is Live"}
+
+@app.get("/")
+def read_root():
+    return {"status": "ok", "message": "Server is running. Visit /docs for API documentation."}
