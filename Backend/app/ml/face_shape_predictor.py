@@ -7,9 +7,18 @@ class FaceShapePredictor:
     def __init__(self, model_path=None):
         try:
             import torch
+            from torchvision import transforms
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            
+            self.transform = transforms.Compose([
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ])
         except ImportError:
             self.device = "cpu"
+            self.transform = None
+            
         self.classes = ["Diamond", "Heart", "Long", "Oval", "Pear", "Round", "Square", "Triangle"]
         
         if model_path is None:
@@ -17,12 +26,6 @@ class FaceShapePredictor:
         
         self.model_path = model_path
         self.model = self._load_model()
-        
-        self.transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
 
     def _load_model(self):
         try:
@@ -60,10 +63,11 @@ class FaceShapePredictor:
         Predicts face shape from a BGR image (OpenCV format)
         Returns: (label, confidence)
         """
-        if self.model is None:
+        if self.model is None or self.transform is None:
             return None, 0.0
             
         try:
+            import torch
             # Convert OpenCV (BGR) to PIL (RGB)
             import cv2
             rgb_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
