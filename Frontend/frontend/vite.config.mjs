@@ -10,6 +10,18 @@ export default defineConfig({
             '@': path.resolve(__dirname, './src'),
         },
     },
+    esbuild: {
+        loader: 'jsx',
+        include: /src\/.*\.js$/,
+        exclude: [],
+    },
+    optimizeDeps: {
+        esbuildOptions: {
+            loader: {
+                '.js': 'jsx',
+            },
+        },
+    },
     server: {
         port: 3000,
         proxy: {

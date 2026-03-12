@@ -3,13 +3,13 @@ import axios from 'axios';
 import {
     FaCamera, FaUpload, FaMagic, FaSyncAlt, FaDownload,
     FaPalette, FaHistory, FaCheck, FaEye, FaWind, FaSun, FaAdjust,
-    FaFingerprint, FaSparkles, FaBan, FaMoon, FaBolt, FaMicrophone,
+    FaFingerprint, FaBan, FaMoon, FaBolt, FaMicrophone,
     FaRegLightbulb, FaLayerGroup
 } from 'react-icons/fa';
 import { getHistory } from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const VIRTUAL_STUDIO_API = `${API_BASE}/tryon`;
 const MATCH_API = `${API_BASE}/tryon/foundation-match`;
 

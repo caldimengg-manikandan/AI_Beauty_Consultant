@@ -5,7 +5,7 @@ import {
     FaChartLine, FaArrowUp, FaArrowDown, FaHistory,
     FaShieldAlt, FaLightbulb, FaCheckCircle, FaExclamationTriangle
 } from 'react-icons/fa';
-import { TrendingUp, Activity, ShieldCircle, Info } from 'lucide-react';
+import { TrendingUp, Activity, Shield, Info } from 'lucide-react';
 
 const TrendsPage = () => {
     const [data, setData] = useState([]);
