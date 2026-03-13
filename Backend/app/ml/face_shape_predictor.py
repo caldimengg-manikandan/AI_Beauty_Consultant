@@ -38,6 +38,13 @@ class FaceShapePredictor:
             return None
             
         try:
+            # Memory safety check for Render Free tier
+            import psutil
+            total_ram = psutil.virtual_memory().total / (1024**3)
+            if total_ram < 1.0:
+                print("⚠️ FaceShapeModel: Low memory environment detected. Skipping heavy model load.")
+                return None
+
             import torch.nn as nn
             from torchvision import models
             # Recreate the exact same architecture used in training

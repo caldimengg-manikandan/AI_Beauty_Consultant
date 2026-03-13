@@ -12,23 +12,32 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 # Path to the model file
 MODEL_PATH = os.path.join(os.path.dirname(__file__), '../models/face_landmarker.task')
 
-# Initialize detector
-try:
-    options = FaceLandmarkerOptions(
-        base_options=BaseOptions(model_asset_path=MODEL_PATH),
-        running_mode=VisionRunningMode.IMAGE
-    )
-    detector = FaceLandmarker.create_from_options(options)
-    print(f"✅ FaceLandmarker loaded from {MODEL_PATH}")
-except Exception as e:
-    print(f"❌ Failed to load FaceLandmarker: {e}")
-    detector = None
+_detector = None
+
+def get_detector():
+    """Lazy load the FaceLandmarker detector to save memory."""
+    global _detector
+    if _detector is not None:
+        return _detector
+        
+    try:
+        options = FaceLandmarkerOptions(
+            base_options=BaseOptions(model_asset_path=MODEL_PATH),
+            running_mode=VisionRunningMode.IMAGE
+        )
+        _detector = FaceLandmarker.create_from_options(options)
+        print(f"✅ FaceLandmarker loaded from {MODEL_PATH}")
+    except Exception as e:
+        print(f"❌ Failed to load FaceLandmarker: {e}")
+        _detector = None
+    return _detector
 
 def detect_faces(image):
     """
     Detects faces using MediaPipe FaceLandmarker.
     Returns list of [x, y, w, h].
     """
+    detector = get_detector()
     if detector is None:
         print("Detector not initialized.")
         return []

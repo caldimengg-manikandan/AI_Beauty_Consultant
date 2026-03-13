@@ -196,20 +196,29 @@ def calculate_face_shape(landmarks, width, height, image=None):
 
 # --- 2. GENDER ANALYSIS (HYBRID AI FUSION) ---
 
-# Load Gender Model
-try:
-    GENDER_PROTO = os.path.join(os.path.dirname(__file__), '../models/gender_deploy.prototxt')
-    GENDER_MODEL = os.path.join(os.path.dirname(__file__), '../models/gender_net.caffemodel')
-    
-    if os.path.exists(GENDER_PROTO) and os.path.exists(GENDER_MODEL):
-        gender_net = cv2.dnn.readNetFromCaffe(GENDER_PROTO, GENDER_MODEL)
-        print("✅ Analysis: Gender CNN Loaded")
-    else:
-        gender_net = None
-        print("⚠️ Analysis: Gender CNN files not found")
-except Exception as e:
-    print(f"⚠️ Analysis: Gender CNN Error {e}")
-    gender_net = None
+# Global variable for the gender model
+_gender_net = None
+
+def get_gender_net():
+    """Lazy load the Gender CNN model to save memory."""
+    global _gender_net
+    if _gender_net is not None:
+        return _gender_net
+        
+    try:
+        GENDER_PROTO = os.path.join(os.path.dirname(__file__), '../models/gender_deploy.prototxt')
+        GENDER_MODEL = os.path.join(os.path.dirname(__file__), '../models/gender_net.caffemodel')
+        
+        if os.path.exists(GENDER_PROTO) and os.path.exists(GENDER_MODEL):
+            _gender_net = cv2.dnn.readNetFromCaffe(GENDER_PROTO, GENDER_MODEL)
+            print("✅ Analysis: Gender CNN Loaded")
+        else:
+            print("⚠️ Analysis: Gender CNN files not found")
+            _gender_net = None
+    except Exception as e:
+        print(f"⚠️ Analysis: Gender CNN Error {e}")
+        _gender_net = None
+    return _gender_net
 
 def classify_gender_geometric(landmarks, width, height, image=None, face_shape=None):
     """
@@ -220,6 +229,7 @@ def classify_gender_geometric(landmarks, width, height, image=None, face_shape=N
     female_prob = 0.5
     
     # 1. CNN INFERENCE (Caffe Model)
+    gender_net = get_gender_net()
     if gender_net is not None and image is not None:
         try:
             # Optimized crop for gender detection
