@@ -32,7 +32,7 @@ class FaceShapePredictor:
 
     def _load_model(self):
         if torch is None:
-            print("⚠️ FaceShapeModel: torch not available")
+            print("WARNING: FaceShapeModel: torch not available")
             return None
             
         try:
@@ -55,13 +55,13 @@ class FaceShapePredictor:
                     
                 model.load_state_dict(state_dict)
                 model.to(self.device).eval()
-                print(f"✅ FaceShapeModel: Loaded weights from {os.path.basename(self.model_path)}")
+                print(f"SUCCESS: FaceShapeModel: Loaded weights from {os.path.basename(self.model_path)}")
                 return model
             else:
-                print(f"⚠️ FaceShapeModel: Model file not found at {self.model_path}")
+                print(f"WARNING: FaceShapeModel: Model file not found at {self.model_path}")
                 return None
         except Exception as e:
-            print(f"❌ FaceShapeModel: Error loading model: {e}")
+            print(f"ERROR: FaceShapeModel: Error loading model: {e}")
             return None
 
     def predict(self, face_img):
@@ -90,7 +90,7 @@ class FaceShapePredictor:
             label = self.classes[index.item()]
             return label, conf.item()
         except Exception as e:
-            print(f"⚠️ FaceShapeModel: Prediction error: {e}")
+            print(f"WARNING: FaceShapeModel: Prediction error: {e}")
             return None, 0.0
 
 # Singleton instance
