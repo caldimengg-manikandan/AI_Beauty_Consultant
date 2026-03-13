@@ -1,22 +1,25 @@
-# torch/torchvision imported lazily inside methods to avoid loading on startup
+try:
+    import torch
+    from torchvision import transforms
+except ImportError:
+    torch = None
+    transforms = None
+
 from PIL import Image
 import os
 import numpy as np
 
 class FaceShapePredictor:
     def __init__(self, model_path=None):
-        try:
-            import torch
-            from torchvision import transforms
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if torch is not None else "cpu"
+        
+        if transforms is not None:
             self.transform = transforms.Compose([
                 transforms.Resize((224, 224)),
                 transforms.ToTensor(),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
             ])
-        except ImportError:
-            self.device = "cpu"
+        else:
             self.transform = None
             
         self.classes = ["Diamond", "Heart", "Long", "Oval", "Pear", "Round", "Square", "Triangle"]
@@ -28,8 +31,11 @@ class FaceShapePredictor:
         self.model = self._load_model()
 
     def _load_model(self):
+        if torch is None:
+            print("⚠️ FaceShapeModel: torch not available")
+            return None
+            
         try:
-            import torch
             import torch.nn as nn
             from torchvision import models
             # Recreate the exact same architecture used in training
@@ -63,11 +69,10 @@ class FaceShapePredictor:
         Predicts face shape from a BGR image (OpenCV format)
         Returns: (label, confidence)
         """
-        if self.model is None or self.transform is None:
+        if self.model is None or self.transform is None or torch is None:
             return None, 0.0
             
         try:
-            import torch
             # Convert OpenCV (BGR) to PIL (RGB)
             import cv2
             rgb_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
