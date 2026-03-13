@@ -1,9 +1,11 @@
+torch = None
+transforms = None
+
 try:
     import torch
     from torchvision import transforms
-except ImportError:
-    torch = None
-    transforms = None
+except Exception:
+    pass
 
 from PIL import Image
 import os
