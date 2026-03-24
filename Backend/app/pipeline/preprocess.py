@@ -17,7 +17,7 @@ class ImageQualityValidator:
         # 1. Check Resolution
         h, w = image.shape[:2]
         results["details"]["resolution"] = f"{w}x{h}"
-        if w < 400 or h < 400:
+        if w < 200 or h < 200:
             results["passed"] = False
             results["errors"].append("Low resolution. Please use a clearer photo.")
 
