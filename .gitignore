@@ -33,6 +33,7 @@ wheels/
 datasets/
 source_data/
 kaggle_data/
+Backend/data/
 *.log
 *.csv
 static/uploads/*
