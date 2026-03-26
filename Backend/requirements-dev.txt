@@ -1,0 +1,55 @@
+# ========================
+# CORE (GPU)
+# ========================
+torch
+torchvision
+torchaudio
+
+# ========================
+# COMPUTER VISION
+# ========================
+opencv-python
+mediapipe
+Pillow
+
+# ========================
+# DATA
+# ========================
+numpy
+pandas
+numpy
+pandas
+scipy
+scikit-learn
+
+# ========================
+# BACKEND
+# ========================
+fastapi
+uvicorn
+pydantic
+email-validator
+python-jose[cryptography]
+passlib[bcrypt]
+argon2-cffi
+python-multipart
+pymongo
+python-dotenv
+
+# ========================
+# UTILS
+# ========================
+tqdm
+requests
+matplotlib
+reportlab
+
+# ========================
+# SECURITY & 2FA
+# ========================
+ pyotp
+ qrcode[pil]
+ transformers
+ sentencepiece
+ 
+ 

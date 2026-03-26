@@ -1,0 +1,42 @@
+{
+  "short_name": "GlowAI",
+  "name": "AI Beauty Consultant — GlowAI",
+  "description": "Your personal AI-powered beauty and skincare consultant.",
+  "icons": [
+    {
+      "src": "/images/consultant_avatar.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/consultant_avatar.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "theme_color": "#A855F7",
+  "background_color": "#faf5ff",
+  "orientation": "portrait-primary",
+  "categories": ["health", "lifestyle", "beauty"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Face Analysis",
+      "short_name": "Analyse",
+      "description": "Start a new face analysis scan",
+      "url": "/dashboard/analyze",
+      "icons": [{ "src": "/images/consultant_avatar.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Ingredient Scanner",
+      "short_name": "Scanner",
+      "description": "Scan a product ingredient list",
+      "url": "/dashboard/scan",
+      "icons": [{ "src": "/images/consultant_avatar.png", "sizes": "96x96" }]
+    }
+  ]
+}

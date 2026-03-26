@@ -1,0 +1,48 @@
+# Virtual Environments
+venv/
+venv_311/
+venv_313/
+venv_train/
+vt/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Data & Models (Training data is too large for GitHub)
+datasets/
+source_data/
+kaggle_data/
+*.log
+*.csv
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Models (Weights are ~80MB, pushing them for functionality)
+# backend/app/models/*.h5
+# backend/models/*.pth
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
