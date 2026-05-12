@@ -19,7 +19,9 @@ import {
   FaSun,
   FaGlobe,
   FaRoute,
-  FaBullseye
+  FaBullseye,
+  FaBuilding,
+  FaStore
 } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
@@ -187,6 +189,12 @@ const Sidebar = ({ onClose }) => {
         </div>
         <div className="animate-fade-in-up">
           <NavItem to="/dashboard/services" icon={<FaSpa />} label="Spa Services" badge="HOT" />
+        </div>
+        <div className="animate-fade-in-up">
+          <NavItem to="/dashboard/marketplace" icon={<FaBuilding />} label="Find Salons" badge="NEW" />
+        </div>
+        <div className="animate-fade-in-up">
+          <NavItem to="/dashboard/shop-owner" icon={<FaStore />} label="My Shop" />
         </div>
 
         <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 mb-2 mt-6 animate-fade-in-up">

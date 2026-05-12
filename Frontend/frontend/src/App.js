@@ -28,6 +28,9 @@ import GoalsTracker from "./features/skin/GoalsTracker";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ExpertDashboard from "./pages/expert/ExpertDashboard";
+import SalonMarketplace from "./features/marketplace/SalonMarketplace";
+import SalonDetailPage from "./features/marketplace/SalonDetailPage";
+import ShopOwnerDashboard from "./features/marketplace/ShopOwnerDashboard";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layout/DashboardLayout";
@@ -82,6 +85,9 @@ function App() {
           <Route path="goals" element={<GoalsTracker />} />
           <Route path="products" element={<ProductCatalog />} />
           <Route path="services" element={<ServicesPage />} />
+          <Route path="marketplace" element={<SalonMarketplace />} />
+          <Route path="salon/:salonId" element={<SalonDetailPage />} />
+          <Route path="shop-owner" element={<ShopOwnerDashboard />} />
           <Route path="settings" element={<SettingsPage />} />
 
           {/* Role-Based Routes */}
