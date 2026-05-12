@@ -121,8 +121,6 @@ def generate_personalized_tips(face_shape, gender, skin_scores, skin_tone=None, 
     models_to_try = [
         "google/gemini-2.0-flash-exp:free",  # Ultra-fast, high quality
         "meta-llama/llama-3.1-8b-instruct:free", # Fast fallback
-        "mistralai/mistral-7b-instruct:free",
-        "microsoft/phi-3-mini-128k-instruct:free",
     ]
     
     for model in models_to_try:
@@ -142,11 +140,15 @@ def generate_personalized_tips(face_shape, gender, skin_scores, skin_tone=None, 
                         {"role": "user", "content": user_prompt}
                     ],
                     "temperature": 0.8,
-                    "max_tokens": 500 # Reduced tokens for speed
+                    "max_tokens": 300 # Reduced tokens for speed
                 },
-                timeout=8 # Reduced timeout to avoid hanging
+                timeout=4 # Reduced timeout to avoid hanging
             )
             
+            if response.status_code == 401:
+                print("⚠️ OpenRouter Auth Failed (401). Check your API Key. Breaking.")
+                break
+                
             if response.status_code == 200:
                 data = response.json()
                 if 'choices' in data and len(data['choices']) > 0:

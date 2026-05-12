@@ -13,15 +13,17 @@ class IngredientRequest(BaseModel):
     ingredients_text: str
 
 # --- Tesseract binary path (Windows) ---
-TESSERACT_PATH = None
-for _path in [
-    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
-    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
-    r"C:\Users\jasmi\AppData\Local\Programs\Tesseract-OCR\tesseract.exe",
-]:
-    if os.path.exists(_path):
-        TESSERACT_PATH = _path
-        break
+TESSERACT_PATH = os.getenv("TESSERACT_PATH", None)
+if not TESSERACT_PATH:
+    for _path in [
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+        r"C:\Users\jasmi\AppData\Local\Programs\Tesseract-OCR\tesseract.exe",
+        r"C:\Users\jasmi\tesseract.exe", # Custom path
+    ]:
+        if os.path.exists(_path):
+            TESSERACT_PATH = _path
+            break
 
 
 @router.post("/ocr")

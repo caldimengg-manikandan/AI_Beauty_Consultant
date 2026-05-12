@@ -11,7 +11,7 @@ const ProgressDashboard = () => {
     const [timeline, setTimeline] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const API_URL = `${process.env.REACT_APP_API_URL || "http://localhost:8000"}/api/progress`;
+    const API_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/progress`;
 
     useEffect(() => {
         const fetchData = async () => {

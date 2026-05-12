@@ -390,10 +390,6 @@ async def chat_consultant(req: ChatRequest, current_user: dict = Depends(get_cur
         models_to_try = [
             "google/gemini-2.0-flash-exp:free",
             "meta-llama/llama-3.1-8b-instruct:free",
-            "google/gemini-exp-1206:free",
-            "liquid/lfm-40b:free",
-            "mistralai/mistral-7b-instruct:free",
-            "microsoft/phi-3-mini-128k-instruct:free",
         ]
         
         import time
@@ -414,9 +410,13 @@ async def chat_consultant(req: ChatRequest, current_user: dict = Depends(get_cur
                             {"role": "user", "content": msg}
                         ]
                     }),
-                    timeout=15
+                    timeout=5
                 )
                 
+                if response.status_code == 401:
+                    print("⚠️ OpenRouter Auth Failed (401). Breaking.")
+                    break
+                    
                 if response.status_code == 200:
                     data = response.json()
                     if 'choices' in data and len(data['choices']) > 0:
