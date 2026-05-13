@@ -151,6 +151,67 @@ const SalonMarketplace = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [usedDemo, setUsedDemo] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [nearMeActive, setNearMeActive] = useState(false);
+
+  const fetchNearby = async (lat, lon) => {
+    setLoading(true);
+    try {
+      const { getNearbySalons, fetchRealWorldSalons } = await import('../../services/salonApi');
+      
+      // 1. Try to get registered salons from DB
+      const dbData = await getNearbySalons(lat, lon, { radius_km: 15, limit: 10 });
+      let finalSalons = dbData.salons || [];
+      
+      // 2. Scrape real-world salons from OpenStreetMap to augment the list
+      const osmSalons = await fetchRealWorldSalons(lat, lon, 10000); // 10km radius
+      
+      // 3. Merge them, keeping DB salons first
+      if (osmSalons.length > 0) {
+        finalSalons = [...finalSalons, ...osmSalons];
+      }
+      
+      if (finalSalons.length > 0) {
+        setSalons(finalSalons);
+        setUsedDemo(false);
+      } else {
+        setSalons(DEMO_SALONS);
+        setUsedDemo(true);
+      }
+    } catch {
+      setSalons(DEMO_SALONS);
+      setUsedDemo(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNearMe = () => {
+    if (nearMeActive) {
+      setNearMeActive(false);
+      setUserLocation(null);
+      return;
+    }
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lon: longitude });
+        setNearMeActive(true);
+        setLocationLoading(false);
+        fetchNearby(latitude, longitude);
+      },
+      (err) => {
+        setLocationLoading(false);
+        alert('Location access denied. Please enable location in your browser settings.');
+      }
+    );
+  };
 
   const fetchSalons = useCallback(async () => {
     setLoading(true);
@@ -230,19 +291,34 @@ const SalonMarketplace = () => {
             />
           </div>
 
-          {/* City select */}
-          <div className="relative">
-            <FaMapMarkerAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-rose-400 text-sm" />
-            <select
-              value={filters.city}
-              onChange={e => setFilters(f => ({ ...f, city: e.target.value }))}
-              className="pl-9 pr-8 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-gray-50 appearance-none"
-            >
-              <option value="">All Cities</option>
-              {cities.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <FaChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
-          </div>
+          {/* Near Me Button */}
+          <button
+            onClick={handleNearMe}
+            disabled={locationLoading}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all ${nearMeActive
+              ? 'bg-rose-500 text-white border-rose-500 shadow-md'
+              : 'border-rose-200 text-rose-600 hover:bg-rose-50'
+            } ${locationLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+          >
+            <FaMapMarkerAlt />
+            {locationLoading ? 'Locating...' : nearMeActive ? 'Near Me ✓' : 'Near Me'}
+          </button>
+
+          {/* City select — hide when Near Me active */}
+          {!nearMeActive && (
+            <div className="relative">
+              <FaMapMarkerAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-rose-400 text-sm" />
+              <select
+                value={filters.city}
+                onChange={e => setFilters(f => ({ ...f, city: e.target.value }))}
+                className="pl-9 pr-8 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-gray-50 appearance-none"
+              >
+                <option value="">All Cities</option>
+                {cities.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <FaChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
+            </div>
+          )}
 
           {/* Filter toggle */}
           <button

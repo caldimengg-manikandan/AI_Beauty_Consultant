@@ -75,6 +75,7 @@ from app.api.gamification_routes import router as gamification_router
 from app.api.ingredient_routes import router as ingredient_router
 from app.api.translation_routes import router as translation_router
 from app.api.salon_routes import router as salon_router
+from app.api.payment_routes import router as payment_router
 
 # 4️⃣ REGISTER ROUTERS
 app.include_router(auth_router)
@@ -97,6 +98,16 @@ app.include_router(gamification_router)
 app.include_router(ingredient_router)
 app.include_router(translation_router)
 app.include_router(salon_router)
+app.include_router(payment_router)
+
+# 5️⃣ AI Recommendations endpoint
+from fastapi import Body
+from app.ml.beauty_recommender import get_recommendations_from_analysis
+
+@app.post("/api/recommend-services")
+def recommend_services(analysis_result: dict = Body(...)):
+    """Given a skin analysis result, return recommended beauty services & salon types."""
+    return get_recommendations_from_analysis(analysis_result)
 
 # 5️⃣ SERVE STATIC FILES (Images)
 from fastapi.staticfiles import StaticFiles

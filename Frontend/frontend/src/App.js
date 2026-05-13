@@ -31,7 +31,7 @@ import ExpertDashboard from "./pages/expert/ExpertDashboard";
 import SalonMarketplace from "./features/marketplace/SalonMarketplace";
 import SalonDetailPage from "./features/marketplace/SalonDetailPage";
 import ShopOwnerDashboard from "./features/marketplace/ShopOwnerDashboard";
-
+import UserBookings from "./features/marketplace/UserBookings";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layout/DashboardLayout";
 import { useEffect } from "react";
@@ -57,6 +57,8 @@ function App() {
         {/* Auth Pages */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/shop-owner/signup" element={<Signup />} />
+        <Route path="/shop-owner/login" element={<Login />} />
         <Route path="/demo-results" element={<DemoResultsPage />} />
         <Route path="/premium" element={<ProtectedRoute><PremiumPage /></ProtectedRoute>} />
 
@@ -86,6 +88,7 @@ function App() {
           <Route path="products" element={<ProductCatalog />} />
           <Route path="services" element={<ServicesPage />} />
           <Route path="marketplace" element={<SalonMarketplace />} />
+          <Route path="my-bookings" element={<UserBookings />} />
           <Route path="salon/:salonId" element={<SalonDetailPage />} />
           <Route path="shop-owner" element={<ShopOwnerDashboard />} />
           <Route path="settings" element={<SettingsPage />} />

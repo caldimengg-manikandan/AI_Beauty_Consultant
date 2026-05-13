@@ -1,15 +1,19 @@
 import { useState, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { login as apiLogin } from "../services/api";
-import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import axios from "axios";
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaStore, FaUser } from "react-icons/fa";
 import illustration from "../assets/auth_illustration.png";
-import LanguageSwitcher from "../components/LanguageSwitcher";
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const Login = () => {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
+  // "customer" or "shop_owner" – default from URL param if present
+  const [roleType, setRoleType] = useState(searchParams.get("role") || "customer");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,64 +26,100 @@ const Login = () => {
     setError(null);
 
     try {
-      const res = await apiLogin({ email, password });
-      // Backend returns { access_token, token_type }
-      login(res.access_token);
-      // Store email for navbar display
-      localStorage.setItem('email', email);
-      navigate("/dashboard");
+      const res = await axios.post(`${API_BASE}/api/auth/login`, {
+        email,
+        password,
+        role_type: roleType,
+      });
+
+      const { access_token, role, name, account_type } = res.data;
+      login(access_token);
+      localStorage.setItem("email", email);
+      localStorage.setItem("name", name || email);
+      localStorage.setItem("role", role);
+      localStorage.setItem("account_type", account_type || "customer");
+
+      // Redirect based on role
+      if (role === "admin") {
+        navigate("/dashboard/admin");
+      } else if (role === "shop_owner" || account_type === "shop_owner") {
+        navigate("/dashboard/shop-owner");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
-      console.error(err);
       setError(err.response?.data?.detail || "Invalid email or password");
     } finally {
       setLoading(false);
     }
   };
 
+  const isShopOwner = roleType === "shop_owner";
+
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-white overflow-hidden">
 
       {/* LEFT SIDE - FORM */}
-      <div className="flex flex-col justify-center px-8 sm:px-16 lg:px-24 py-12 relative z-10 animate-fade-in-left">
+      <div className="flex flex-col justify-center px-8 sm:px-16 lg:px-20 py-12 relative z-10">
 
-        {/* Global Action Bar */}
-        <div className="absolute top-6 left-6 right-6 flex justify-between items-center md:hidden lg:flex">
-          <div>{/* Logo or back button */}</div>
-          <LanguageSwitcher variant="minimal" />
-        </div>
+        {/* Logo */}
+        <div className="mb-8">
+          <Link to="/" className="flex items-center gap-2 mb-8">
+            <div className={`h-11 w-11 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-lg ${isShopOwner ? 'bg-gradient-to-tr from-teal-500 to-emerald-600' : 'bg-gradient-to-tr from-purple-600 to-pink-500'}`}>
+              {isShopOwner ? <FaStore /> : "AI"}
+            </div>
+            <span className="font-black text-xl text-gray-800">GlowAI</span>
+          </Link>
 
-        {/* Logo Area */}
-        <div className="mb-12">
-          <div className="h-12 w-12 bg-gradient-to-tr from-teal-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg mb-6 text-white text-2xl font-bold transform rotate-3 hover:rotate-6 transition-transform">
-            AI
-          </div>
-          <h1 className="text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">
-            Welcome Back
+          <h1 className="text-3xl font-extrabold text-slate-900 mb-2">
+            {isShopOwner ? "Partner Portal" : "Welcome Back"}
           </h1>
-          <p className="text-slate-500 text-lg">
-            Unlock real-time skin insights.
+          <p className="text-slate-500">
+            {isShopOwner ? "Manage your salon, bookings & customers." : "Unlock real-time skin insights & book salons."}
           </p>
         </div>
 
+        {/* Role Switcher */}
+        <div className="flex bg-gray-100 rounded-2xl p-1 mb-8 gap-1">
+          <button
+            type="button"
+            onClick={() => { setRoleType("customer"); setError(null); }}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${!isShopOwner
+              ? "bg-white text-purple-700 shadow-md"
+              : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <FaUser className="text-xs" /> Customer
+          </button>
+          <button
+            type="button"
+            onClick={() => { setRoleType("shop_owner"); setError(null); }}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${isShopOwner
+              ? "bg-white text-teal-700 shadow-md"
+              : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <FaStore className="text-xs" /> Shop Owner
+          </button>
+        </div>
+
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center shadow-sm animate-pulse">
-            <span className="mr-2 text-lg">⚠️</span> {error}
+          <div className="mb-6 bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2 shadow-sm">
+            ⚠️ {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-md">
+        <form onSubmit={handleSubmit} className="space-y-5 w-full max-w-md">
 
-          {/* Email Input */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700 ml-1">Email Address</label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <FaEnvelope className="text-slate-400 group-focus-within:text-teal-500 transition-colors" />
-              </div>
+          {/* Email */}
+          <div>
+            <label className="text-sm font-semibold text-slate-700 mb-1.5 block">Email Address</label>
+            <div className="relative">
+              <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="email"
-                className="w-full pl-11 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 text-slate-900 placeholder-slate-400 transition-all font-medium"
-                placeholder="name@example.com"
+                className={`w-full pl-11 pr-5 py-3.5 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 text-slate-900 placeholder-slate-400 transition-all font-medium ${isShopOwner ? 'focus:ring-teal-500/50 focus:border-teal-500 border-slate-200' : 'focus:ring-purple-500/50 focus:border-purple-500 border-slate-200'}`}
+                placeholder={isShopOwner ? "salon@business.com" : "name@example.com"}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -87,82 +127,98 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Password Input */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700 ml-1">Password</label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <FaLock className="text-slate-400 group-focus-within:text-teal-500 transition-colors" />
-              </div>
+          {/* Password */}
+          <div>
+            <label className="text-sm font-semibold text-slate-700 mb-1.5 block">Password</label>
+            <div className="relative">
+              <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type={showPassword ? "text" : "password"}
-                className="w-full pl-11 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 text-slate-900 placeholder-slate-400 transition-all font-medium"
+                className={`w-full pl-11 pr-12 py-3.5 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 text-slate-900 placeholder-slate-400 transition-all font-medium ${isShopOwner ? 'focus:ring-teal-500/50 focus:border-teal-500 border-slate-200' : 'focus:ring-purple-500/50 focus:border-purple-500 border-slate-200'}`}
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute top-1/2 right-4 -translate-y-1/2 text-slate-400 hover:text-teal-600 transition-colors p-1"
-              >
-                {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+              <button type="button" onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
           </div>
 
           <div className="flex justify-end">
-            <a href="#" className="text-sm font-semibold text-teal-600 hover:text-teal-800 transition-colors">
+            <Link to="/forgot-password" className={`text-sm font-semibold transition-colors ${isShopOwner ? 'text-teal-600 hover:text-teal-800' : 'text-purple-600 hover:text-purple-800'}`}>
               Forgot Password?
-            </a>
+            </Link>
           </div>
 
           <button
             disabled={loading}
-            className={`w-full py-4 rounded-xl font-bold text-white text-lg tracking-wide shadow-lg shadow-teal-500/20 transform transition-all duration-300
-                ${loading
-                ? 'bg-slate-300 cursor-not-allowed'
-                : 'bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 hover:scale-[1.01] active:scale-[0.98]'
-              }`}
+            className={`w-full py-3.5 rounded-xl font-bold text-white text-base tracking-wide shadow-lg transform transition-all duration-300 ${loading
+              ? 'bg-slate-300 cursor-not-allowed'
+              : isShopOwner
+                ? 'bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 hover:scale-[1.01] active:scale-[0.98] shadow-teal-500/20'
+                : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 hover:scale-[1.01] active:scale-[0.98] shadow-purple-500/20'
+            }`}
           >
             {loading ? "Signing in..." : "Sign In →"}
           </button>
         </form>
 
-        <p className="mt-10 text-slate-500">
-          Start your journey?{" "}
-          <Link to="/signup" className="text-teal-600 font-bold hover:text-teal-800 transition-colors">
-            Create an account
+        <p className="mt-8 text-slate-500 text-sm">
+          {isShopOwner ? "New salon/parlour?" : "New here?"}{" "}
+          <Link
+            to={isShopOwner ? "/signup?role=shop_owner" : "/signup"}
+            className={`font-bold hover:underline ${isShopOwner ? 'text-teal-600 hover:text-teal-800' : 'text-purple-600 hover:text-purple-800'}`}
+          >
+            {isShopOwner ? "Register your business →" : "Create an account →"}
           </Link>
         </p>
 
-        <div className="mt-auto pt-10 text-xs text-slate-400">
-          © 2026 AI Beauty Consultant. All rights reserved.
-        </div>
+        {!isShopOwner && (
+          <p className="mt-2 text-sm text-slate-400">
+            Are you a salon owner?{" "}
+            <button onClick={() => setRoleType("shop_owner")} className="text-teal-600 font-semibold hover:underline">
+              Switch to Partner Portal
+            </button>
+          </p>
+        )}
+
+        <div className="mt-auto pt-8 text-xs text-slate-400">© 2026 GlowAI. All rights reserved.</div>
       </div>
 
-      {/* RIGHT SIDE - ILLUSTRATION */}
-      <div className="hidden md:flex flex-col items-center justify-center relative bg-gradient-to-br from-teal-50 to-blue-50 p-12 overflow-hidden">
-        {/* Decorative Circles */}
-        <div className="absolute top-20 right-20 w-80 h-80 bg-teal-200/20 rounded-full blur-3xl animate-pulse-slow"></div>
-        <div className="absolute bottom-20 left-20 w-96 h-96 bg-blue-200/20 rounded-full blur-3xl animate-pulse-slow animation-delay-2000"></div>
+      {/* RIGHT SIDE */}
+      <div className={`hidden md:flex flex-col items-center justify-center relative p-12 overflow-hidden transition-all duration-500 ${isShopOwner ? 'bg-gradient-to-br from-teal-50 to-emerald-50' : 'bg-gradient-to-br from-purple-50 to-pink-50'}`}>
+        <div className={`absolute top-20 right-20 w-80 h-80 rounded-full blur-3xl animate-pulse-slow ${isShopOwner ? 'bg-teal-200/30' : 'bg-purple-200/30'}`} />
+        <div className={`absolute bottom-20 left-20 w-96 h-96 rounded-full blur-3xl animate-pulse-slow ${isShopOwner ? 'bg-emerald-200/30' : 'bg-pink-200/30'}`} />
 
-        <div className="relative z-10 max-w-lg w-full flex justify-center">
-          <img
-            src={illustration}
-            alt="AI Analysis Illustration"
-            className="w-full h-auto drop-shadow-2xl animate-fade-in-up hover:scale-[1.02] transition-transform duration-700 cursor-pointer"
-          />
-        </div>
-
-        <div className="mt-12 text-center max-w-md relative z-10">
-          <h3 className="text-3xl font-bold text-slate-800 mb-4 tracking-tight">
-            Smart Skin Analysis
-          </h3>
-          <p className="text-slate-500 text-lg leading-relaxed">
-            Experience the future of dermatology with our advanced AI-powered diagnostics.
-          </p>
+        <div className="relative z-10 text-center max-w-md">
+          {isShopOwner ? (
+            <>
+              <div className="text-8xl mb-6">🏪</div>
+              <h3 className="text-3xl font-bold text-slate-800 mb-4">Grow Your Business</h3>
+              <p className="text-slate-500 text-lg leading-relaxed">
+                Join 500+ salons, parlours & spas on GlowAI. Manage bookings, track earnings, and build a loyal customer base — all in one place.
+              </p>
+              <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+                {[['500+', 'Partner Salons'], ['10K+', 'Monthly Bookings'], ['4.8★', 'Avg Rating']].map(([val, label]) => (
+                  <div key={label} className="bg-white/70 backdrop-blur rounded-2xl p-3">
+                    <div className="font-black text-teal-700 text-xl">{val}</div>
+                    <div className="text-xs text-gray-500 mt-1">{label}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <img src={illustration} alt="AI Beauty" className="w-full h-auto drop-shadow-2xl mb-8 hover:scale-[1.02] transition-transform duration-700" />
+              <h3 className="text-3xl font-bold text-slate-800 mb-4">Smart Skin Analysis</h3>
+              <p className="text-slate-500 text-lg leading-relaxed">
+                Experience AI-powered beauty consultation and book your perfect salon instantly.
+              </p>
+            </>
+          )}
         </div>
       </div>
 

@@ -3,10 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   FaArrowLeft, FaMapMarkerAlt, FaStar, FaRegStar, FaStarHalfAlt,
   FaClock, FaPhone, FaEnvelope, FaCheckCircle, FaTimes,
-  FaCalendarAlt, FaRegClock, FaExclamationCircle, FaUsers,
-  FaSpa, FaCut, FaLeaf, FaHeart, FaShare
+  FaCalendarAlt, FaRegClock, FaExclamationCircle, FaRupeeSign
 } from 'react-icons/fa';
 import { getSalon, getSalonReviews, getAvailableSlots, bookSalonSlot, submitReview } from '../../services/salonApi';
+import PaymentButton from '../../components/PaymentButton';
 
 // ─── Star renderer ─────────────────────────────────────────────────────────────
 const StarRating = ({ rating }) => {
@@ -78,6 +78,7 @@ const SalonDetailPage = () => {
   const [bookingError, setBookingError] = useState('');
   const [booking, setBooking] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [pendingBookingId, setPendingBookingId] = useState(null); // awaiting payment
 
   // Review state
   const [reviewForm, setReviewForm] = useState({ rating: 0, comment: '' });
@@ -144,8 +145,8 @@ const SalonDetailPage = () => {
     try {
       if (isDemo) {
         await new Promise(r => setTimeout(r, 800));
-        setBookingResult({ booking_ref: 'SB-DEMO' + Math.random().toString(36).slice(2, 6).toUpperCase() });
-        setActiveTab('overview');
+        const demoRef = 'SB-DEMO' + Math.random().toString(36).slice(2, 6).toUpperCase();
+        setPendingBookingId(demoRef);
       } else {
         const res = await bookSalonSlot({
           salon_id: salonId,
@@ -154,8 +155,8 @@ const SalonDetailPage = () => {
           appointment_time: selectedTime,
           ...bookingForm,
         });
-        setBookingResult(res);
-        setActiveTab('overview');
+        // After booking creation, go to payment step
+        setPendingBookingId(res.booking_id || res.id || res.booking_ref);
       }
     } catch (err) {
       setBookingError(err.response?.data?.detail || 'Booking failed. Please try again.');
@@ -449,15 +450,45 @@ const SalonDetailPage = () => {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={booking || !selectedService || !selectedDate || !selectedTime}
-              className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-teal-600 text-white font-bold rounded-2xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {booking ? (
-                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Confirming...</>
-              ) : '✅ Confirm Slot Booking'}
-            </button>
+            {/* Payment Step — shown after booking details filled */}
+            {pendingBookingId ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl text-sm">
+                  <p className="font-bold text-purple-800 mb-1">🎉 Booking Created! Complete Payment to Confirm</p>
+                  <p className="text-purple-600 text-xs">Booking Ref: <span className="font-mono font-bold">{pendingBookingId}</span></p>
+                </div>
+                <PaymentButton
+                  bookingId={pendingBookingId}
+                  amount={250}
+                  salonName={salon.name}
+                  serviceName={selectedService}
+                  customerName={bookingForm.customer_name}
+                  onSuccess={(payData) => {
+                    setBookingResult({ booking_ref: pendingBookingId, payment_id: payData.payment_id });
+                    setPendingBookingId(null);
+                    setActiveTab('overview');
+                  }}
+                  onError={(err) => setBookingError(err?.message || 'Payment failed. Please try again.')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setPendingBookingId(null)}
+                  className="w-full py-2 text-sm text-gray-500 hover:text-gray-700"
+                >
+                  ← Back to booking details
+                </button>
+              </div>
+            ) : (
+              <button
+                type="submit"
+                disabled={booking || !selectedService || !selectedDate || !selectedTime}
+                className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-teal-600 text-white font-bold rounded-2xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {booking ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Creating Booking...</>
+                ) : '📅 Proceed to Payment'}
+              </button>
+            )}
           </form>
         </div>
       )}

@@ -18,6 +18,13 @@ const SERVICES_LIST = ['Facial', 'Threading', 'Waxing', 'Bridal Makeup', 'Hair C
   'Keratin', 'Beard Styling', 'Mani-Pedi', 'Nail Art', 'Head Massage', 'Body Massage',
   'Hot Stone', 'Aromatherapy', 'Hair Spa', 'HydraFacial', 'Anti-Aging', 'Pedicure'];
 
+const Field = ({ label, ...props }) => (
+  <div>
+    <label className="block text-xs font-bold text-gray-600 mb-1">{label}</label>
+    <input className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400" {...props} />
+  </div>
+);
+
 // ── Registration Form ──────────────────────────────────────────────────────────
 const RegisterForm = ({ onSuccess }) => {
   const [form, setForm] = useState({
@@ -50,12 +57,7 @@ const RegisterForm = ({ onSuccess }) => {
     }
   };
 
-  const Field = ({ label, ...props }) => (
-    <div>
-      <label className="block text-xs font-bold text-gray-600 mb-1">{label}</label>
-      <input className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400" {...props} />
-    </div>
-  );
+
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
@@ -316,30 +318,100 @@ const ShopOwnerDashboard = () => {
 
       {/* Profile tab */}
       {activeTab === 'profile' && salon && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-          <h2 className="font-bold text-gray-900">Salon Profile</h2>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            {[
-              ['Name', salon.name], ['Type', salon.salon_type],
-              ['Serves', salon.gender_served], ['City', salon.city],
-              ['Hours', `${salon.opening_time} – ${salon.closing_time}`],
-              ['Slot', `${salon.slot_duration_minutes} mins`],
-            ].map(([k, v]) => (
-              <div key={k} className="bg-gray-50 rounded-xl p-3">
-                <p className="text-[10px] font-bold text-gray-400 uppercase">{k}</p>
-                <p className="font-semibold text-gray-800 mt-0.5 capitalize">{v}</p>
-              </div>
-            ))}
-          </div>
-          <div>
-            <p className="text-xs font-bold text-gray-600 mb-2">Services</p>
-            <div className="flex flex-wrap gap-1.5">
-              {salon.services_offered?.map(s => (
-                <span key={s} className="text-xs bg-purple-50 text-purple-600 border border-purple-100 px-2.5 py-1 rounded-full">{s}</span>
+        <div className="space-y-5">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-gray-900">Salon Profile</h2>
+              <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${salon.is_verified ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                {salon.is_verified ? 'Verified ✓' : 'Verification Pending'}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {[
+                ['Name', salon.name], ['Type', salon.salon_type],
+                ['Serves', salon.gender_served], ['City', salon.city],
+                ['Hours', `${salon.opening_time} – ${salon.closing_time}`],
+                ['Slot', `${salon.slot_duration_minutes} mins`],
+              ].map(([k, v]) => (
+                <div key={k} className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">{k}</p>
+                  <p className="font-semibold text-gray-800 mt-0.5 capitalize">{v}</p>
+                </div>
               ))}
             </div>
+            
+            <div>
+              <p className="text-xs font-bold text-gray-600 mb-2">About</p>
+              <p className="text-sm text-gray-500 leading-relaxed">{salon.description || 'No description provided.'}</p>
+            </div>
+
+            <div>
+              <p className="text-xs font-bold text-gray-600 mb-2">Services</p>
+              <div className="flex flex-wrap gap-1.5">
+                {salon.services_offered?.map(s => (
+                  <span key={s} className="text-xs bg-purple-50 text-purple-600 border border-purple-100 px-2.5 py-1 rounded-full">{s}</span>
+                ))}
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-gray-400">To update your profile, contact support or use the API.</p>
+
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <FaEdit className="text-purple-500" /> Update Salon Info
+            </h2>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target);
+              const updates = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                opening_time: formData.get('opening_time'),
+                closing_time: formData.get('closing_time'),
+                slot_duration_minutes: Number(formData.get('slot_duration_minutes')),
+                max_concurrent_slots: Number(formData.get('max_concurrent_slots')),
+              };
+              try {
+                await updateMySalon(updates);
+                toast.success('Salon updated successfully!');
+                loadData();
+              } catch (err) {
+                toast.error('Update failed');
+              }
+            }} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Salon Name</label>
+                  <input name="name" defaultValue={salon.name} className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Slot Duration (mins)</label>
+                  <select name="slot_duration_minutes" defaultValue={salon.slot_duration_minutes} className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl outline-none">
+                    {[30, 45, 60, 90].map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Opens At</label>
+                  <input name="opening_time" defaultValue={salon.opening_time} className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Closes At</label>
+                  <input name="closing_time" defaultValue={salon.closing_time} className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Max Bookings/Slot</label>
+                  <input type="number" name="max_concurrent_slots" defaultValue={salon.max_concurrent_slots} className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl outline-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Description</label>
+                <textarea name="description" defaultValue={salon.description} rows={3} className="w-full px-3.5 py-2 text-sm border border-gray-200 rounded-xl outline-none resize-none" />
+              </div>
+              <button type="submit" className="px-6 py-2 bg-purple-600 text-white text-sm font-bold rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-2">
+                <FaSave /> Save Changes
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

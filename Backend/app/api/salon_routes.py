@@ -249,7 +249,7 @@ async def cancel_my_booking(booking_id: str, current_user: dict = Depends(get_cu
 
 @router.get("/my-wishlist")
 async def get_wishlist(current_user: dict = Depends(get_current_user)):
-    user = users_collection.find_one({"_id": current_user.get("sub")}) or {}
+    user = users_collection.find_one({"email": current_user.get("sub")}) or {}
     wishlist = user.get("salon_wishlist", [])
     salons = [_enrich(s) for s in salons_collection.find({"id": {"$in": wishlist}})]
     return {"wishlist": salons}
@@ -432,7 +432,7 @@ async def submit_review(review: ReviewCreate, current_user: dict = Depends(get_c
         raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
     if reviews_collection.find_one({"salon_id": review.salon_id, "user_id": current_user.get("sub")}):
         raise HTTPException(status_code=400, detail="You have already reviewed this salon.")
-    user = users_collection.find_one({"_id": current_user.get("sub")}) or {}
+    user = users_collection.find_one({"email": current_user.get("sub")}) or {}
     new_review = {
         "id": str(uuid.uuid4()), "user_id": current_user.get("sub"),
         "user_name": user.get("name", current_user.get("sub", "Anonymous")),
@@ -448,13 +448,13 @@ async def submit_review(review: ReviewCreate, current_user: dict = Depends(get_c
 @router.post("/{salon_id}/wishlist")
 async def toggle_wishlist(salon_id: str, current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("sub")
-    user    = users_collection.find_one({"_id": user_id}) or {}
+    user    = users_collection.find_one({"email": user_id}) or {}
     wishlist: list = user.get("salon_wishlist", [])
     if salon_id in wishlist:
         wishlist.remove(salon_id); action = "removed"
     else:
         wishlist.append(salon_id); action = "added"
-    users_collection.update_one({"_id": user_id}, {"$set": {"salon_wishlist": wishlist}})
+    users_collection.update_one({"email": user_id}, {"$set": {"salon_wishlist": wishlist}})
     return {"status": "success", "action": action, "wishlist": wishlist}
 
 
@@ -475,7 +475,7 @@ async def register_salon(salon: SalonCreate, current_user: dict = Depends(get_cu
     salons_collection.insert_one(new_salon)
     new_salon.pop("_id", None)
     users_collection.update_one(
-        {"_id": current_user.get("sub")},
+        {"email": current_user.get("sub")},
         {"$set": {"role": "shop_owner", "salon_id": salon_id}}
     )
     return {

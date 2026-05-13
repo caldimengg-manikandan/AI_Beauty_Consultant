@@ -1,5 +1,12 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
+
+
+class ServiceItem(BaseModel):
+    name: str
+    price: float = 0.0
+    duration_mins: int = 60
+    category: str = "General"  # Hair | Skin | Spa | Makeup | Nail
 
 
 class SalonCreate(BaseModel):
@@ -22,7 +29,9 @@ class SalonCreate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     google_place_id: Optional[str] = None
-    # For price-range filtering
+    # Structured services with pricing
+    services_with_pricing: Optional[List[ServiceItem]] = []
+    # For price-range filtering (auto-calculated from services_with_pricing if provided)
     avg_service_price: Optional[float] = 0.0
     # Social / media
     instagram_url: Optional[str] = None
@@ -45,6 +54,7 @@ class SalonUpdate(BaseModel):
     is_active: Optional[bool] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    services_with_pricing: Optional[List[ServiceItem]] = None
     avg_service_price: Optional[float] = None
     instagram_url: Optional[str] = None
     website_url: Optional[str] = None
@@ -68,3 +78,7 @@ class SlotBookingCreate(BaseModel):
     category: Optional[str] = None
     gender: Optional[str] = None
     notes: Optional[str] = ""
+    # Payment fields
+    payment_status: Optional[str] = "pending"  # pending | paid | refunded
+    payment_id: Optional[str] = None
+    amount: Optional[float] = None
