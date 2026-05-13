@@ -21,6 +21,18 @@ export const getAvailableSlots = async (salonId, date) => {
   return res.data;
 };
 
+// ─── Nearby (registered salons with coordinates) ─────────────────────────────
+export const getNearbySalons = async (lat, lon, params = {}) => {
+  const res = await api.get('/api/salons/nearby', { params: { lat, lon, ...params } });
+  return res.data;
+};
+
+// ─── Google Places Proxy ──────────────────────────────────────────────────────
+export const getGooglePlacesNearby = async (lat, lon, params = {}) => {
+  const res = await api.get('/api/salons/google-places', { params: { lat, lon, ...params } });
+  return res.data;
+};
+
 // ─── Customer Booking ─────────────────────────────────────────────────────────
 export const bookSalonSlot = async (bookingData) => {
   const res = await api.post('/api/salons/book-slot', bookingData);
@@ -32,9 +44,25 @@ export const getMySlotBookings = async () => {
   return res.data;
 };
 
+export const cancelMyBooking = async (bookingId) => {
+  const res = await api.patch(`/api/salons/my-slot-bookings/${bookingId}/cancel`);
+  return res.data;
+};
+
 // ─── Reviews ─────────────────────────────────────────────────────────────────
 export const submitReview = async (reviewData) => {
   const res = await api.post('/api/salons/reviews', reviewData);
+  return res.data;
+};
+
+// ─── Wishlist ─────────────────────────────────────────────────────────────────
+export const toggleWishlist = async (salonId) => {
+  const res = await api.post(`/api/salons/${salonId}/wishlist`);
+  return res.data;
+};
+
+export const getMyWishlist = async () => {
+  const res = await api.get('/api/salons/my-wishlist');
   return res.data;
 };
 
@@ -63,5 +91,10 @@ export const updateBookingStatus = async (bookingId, status) => {
   const res = await api.patch(`/api/salons/owner/bookings/${bookingId}/status`, null, {
     params: { status }
   });
+  return res.data;
+};
+
+export const getOwnerAnalytics = async () => {
+  const res = await api.get('/api/salons/owner/analytics');
   return res.data;
 };

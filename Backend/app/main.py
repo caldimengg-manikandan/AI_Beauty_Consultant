@@ -34,12 +34,15 @@ app = FastAPI(
 )
 
 # 2️⃣ ADD MIDDLEWARE — allow localhost for dev, Vercel domain for prod
-import os
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://localhost:3000",
-    os.getenv("FRONTEND_URL", "*"),   # set this in Render dashboard
+    "http://127.0.0.1:3000",
+    os.getenv("FRONTEND_URL", "http://localhost:3000"), # Default to localhost if not set
 ]
+
+# Ensure we don't have duplicates and remove any '*' if credentials are True
+ALLOWED_ORIGINS = list(set([o for o in ALLOWED_ORIGINS if o and o != "*"]))
 
 app.add_middleware(
     CORSMiddleware,

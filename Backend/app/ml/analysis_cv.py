@@ -8,7 +8,7 @@ from app.ml.face_shape_predictor import get_face_shape_predictor
 # MIGRATION UPDATE: Switched to PyTorch. TensorFlow models disabled.
 skin_model = None
 MODEL_TYPE = None
-print("ℹ️ Analysis: Running in PyTorch Migration Mode (TF models disabled)")
+print("[INFO] Analysis: Running in PyTorch Migration Mode (TF models disabled)")
 
 # --- ADVANCED PREPROCESSING (Industry Standard) ---
 
