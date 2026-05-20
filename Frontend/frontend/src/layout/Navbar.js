@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { FaBell, FaCog, FaSignOutAlt, FaCircle, FaInfoCircle, FaMagic, FaUserAstronaut } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { useAuth, ROLE_LABELS } from '../context/AuthContext';
 
 const Navbar = ({ onMenuClick }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -9,6 +10,8 @@ const Navbar = ({ onMenuClick }) => {
     const notificationRef = useRef(null);
     const location = useLocation();
     const navigate = useNavigate();
+    const { user, logout, role } = useAuth();
+    const roleInfo = ROLE_LABELS[role] || ROLE_LABELS.user;
 
     const notifications = [
         {
@@ -48,16 +51,8 @@ const Navbar = ({ onMenuClick }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Extract username from email
-    const getUsername = () => {
-        const email = localStorage.getItem('email') || localStorage.getItem('username') || '';
-        if (email.includes('@')) {
-            return email.split('@')[0];
-        }
-        return email || 'User';
-    };
-
-    const username = getUsername();
+    // Get username from JWT via AuthContext
+    const username = user?.name || user?.sub?.split('@')[0] || 'User';
 
     // Update time every minute
     useEffect(() => {
@@ -68,8 +63,8 @@ const Navbar = ({ onMenuClick }) => {
     }, []);
 
     const handleLogout = () => {
-        localStorage.clear();
-        window.location.href = '/login';
+        logout();
+        navigate('/login');
     };
 
     const handleSettings = () => {
@@ -138,9 +133,14 @@ const Navbar = ({ onMenuClick }) => {
                     <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                     <span className="text-sm font-black text-slate-700 tracking-tight">{formatTime(currentTime)}</span>
                 </div>
-                <div className="flex flex-col items-end">
+                <div className="flex flex-col items-end gap-0.5">
                     <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{getGreeting()}</span>
-                    <span className="text-sm font-black text-indigo-600">{username}</span>
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-black text-indigo-600">{username}</span>
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase ${roleInfo.color}`}>
+                            {roleInfo.emoji} {roleInfo.label}
+                        </span>
+                    </div>
                 </div>
             </div>
 

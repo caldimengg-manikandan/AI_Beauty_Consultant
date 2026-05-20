@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { FaCamera, FaMagic, FaCut, FaPaintBrush, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaCrown, FaArrowUp, FaShieldAlt, FaStethoscope, FaPalette, FaFileDownload } from 'react-icons/fa';
+import { FaCamera, FaMagic, FaCut, FaPaintBrush, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaCrown, FaArrowUp, FaShieldAlt, FaStethoscope, FaPalette, FaFileDownload, FaStore } from 'react-icons/fa';
 import { getUserRole, getUserStats } from '../services/premiumApi';
 import { getHistory, getOnboardingStatus } from '../services/api';
 import OnboardingWizard from '../components/OnboardingWizard';
@@ -10,31 +10,39 @@ import generateBeautyReport from '../utils/generateBeautyReport';
 import { useTranslation } from 'react-i18next';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import { useAuth, ROLE_LABELS } from '../context/AuthContext';
+
+// Roles that should skip the consumer onboarding wizard
+const SKIP_ONBOARDING_ROLES = ['admin', 'expert', 'shop_owner'];
 
 const DashboardHome = () => {
   const { t } = useTranslation();
+  const { user, role } = useAuth();
   const [userRole, setUserRole] = useState(null);
   const [userStats, setUserStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true);
 
+  const displayName = user?.name || user?.sub?.split('@')[0] || 'Member';
+  const roleInfo = ROLE_LABELS[role] || ROLE_LABELS.user;
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const [role, stats, history, onboarding] = await Promise.all([
+        const [apiRole, stats, history, onboarding] = await Promise.all([
           getUserRole(),
           getUserStats(),
           getHistory(),
           getOnboardingStatus()
         ]);
-        setUserRole(role);
+        setUserRole(apiRole);
         setUserStats(stats);
         setHasCompletedOnboarding(onboarding.completed);
-        if (!onboarding.completed) {
+        // Only show onboarding for consumer roles
+        if (!onboarding.completed && !SKIP_ONBOARDING_ROLES.includes(role)) {
           setOnboardingOpen(true);
         }
-        // Take top 3 most recent
         const historyArray = Array.isArray(history) ? history : [];
         setRecentAnalyses(historyArray.slice(0, 3));
       } catch (err) {
@@ -44,7 +52,7 @@ const DashboardHome = () => {
       }
     };
     fetchUserData();
-  }, []);
+  }, [role]);
 
   const [recentAnalyses, setRecentAnalyses] = useState([]);
 
@@ -217,7 +225,7 @@ const DashboardHome = () => {
       <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-purple-100 dark:border-slate-800 shadow-xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-500/5 to-teal-500/5 rounded-full blur-3xl -mr-48 -mt-48 group-hover:scale-110 transition-transform duration-1000"></div>
         <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic mb-2 relative z-10">
-          {t('welcome')}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-teal-600">{localStorage.getItem('user_name')?.split(' ')[0] || 'Member'}!</span>
+          {t('welcome')}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-teal-600">{displayName.split(' ')[0]}!</span>
         </h1>
         <p className="text-slate-600 dark:text-slate-400 text-lg relative z-10 font-medium">
           Your personalized AI-powered beauty consultant is ready to help you achieve your best look.

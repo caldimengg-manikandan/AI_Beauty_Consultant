@@ -158,6 +158,30 @@ def signup(user: UserAuth):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ─── Get Current User Profile ────────────────────────────────────────────────
+@router.get("/me")
+def get_me(current_user: dict = Depends(get_current_user)):
+    """Returns the authenticated user's profile including role."""
+    user_email = current_user.get("sub")
+    db_user = user_collection.find_one({"email": user_email}, {"password": 0})
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db_user.pop("_id", None)
+    return {
+        "email": db_user.get("email"),
+        "name": db_user.get("name", ""),
+        "phone": db_user.get("phone", ""),
+        "role": db_user.get("role", "user"),
+        "account_type": db_user.get("account_type", "customer"),
+        "business_name": db_user.get("business_name"),
+        "business_city": db_user.get("business_city"),
+        "subscription_end": str(db_user.get("subscription_end", "")),
+        "created_at": str(db_user.get("created_at", "")),
+        "analysis_count_total": db_user.get("analysis_count_total", 0),
+        "analysis_count_this_month": db_user.get("analysis_count_this_month", 0),
+    }
+
 # ─── Delete Account ───────────────────────────────────────────────────────────
 @router.delete("/delete-account")
 def delete_account(current_user: dict = Depends(get_current_user)):

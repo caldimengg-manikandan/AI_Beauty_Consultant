@@ -1,15 +1,25 @@
 import { Navigate } from "react-router-dom";
-import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
-export default function ProtectedRoute({ children, allowedRoles }) {
-  const { token, user } = useContext(AuthContext);
+/**
+ * ProtectedRoute — guards routes behind authentication and optional role checks.
+ *
+ * Props:
+ *   allowedRoles?: string[]  — if provided, user's role must be in this list
+ *   permission?: string      — if provided, user must have this RBAC permission
+ */
+export default function ProtectedRoute({ children, allowedRoles, permission }) {
+  const { token, can, hasRole } = useAuth();
 
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && !hasRole(...allowedRoles)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (permission && !can(permission)) {
     return <Navigate to="/dashboard" replace />;
   }
 

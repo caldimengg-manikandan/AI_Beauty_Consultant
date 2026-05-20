@@ -10,9 +10,11 @@ import {
     Search,
     CheckCircle2,
     XCircle,
-    Megaphone
+    Megaphone,
+    LifeBuoy,
+    Clock
 } from 'lucide-react';
-import { getAdminStats, getAllUsers, updateUserRole, broadcastAnnouncement, updateUserStatus } from '../../services/api';
+import { getAdminStats, getAllUsers, updateUserRole, broadcastAnnouncement, updateUserStatus, getSupportTickets, updateTicketStatus } from '../../services/api';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState(null);
@@ -21,6 +23,8 @@ const AdminDashboard = () => {
     const [announcement, setAnnouncement] = useState("");
     const [broadcasting, setBroadcasting] = useState(false);
     const [search, setSearch] = useState("");
+    const [tickets, setTickets] = useState([]);
+    const [activeTab, setActiveTab] = useState('users'); // users | support
 
     useEffect(() => {
         fetchData();
@@ -29,12 +33,14 @@ const AdminDashboard = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [statsData, usersData] = await Promise.all([
+            const [statsData, usersData, ticketsData] = await Promise.all([
                 getAdminStats(),
-                getAllUsers()
+                getAllUsers(),
+                getSupportTickets().catch(() => [])
             ]);
             setStats(statsData);
             setUsers(usersData);
+            setTickets(ticketsData);
         } catch (error) {
             console.error("Failed to fetch admin data", error);
         } finally {
@@ -81,6 +87,15 @@ const AdminDashboard = () => {
         u.email.toLowerCase().includes(search.toLowerCase()) ||
         u.role.toLowerCase().includes(search.toLowerCase())
     );
+
+    const handleResolveTicket = async (id) => {
+        try {
+            await updateTicketStatus(id, 'resolved');
+            setTickets(tickets.map(t => t.id === id ? { ...t, status: 'resolved' } : t));
+        } catch (error) {
+            alert("Failed to resolve ticket");
+        }
+    };
 
     if (loading) return (
         <div className="flex items-center justify-center h-[calc(100vh-200px)]">
@@ -139,9 +154,27 @@ const AdminDashboard = () => {
                 />
             </div>
 
+            {/* View Toggle Tabs */}
+            <div className="flex gap-2 border-b border-slate-200 pb-2">
+                <button 
+                  onClick={() => setActiveTab('users')} 
+                  className={`px-6 py-2.5 rounded-t-xl font-bold transition-colors ${activeTab === 'users' ? 'bg-white text-indigo-600 border-t border-x border-slate-200' : 'text-slate-500 hover:text-slate-800'}`}>
+                  Member Directory
+                </button>
+                <button 
+                  onClick={() => setActiveTab('support')} 
+                  className={`px-6 py-2.5 rounded-t-xl font-bold transition-colors ${activeTab === 'support' ? 'bg-white text-indigo-600 border-t border-x border-slate-200' : 'text-slate-500 hover:text-slate-800 flex items-center gap-2'}`}>
+                  Support Tickets
+                  {tickets.filter(t => t.status === 'open').length > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">{tickets.filter(t => t.status === 'open').length}</span>
+                  )}
+                </button>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* User Management */}
-                <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+                {/* Main Content Area based on Tab */}
+                {activeTab === 'users' && (
+                  <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                         <h2 className="text-xl font-bold text-slate-800">Member Directory</h2>
                         <div className="relative">
@@ -212,7 +245,52 @@ const AdminDashboard = () => {
                             </tbody>
                         </table>
                     </div>
-                </div>
+                  </div>
+                )}
+
+                {activeTab === 'support' && (
+                  <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden p-6">
+                      <div className="flex justify-between items-center mb-6">
+                          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><LifeBuoy className="text-indigo-500" /> Active Support Tickets</h2>
+                      </div>
+                      <div className="space-y-4">
+                          {tickets.length === 0 ? (
+                              <div className="text-center py-10 text-slate-400 font-medium">No support tickets found.</div>
+                          ) : (
+                              tickets.map(ticket => (
+                                  <div key={ticket.id} className={`p-4 rounded-2xl border ${ticket.status === 'resolved' ? 'bg-slate-50 border-slate-200' : 'bg-white border-amber-200 shadow-sm'}`}>
+                                      <div className="flex justify-between items-start mb-2">
+                                          <div>
+                                              <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${ticket.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                  {ticket.priority} Priority
+                                              </span>
+                                              <span className="text-[10px] font-bold text-slate-400 ml-2">ID: {ticket.id}</span>
+                                          </div>
+                                          <span className={`text-xs font-bold flex items-center gap-1 ${ticket.status === 'resolved' ? 'text-emerald-500' : 'text-amber-500'}`}>
+                                              {ticket.status === 'resolved' ? <CheckCircle2 size={14} /> : <Clock size={14} />} 
+                                              {ticket.status}
+                                          </span>
+                                      </div>
+                                      <h3 className="font-bold text-slate-900 mt-2">{ticket.subject}</h3>
+                                      <p className="text-sm text-slate-600 mt-1">{ticket.message}</p>
+                                      
+                                      <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-100">
+                                          <div className="text-xs text-slate-500 font-medium">From: {ticket.user_email}</div>
+                                          {ticket.status === 'open' && (
+                                              <button 
+                                                onClick={() => handleResolveTicket(ticket.id)}
+                                                className="px-4 py-2 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-xl hover:bg-indigo-100 transition-colors"
+                                              >
+                                                  Mark Resolved
+                                              </button>
+                                          )}
+                                      </div>
+                                  </div>
+                              ))
+                          )}
+                      </div>
+                  </div>
+                )}
 
                 {/* Console / Broadcast Area */}
                 <div className="space-y-6">

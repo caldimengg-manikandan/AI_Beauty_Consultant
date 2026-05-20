@@ -215,3 +215,23 @@ def require_premium(current_user: dict = Depends(get_current_user)):
     if info["role"] != ROLE_PREMIUM and info["role"] != ROLE_ADMIN:
         raise HTTPException(status_code=403, detail="Premium required")
     return current_user
+
+def require_shop_owner(current_user: dict = Depends(get_current_user)):
+    """Require shop_owner or admin role for B2B endpoints."""
+    info = get_user_role_info(current_user["sub"])
+    if info["role"] not in [ROLE_ADMIN, "shop_owner"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. This feature is only available to registered Shop Owners."
+        )
+    return current_user
+
+def require_expert(current_user: dict = Depends(get_current_user)):
+    """Require expert or admin role."""
+    info = get_user_role_info(current_user["sub"])
+    if info["role"] not in [ROLE_ADMIN, ROLE_EXPERT]:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. Expert credentials required."
+        )
+    return current_user

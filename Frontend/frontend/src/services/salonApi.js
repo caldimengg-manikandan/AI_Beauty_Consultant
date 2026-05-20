@@ -142,7 +142,7 @@ export const fetchRealWorldSalons = async (lat, lon, radiusMeters = 5000) => {
       const isSalon = el.tags?.shop === 'hairdresser';
       
       return {
-        id: \`osm-\${el.id}\`,
+        id: `osm-${el.id}`,
         name: el.tags?.name || (isSpa ? 'Wellness Spa' : isSalon ? 'Hair Salon' : 'Beauty Parlour'),
         salon_type: isSpa ? 'spa' : isSalon ? 'salon' : 'parlour',
         gender_served: el.tags?.female === 'yes' && el.tags?.male !== 'yes' ? 'Female' : 'Unisex',

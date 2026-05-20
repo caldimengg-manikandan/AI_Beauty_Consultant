@@ -18,7 +18,7 @@ class UserLogin(BaseModel):
 
 class UserRole(BaseModel):
     """User role and subscription information"""
-    role: str = "normal"  # "normal" or "premium"
+    role: str = "CUSTOMER"  # "CUSTOMER", "SALON_OWNER", "STAFF", "ADMIN"
     subscription_start: Optional[datetime] = None
     subscription_end: Optional[datetime] = None
     features: list = []  # List of enabled features
@@ -27,7 +27,10 @@ class UserRole(BaseModel):
 class UserProfile(BaseModel):
     """Complete user profile with role"""
     email: EmailStr
-    role: str = "normal"
+    role: str = "CUSTOMER" # CUSTOMER, SALON_OWNER, STAFF, ADMIN
+    phone: Optional[str] = None
+    gender: Optional[str] = None
+    preferences: Optional[dict] = {}
     subscription_start: Optional[datetime] = None
     subscription_end: Optional[datetime] = None
     created_at: Optional[datetime] = None

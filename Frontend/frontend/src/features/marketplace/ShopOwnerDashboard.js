@@ -7,6 +7,18 @@ import {
 import { getMySalon, registerSalon, updateMySalon, getOwnerBookings, updateBookingStatus } from '../../services/salonApi';
 import { toast } from 'react-toastify';
 
+// ── New Enterprise B2B Modules ────────────────────────────────────────────────
+import StaffManagement from '../partner/StaffManagement';
+import BillingPOS from '../partner/BillingPOS';
+import InventoryPanel from '../partner/InventoryPanel';
+import MarketingTools from '../partner/MarketingTools';
+import BusinessInsights from '../partner/BusinessInsights';
+import LiveWaitlist from '../partner/LiveWaitlist';
+import DeveloperAPI from '../partner/DeveloperAPI';
+import SupplyChain from '../partner/SupplyChain';
+import CustomForms from '../partner/CustomForms';
+import HRPayroll from '../partner/HRPayroll';
+
 const STATUS_COLORS = {
   confirmed: 'bg-green-100 text-green-700',
   pending:   'bg-amber-100 text-amber-700',
@@ -153,12 +165,28 @@ const RegisterForm = ({ onSuccess }) => {
 };
 
 // ── Owner Dashboard ────────────────────────────────────────────────────────────
-const ShopOwnerDashboard = () => {
+
+// Map URL section names to internal tab keys
+const SECTION_TO_TAB = {
+  staff: 'staff',
+  hr: 'payroll',
+  inventory: 'inventory',
+  invoices: 'billing',
+  campaigns: 'marketing',
+  coupons: 'marketing',
+  insights: 'insights',
+  'supply-chain': 'supply',
+  forms: 'forms',
+  webhooks: 'developer',
+};
+
+const ShopOwnerDashboard = ({ section }) => {
   const [salon, setSalon] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasNoSalon, setHasNoSalon] = useState(false);
-  const [activeTab, setActiveTab] = useState('bookings');
+  // If a section prop is passed (from sidebar nav), use its mapped tab as default
+  const [activeTab, setActiveTab] = useState(SECTION_TO_TAB[section] || 'bookings');
   const [filterDate, setFilterDate] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
@@ -244,10 +272,23 @@ const ShopOwnerDashboard = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-        {[['bookings', 'Bookings'], ['profile', 'My Profile']].map(([k, l]) => (
+      <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
+        {[
+          ['bookings', 'Bookings'], 
+          ['waitlist', 'Live Waitlist'],
+          ['insights', 'AI Insights'],
+          ['staff', 'Staff'], 
+          ['payroll', 'HR & Payroll'],
+          ['forms', 'Custom Forms'],
+          ['billing', 'Billing POS'], 
+          ['inventory', 'Inventory'], 
+          ['marketing', 'Marketing'], 
+          ['supply', 'B2B Supply Chain'],
+          ['developer', 'API & Webhooks'],
+          ['profile', 'My Profile']
+        ].map(([k, l]) => (
           <button key={k} onClick={() => setActiveTab(k)}
-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === k ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${activeTab === k ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
             {l}
           </button>
         ))}
@@ -414,6 +455,19 @@ const ShopOwnerDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* New Enterprise Tabs */}
+      {activeTab === 'waitlist' && <LiveWaitlist />}
+      {activeTab === 'insights' && <BusinessInsights />}
+      {activeTab === 'staff' && <StaffManagement />}
+      {activeTab === 'payroll' && <HRPayroll />}
+      {activeTab === 'forms' && <CustomForms />}
+      {activeTab === 'billing' && <BillingPOS />}
+      {activeTab === 'inventory' && <InventoryPanel />}
+      {activeTab === 'marketing' && <MarketingTools />}
+      {activeTab === 'supply' && <SupplyChain />}
+      {activeTab === 'developer' && <DeveloperAPI />}
+
     </div>
   );
 };

@@ -128,6 +128,18 @@ export const broadcastAnnouncement = async (message) => {
   return res.data;
 };
 
+// --- SUPPORT (ADMIN) ENDPOINTS ---
+export const getSupportTickets = async (status=null) => {
+  const params = status ? { status } : {};
+  const res = await api.get("/api/support/admin/tickets", { params });
+  return res.data;
+};
+
+export const updateTicketStatus = async (ticketId, status) => {
+  const res = await api.put(`/api/support/admin/tickets/${ticketId}/status`, null, { params: { status } });
+  return res.data;
+};
+
 // --- EXPERT ENDPOINTS ---
 export const getReviewQueue = async () => {
   const res = await api.get("/api/expert/review-queue");
