@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaArrowLeft, FaMapMarkerAlt, FaStar, FaRegStar, FaStarHalfAlt,
   FaClock, FaPhone, FaEnvelope, FaCheckCircle, FaTimes,
-  FaCalendarAlt, FaRegClock, FaExclamationCircle, FaRupeeSign
+  FaCalendarAlt, FaRegClock, FaExclamationCircle, FaRupeeSign,
+  FaHeart, FaShare
 } from 'react-icons/fa';
 import { getSalon, getSalonReviews, getAvailableSlots, bookSalonSlot, submitReview } from '../../services/salonApi';
 import PaymentButton from '../../components/PaymentButton';
@@ -62,12 +63,13 @@ const DEMO_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2
 const SalonDetailPage = () => {
   const { salonId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [salon, setSalon] = useState(null);
+  const [salon, setSalon] = useState(location.state?.salon || null);
   const [reviews, setReviews] = useState([]);
   const [slots, setSlots] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview'); // overview | book | reviews
+  const [loading, setLoading] = useState(!location.state?.salon);
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'overview'); // overview | book | reviews
 
   // Booking state
   const [selectedDate, setSelectedDate] = useState('');
@@ -86,28 +88,30 @@ const SalonDetailPage = () => {
   const [reviewError, setReviewError] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  const isDemo = salonId?.startsWith('d');
+  const isDemo = salonId?.startsWith('d') || salonId?.startsWith('loc') || salonId?.startsWith('osm');
 
   // Fetch salon + reviews
   useEffect(() => {
     (async () => {
-      setLoading(true);
+      // If we already have the salon from router state, we don't need to show a big loader or override it with generic demo
+      if (!salon) setLoading(true);
+      
       if (isDemo) {
-        setSalon(DEMO_SALON);
+        if (!salon) setSalon(DEMO_SALON); // Fallback to generic if accessed directly via URL
         setReviews(DEMO_REVIEWS);
       } else {
         try {
           const [s, r] = await Promise.all([getSalon(salonId), getSalonReviews(salonId)]);
-          setSalon(s);
+          if (!salon) setSalon(s);
           setReviews(r);
         } catch {
-          setSalon(DEMO_SALON);
+          if (!salon) setSalon(DEMO_SALON);
           setReviews(DEMO_REVIEWS);
         }
       }
       setLoading(false);
     })();
-  }, [salonId, isDemo]);
+  }, [salonId, isDemo, salon]);
 
   // Fetch slots when date changes
   const fetchSlots = useCallback(async (date) => {
@@ -240,8 +244,8 @@ const SalonDetailPage = () => {
               </span>
               <h1 className="text-2xl font-bold">{salon.name}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <StarRating rating={salon.avg_rating || 0} />
-                <span className="text-sm font-bold">{(salon.avg_rating || 0).toFixed(1)}</span>
+                <StarRating rating={Number(salon.avg_rating || 0)} />
+                <span className="text-sm font-bold">{Number(salon.avg_rating || 0).toFixed(1)}</span>
                 <span className="text-white/70 text-xs">({salon.review_count || 0} reviews)</span>
               </div>
               <div className="flex items-center gap-1.5 mt-2 text-white/80 text-sm">

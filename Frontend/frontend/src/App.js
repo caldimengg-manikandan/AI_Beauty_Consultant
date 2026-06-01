@@ -33,6 +33,7 @@ import ExpertDashboard from "./pages/expert/ExpertDashboard";
 import SalonMarketplace from "./features/marketplace/SalonMarketplace";
 import SalonDetailPage from "./features/marketplace/SalonDetailPage";
 import EcommerceStore from "./features/ecommerce/EcommerceStore";
+import ShoppableRoutines from "./features/ecommerce/ShoppableRoutines";
 import ReelsFeed from "./features/reels/ReelsFeed";
 import FranchiseHQ from "./features/partner/FranchiseHQ";
 import ShopOwnerDashboard from "./features/marketplace/ShopOwnerDashboard";
@@ -100,6 +101,7 @@ function App() {
             <Route path="services" element={<ServicesPage />} />
             <Route path="reels" element={<ReelsFeed />} />
             <Route path="store" element={<EcommerceStore />} />
+            <Route path="routine-shop" element={<ShoppableRoutines />} />
             <Route path="my-bookings" element={<UserBookings />} />
 
             {/* ── Rewards — all ── */}

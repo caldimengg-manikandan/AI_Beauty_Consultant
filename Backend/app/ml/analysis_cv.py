@@ -487,11 +487,37 @@ def analyze_skin_cv(image, landmarks):
     else:
         texture_score = 0.5
 
+    # --- HYDRATION (Brightness of cheeks) ---
+    if cheek_roi.size > 0:
+        brightness = np.mean(cheek_roi)
+        hydration_score = np.clip((brightness / 255.0) * 100, 30, 95)
+    else:
+        hydration_score = 60.0
+
+    # --- EVENNESS (Std deviation of cheeks) ---
+    if cheek_roi.size > 0:
+        std_dev = np.std(cheek_roi)
+        evenness_score = np.clip(100 - (std_dev * 2.0), 30, 95)
+    else:
+        evenness_score = 60.0
+
+    # --- ADVANCED METRICS FOR DASHBOARD ---
+    # Derived from physical properties
+    barrier_score = (hydration_score * 0.6) + (evenness_score * 0.4)
+    texture_100 = texture_score * 100
+    pores_score = np.clip(texture_100 * 0.85, 30, 90)
+    elasticity_score = np.clip((hydration_score * 0.5) + (texture_100 * 0.5), 40, 95)
+
     # --- FINAL REFINEMENT (No rounding, high precision for progress tracking) ---
     return {
         "acne": float(round(final_acne, 3)),
         "oiliness": float(round(final_oil, 3)),
-        "texture": float(round(texture_score, 3))
+        "texture": float(round(texture_score, 3)),
+        "hydration": float(round(hydration_score / 100.0, 3)),
+        "evenness": float(round(evenness_score / 100.0, 3)),
+        "barrier": float(round(barrier_score / 100.0, 3)),
+        "pores": float(round(pores_score / 100.0, 3)),
+        "elasticity": float(round(elasticity_score / 100.0, 3))
     }
 
 def generate_annotated_image(image, landmarks, gender=None):

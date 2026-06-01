@@ -17,7 +17,7 @@ const SKIP_ONBOARDING_ROLES = ['admin', 'expert', 'shop_owner'];
 
 const DashboardHome = () => {
   const { t } = useTranslation();
-  const { user, role } = useAuth();
+  const { user, role, profile } = useAuth();
   const [userRole, setUserRole] = useState(null);
   const [userStats, setUserStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -133,14 +133,14 @@ const DashboardHome = () => {
       link: '/dashboard/hair-styling',
       gradient: 'from-orange-600 to-red-600',
     },
-    {
+    ...(profile?.gender?.toLowerCase() !== 'male' ? [{
       title: 'Nail Studio',
       desc: 'Discover nail art that matches your style',
       icon: <FaPaintBrush className="text-4xl" />,
       link: '/dashboard/nail-styling',
       gradient: 'from-teal-600 to-cyan-600',
       badge: 'New'
-    },
+    }] : []),
     {
       title: 'Style Lookbook',
       desc: 'Personalized color palette & wardrobe',

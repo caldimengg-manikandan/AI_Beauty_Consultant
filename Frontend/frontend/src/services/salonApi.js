@@ -127,7 +127,7 @@ export const fetchRealWorldSalons = async (lat, lon, radiusMeters = 5000) => {
     const query = `
       [out:json][timeout:15];
       (
-        node["shop"~"beauty|hairdresser"](around:${radiusMeters},${lat},${lon});
+        node["shop"~"beauty|hairdresser|massage|cosmetics|tattoo"](around:${radiusMeters},${lat},${lon});
         node["leisure"="spa"](around:${radiusMeters},${lat},${lon});
       );
       out body;
@@ -137,9 +137,21 @@ export const fetchRealWorldSalons = async (lat, lon, radiusMeters = 5000) => {
     if (!res.ok) throw new Error('Failed to fetch from OSM');
     const data = await res.json();
     
+    // Haversine distance calculator
+    const getDistanceKm = (lat1, lon1, lat2, lon2) => {
+      const R = 6371; // km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    };
+    
     return data.elements.filter(el => el.tags && el.tags.name).map(el => {
-      const isSpa = el.tags?.leisure === 'spa';
-      const isSalon = el.tags?.shop === 'hairdresser';
+      const isSpa = el.tags?.leisure === 'spa' || el.tags?.shop === 'massage';
+      const isSalon = el.tags?.shop === 'hairdresser' || el.tags?.shop === 'tattoo';
+      const dist = getDistanceKm(lat, lon, el.lat, el.lon);
       
       return {
         id: `osm-${el.id}`,
@@ -148,18 +160,19 @@ export const fetchRealWorldSalons = async (lat, lon, radiusMeters = 5000) => {
         gender_served: el.tags?.female === 'yes' && el.tags?.male !== 'yes' ? 'Female' : 'Unisex',
         city: el.tags?.['addr:city'] || 'Nearby Area',
         address: [el.tags?.['addr:street'], el.tags?.['addr:housenumber']].filter(Boolean).join(', ') || 'Local Location',
-        avg_rating: (Math.random() * (5.0 - 3.8) + 3.8).toFixed(1), // mock rating
+        avg_rating: (Math.random() * (5.0 - 4.0) + 4.0).toFixed(1), // mock rating
         review_count: Math.floor(Math.random() * 300) + 20,
         is_active: true,
-        description: 'Real-world salon fetched securely from OpenStreetMap. ' + (el.tags?.description || ''),
+        description: 'Real-world local salon fetched securely from OpenStreetMap. ' + (el.tags?.description || ''),
         services_offered: isSpa ? ['Swedish Massage', 'Hot Stone', 'Aromatherapy'] : isSalon ? ['Hair Cut', 'Hair Color', 'Keratin'] : ['Facial', 'Threading', 'Waxing'],
         opening_time: el.tags?.opening_hours || '9:00 AM',
         closing_time: '8:00 PM',
         lat: el.lat,
         lon: el.lon,
+        distance_km: parseFloat(dist.toFixed(2)),
         isReal: true // Flag to indicate it's real data
       };
-    });
+    }).sort((a, b) => a.distance_km - b.distance_km); // Sort by distance ascending!
   } catch (error) {
     console.error("Overpass API error:", error);
     return [];

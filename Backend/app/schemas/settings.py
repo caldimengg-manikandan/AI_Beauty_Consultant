@@ -1,7 +1,7 @@
 """
 Settings Pydantic schemas for validation
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 
@@ -21,6 +21,7 @@ class CameraSettings(BaseModel):
 
 
 class AIModelSettings(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     model_version: str = "latest"
     analysis_speed: str = "balanced"
     confidence_threshold: int = 70

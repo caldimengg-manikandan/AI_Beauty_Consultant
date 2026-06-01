@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from "react";
 import { jwtDecode } from "jwt-decode";
+import api from "../services/api";
 
 export const AuthContext = createContext(null);
 
@@ -82,6 +83,7 @@ export const ROLE_PERMISSIONS = {
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     if (token) {
@@ -93,12 +95,17 @@ export const AuthProvider = ({ children }) => {
           return;
         }
         setUser(decoded);
+        api.get("/api/onboarding/profile")
+          .then(res => setProfile(res.data?.profile || res.data))
+          .catch(e => console.error("Failed to fetch profile", e));
       } catch (error) {
         console.error("Failed to decode token:", error);
         setUser(null);
+        setProfile(null);
       }
     } else {
       setUser(null);
+      setProfile(null);
     }
   }, [token]);
 
@@ -142,6 +149,7 @@ export const AuthProvider = ({ children }) => {
       isAdmin,
       isPremium,
       role: user?.role || "user",
+      profile,
     }}>
       {children}
     </AuthContext.Provider>

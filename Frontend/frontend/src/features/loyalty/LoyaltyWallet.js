@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FiGift, FiAward, FiStar, FiClock, FiCopy, FiChevronRight } from 'react-icons/fi';
+import { FiGift, FiAward, FiStar, FiClock, FiCopy, FiChevronRight, FiCheck } from 'react-icons/fi';
 import { getWallet, getLoyaltyTransactions, getTierInfo, applyReferral } from '../../services/loyaltyApi';
 import { toast } from 'react-toastify';
 

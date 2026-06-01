@@ -243,7 +243,12 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
                 "skin_analysis": {
                     "acne": float(skin_scores.get('acne', 0)),
                     "oiliness": float(skin_scores.get('oiliness', 0)),
-                    "texture": float(skin_scores.get('texture', 0))
+                    "texture": float(skin_scores.get('texture', 0)),
+                    "hydration": float(skin_scores.get('hydration', 60)),
+                    "barrier": float(skin_scores.get('barrier', 60)),
+                    "evenness": float(skin_scores.get('evenness', 60)),
+                    "pores": float(skin_scores.get('pores', 60)),
+                    "elasticity": float(skin_scores.get('elasticity', 60))
                 },
                 "color_analysis": {
                     "skin_tone": skin_tone,

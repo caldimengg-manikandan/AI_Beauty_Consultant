@@ -32,16 +32,23 @@ const severity = (score) => {
 const buildDashboard = (analysis) => {
     const skin = analysis || {};
 
-    // Seed deterministic pseudo-random off user data so numbers are consistent
+    // Seed deterministic pseudo-random off user data as fallback
     const seed  = (skin.confidence || 82) + (skin.gender === 'Female' ? 7 : 0);
     const rng   = (base, spread) => clamp(base + ((seed % spread) - spread / 2));
 
-    const hydration    = rng(68, 20);
-    const barrier      = rng(72, 18);
-    const evenness     = rng(65, 22);
-    const texture      = rng(70, 16);
-    const poresScore   = rng(60, 24);
-    const elasticity   = rng(74, 18);
+    const scores = skin.skinScores || skin.skin_analysis || {};
+
+    const hydration    = scores.hydration !== undefined ? Math.round(scores.hydration) : rng(68, 20);
+    const barrier      = scores.barrier !== undefined ? Math.round(scores.barrier) : rng(72, 18);
+    const evenness     = scores.evenness !== undefined ? Math.round(scores.evenness) : rng(65, 22);
+    
+    // Texture from backend is 0-1 or 0-100? If it's 0-1, multiply by 100
+    let textureVal = scores.texture;
+    if (textureVal !== undefined && textureVal <= 1.0) textureVal *= 100;
+    
+    const texture      = textureVal !== undefined ? Math.round(textureVal) : rng(70, 16);
+    const poresScore   = scores.pores !== undefined ? Math.round(scores.pores) : rng(60, 24);
+    const elasticity   = scores.elasticity !== undefined ? Math.round(scores.elasticity) : rng(74, 18);
 
     const overall = Math.round((hydration + barrier + evenness + texture + poresScore + elasticity) / 6);
 

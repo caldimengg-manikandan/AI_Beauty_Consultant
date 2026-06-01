@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.auth.jwt_handler import get_current_user
-from app.mongodb.collections import reels_collection, salons_collection, users_collection
-from bson import ObjectId
+from app.mongodb.collections import reels_collection, salons_collection
 import uuid
 from datetime import datetime
 
@@ -113,3 +112,58 @@ async def toggle_reel_like(reel_id: str, current_user: dict = Depends(get_curren
     )
     
     return {"status": "success", "is_liked": is_liked, "likes_count": reel.get("likes_count", 0) + inc}
+
+from fastapi import File, UploadFile, Form
+import os
+
+@router.post("/upload")
+async def upload_reel(
+    video: UploadFile = File(...),
+    caption: str = Form(""),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a new beauty reel video."""
+    user_id = current_user.get("sub")
+    
+    # 1. Save video file to disk
+    filename = f"reel_{uuid.uuid4().hex}.mp4"
+    file_path = os.path.join("static/uploads", filename)
+    os.makedirs("static/uploads", exist_ok=True)
+    
+    try:
+        video_bytes = await video.read()
+        with open(file_path, "wb") as f:
+            f.write(video_bytes)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save video: {str(e)}")
+
+    BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+    video_url = f"{BASE_URL}/static/uploads/{filename}"
+    
+    # Create a new reel document
+    # Assign some dummy salon properties if the user isn't a salon owner yet
+    salon = salons_collection.find_one({})
+    salon_id = str(salon["_id"]) if salon else "default_salon_123"
+    salon_name = salon.get("name", "Luxe Studio") if salon else "Luxe Studio"
+
+    new_reel = {
+        "id": str(uuid.uuid4()),
+        "salon_id": salon_id,
+        "salon_name": salon_name,
+        "stylist_name": user_id.split('@')[0].capitalize(),
+        "video_url": video_url,
+        "thumbnail_url": "https://images.unsplash.com/photo-1595152772835-219674b2a8a6?auto=format&fit=crop&w=400&q=80",
+        "caption": caption,
+        "likes_count": 0,
+        "comments_count": 0,
+        "shares_count": 0,
+        "liked_by": [],
+        "created_at": datetime.utcnow().isoformat()
+    }
+    
+    reels_collection.insert_one(new_reel)
+    new_reel.pop("_id", None)
+    new_reel["is_liked"] = False
+    
+    return {"status": "success", "message": "Reel uploaded successfully!", "reel": new_reel}
+

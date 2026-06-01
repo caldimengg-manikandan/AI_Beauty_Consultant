@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FiHeart, FiMessageCircle, FiShare2, FiMoreVertical, FiPlay, FiPause, FiCalendar } from 'react-icons/fi';
-import { getReelsFeed, toggleReelLike } from '../../services/reelsApi';
+import React, { useState, useEffect, useRef } from 'react';
+import { FiHeart, FiMessageCircle, FiShare2, FiPlay, FiCalendar, FiPlus, FiX, FiUploadCloud } from 'react-icons/fi';
+import { getReelsFeed, toggleReelLike, uploadReel } from '../../services/reelsApi';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
@@ -139,23 +139,29 @@ export default function ReelsFeed() {
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef(null);
 
+  // Upload Modal State
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadCaption, setUploadCaption] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
   useEffect(() => {
-    const loadReels = async () => {
-      try {
-        const res = await getReelsFeed();
-        setReels(res);
-      } catch (e) {
-        toast.error('Failed to load beauty feed');
-      } finally {
-        setLoading(false);
-      }
-    };
     loadReels();
   }, []);
 
+  const loadReels = async () => {
+    try {
+      const res = await getReelsFeed();
+      setReels(res);
+    } catch (e) {
+      toast.error('Failed to load beauty feed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleScroll = () => {
     if (!containerRef.current) return;
-    // Calculate which reel is currently in view
     const { scrollTop, clientHeight } = containerRef.current;
     const index = Math.round(scrollTop / clientHeight);
     if (index !== activeIndex) {
@@ -163,7 +169,44 @@ export default function ReelsFeed() {
     }
   };
 
-  if (loading) {
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setUploadFile(e.target.files[0]);
+    }
+  };
+
+  const handleUploadSubmit = async (e) => {
+    e.preventDefault();
+    if (!uploadFile) {
+      toast.error("Please select a video to upload");
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('video', uploadFile);
+    formData.append('caption', uploadCaption);
+
+    try {
+      const res = await uploadReel(formData);
+      toast.success(res.message || "Reel uploaded!");
+      setIsUploadOpen(false);
+      setUploadFile(null);
+      setUploadCaption('');
+      // Reload the feed to show the new reel at the top
+      loadReels();
+      // Scroll to top
+      if (containerRef.current) {
+        containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Failed to upload reel");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  if (loading && reels.length === 0) {
     return (
       <div className="flex items-center justify-center h-full min-h-screen bg-slate-900">
         <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
@@ -172,7 +215,79 @@ export default function ReelsFeed() {
   }
 
   return (
-    <div className="md:p-4 bg-slate-950 min-h-screen flex items-center justify-center overflow-hidden">
+    <div className="md:p-4 bg-slate-950 min-h-screen flex items-center justify-center overflow-hidden relative">
+      
+      {/* Upload FAB */}
+      <button 
+        onClick={() => setIsUploadOpen(true)}
+        className="absolute top-6 right-6 md:top-10 md:right-10 z-50 w-14 h-14 bg-gradient-to-tr from-pink-500 to-indigo-500 text-white rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(236,72,153,0.5)] hover:scale-110 active:scale-95 transition-all"
+      >
+        <FiPlus size={28} />
+      </button>
+
+      {/* Upload Modal */}
+      {isUploadOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 w-full max-w-md rounded-[2rem] shadow-2xl border border-slate-700 overflow-hidden relative">
+            <button 
+              onClick={() => setIsUploadOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              <FiX size={24} />
+            </button>
+            <div className="p-8">
+              <h2 className="text-2xl font-black text-white mb-6">Create New Reel</h2>
+              <form onSubmit={handleUploadSubmit} className="space-y-6">
+                
+                {/* File Drop/Select Area */}
+                <div className="relative border-2 border-dashed border-slate-600 rounded-2xl p-8 flex flex-col items-center justify-center text-center hover:border-indigo-500 transition-colors bg-slate-800/50">
+                  <FiUploadCloud size={40} className="text-indigo-400 mb-3" />
+                  <span className="text-slate-300 font-medium mb-1">
+                    {uploadFile ? uploadFile.name : "Tap to upload video"}
+                  </span>
+                  <span className="text-xs text-slate-500">MP4, WebM up to 50MB</span>
+                  <input 
+                    type="file" 
+                    accept="video/*"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                </div>
+
+                {/* Caption Input */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Caption & Hashtags</label>
+                  <textarea 
+                    value={uploadCaption}
+                    onChange={(e) => setUploadCaption(e.target.value)}
+                    placeholder="Write a catchy description..."
+                    rows={3}
+                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-4 focus:outline-none focus:border-indigo-500 resize-none"
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <button 
+                  type="submit" 
+                  disabled={isUploading || !uploadFile}
+                  className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-black rounded-xl hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isUploading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    "Publish Reel"
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reels Feed Container */}
       <div 
         ref={containerRef}
         onScroll={handleScroll}

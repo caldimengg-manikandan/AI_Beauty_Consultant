@@ -66,7 +66,7 @@ const NavSection = ({ title, color = "text-slate-400", children, collapsible = f
 const Sidebar = ({ onClose }) => {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
-  const { user, can, role } = useAuth();
+  const { user, can, role, profile } = useAuth();
 
   const roleInfo = ROLE_LABELS[role] || ROLE_LABELS.user;
 
@@ -166,7 +166,9 @@ const Sidebar = ({ onClose }) => {
         {/* ── STYLING STUDIO — all roles ── */}
         <NavSection title="💅 Styling Studio" collapsible>
           <NavItem to="/dashboard/hair-styling" icon={<FaCut />} label="Hair Styling" />
-          <NavItem to="/dashboard/nail-styling" icon={<FaPaintBrush />} label="Nail Studio" />
+          {profile?.gender?.toLowerCase() !== 'male' && (
+            <NavItem to="/dashboard/nail-styling" icon={<FaPaintBrush />} label="Nail Studio" />
+          )}
           <NavItem to="/dashboard/virtual-studio" icon={<FaUserCircle />} label="Vision Studio" badge="AR" badgeColor="bg-indigo-100 text-indigo-600" />
           {can("routine_builder") && (
             <NavItem to="/dashboard/routine" icon={<FaStethoscope />} label="Routine Builder" />
@@ -179,6 +181,7 @@ const Sidebar = ({ onClose }) => {
           <NavItem to="/dashboard/services" icon={<FaSpa />} label="Spa Services" badge="HOT" badgeColor="bg-rose-100 text-rose-600" />
           <NavItem to="/dashboard/reels" icon={<FaVideo />} label="Beauty Reels" />
           <NavItem to="/dashboard/store" icon={<FaShoppingBag />} label="Beauty Store" />
+          <NavItem to="/dashboard/routine-shop" icon={<FaMagic />} label="AI Routine Shop" badge="NEW" badgeColor="bg-indigo-100 text-indigo-600" />
           <NavItem to="/dashboard/my-bookings" icon={<FaCalendarCheck />} label={t("my_bookings") || "My Bookings"} />
         </NavSection>
 
