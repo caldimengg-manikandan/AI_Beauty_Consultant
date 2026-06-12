@@ -33,7 +33,7 @@ class PayrollRunRequest(BaseModel):
     month: str # YYYY-MM
 
 def _get_owner_salon(current_user: dict):
-    salon = salons_collection.find_one({"owner_user_id": current_user.get("sub") or str(current_user["_id"])})
+    salon = salons_collection.find_one({"owner_user_id": current_user.get("sub")})
     if not salon:
         raise HTTPException(status_code=404, detail="No salon found for this account")
     return salon
@@ -45,14 +45,14 @@ async def request_leave(req: LeaveRequest, current_user: dict = Depends(get_curr
     salon = _get_owner_salon(current_user)
     
     # Verify staff exists in this salon
-    staff = staff_collection.find_one({"id": req.staff_id, "salon_id": str(salon["_id"])})
+    staff = staff_collection.find_one({"id": req.staff_id, "salon_id": salon["id"]})
     if not staff:
         raise HTTPException(status_code=404, detail="Staff member not found")
         
     leave_id = str(uuid.uuid4())
     new_leave = {
         "id": leave_id,
-        "salon_id": str(salon["_id"]),
+        "salon_id": salon["id"],
         "staff_id": req.staff_id,
         "staff_name": staff["name"],
         "start_date": req.start_date,
@@ -72,7 +72,7 @@ async def get_leaves(current_user: dict = Depends(get_current_user)):
     """Get all leave requests for the salon."""
     salon = _get_owner_salon(current_user)
     
-    cursor = staff_leaves_collection.find({"salon_id": str(salon["_id"])}).sort("requested_at", -1)
+    cursor = staff_leaves_collection.find({"salon_id": salon["id"]}).sort("requested_at", -1)
     leaves = list(cursor)
     for l in leaves:
         l.pop("_id", None)
@@ -83,7 +83,7 @@ async def update_leave_status(leave_id: str, req: LeaveStatusUpdate, current_use
     """Approve or reject a leave request."""
     salon = _get_owner_salon(current_user)
     
-    leave = staff_leaves_collection.find_one({"id": leave_id, "salon_id": str(salon["_id"])})
+    leave = staff_leaves_collection.find_one({"id": leave_id, "salon_id": salon["id"]})
     if not leave:
         raise HTTPException(status_code=404, detail="Leave request not found")
         
@@ -101,7 +101,7 @@ async def update_leave_status(leave_id: str, req: LeaveStatusUpdate, current_use
 async def calculate_payroll(req: PayrollRunRequest, current_user: dict = Depends(get_current_user)):
     """Calculate and return payroll breakdown for all staff in the salon for a given month."""
     salon = _get_owner_salon(current_user)
-    salon_id = str(salon["_id"])
+    salon_id = salon["id"]
     
     # Get all active staff
     staff_list = list(staff_collection.find({"salon_id": salon_id, "is_active": True}))

@@ -65,8 +65,8 @@ const Signup = () => {
         name: customerForm.name,
         phone: customerForm.phone,
       });
-      setSuccess("Account created! Redirecting to login...");
-      setTimeout(() => navigate("/login"), 1500);
+      setSuccess("Account created! Redirecting to verify your email...");
+      setTimeout(() => navigate(`/verify-email?email=${encodeURIComponent(customerForm.email)}&role=customer`), 1500);
     } catch (err) {
       setError(err.response?.data?.detail || "Signup failed. Please try again.");
     } finally {
@@ -93,8 +93,8 @@ const Signup = () => {
         business_city: ownerForm.business_city,
         business_type: ownerForm.business_type,
       });
-      setSuccess("Partner account created! Redirecting to login...");
-      setTimeout(() => navigate("/login?role=shop_owner"), 1500);
+      setSuccess("Partner account created! Redirecting to verify your email...");
+      setTimeout(() => navigate(`/verify-email?email=${encodeURIComponent(ownerForm.email)}&role=shop_owner`), 1500);
     } catch (err) {
       setError(err.response?.data?.detail || "Registration failed. Please try again.");
     } finally {

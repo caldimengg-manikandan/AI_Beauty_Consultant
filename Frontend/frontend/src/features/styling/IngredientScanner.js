@@ -61,19 +61,19 @@ const IngredientScanner = () => {
 
     return (
         <div className="min-h-screen bg-[#fafaf9] p-6 lg:p-12 font-sans selection:bg-indigo-100">
-            <div className="max-w-6xl mx-auto space-y-12">
+            <div className="max-w-6xl mx-auto space-y-8">
 
                 {/* HEADER */}
                 <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
-                            <span className="px-3 py-1 bg-indigo-600 text-white text-[9px] font-black rounded uppercase tracking-widest">Lab Grade</span>
-                            <span className="text-indigo-600 font-bold text-xs uppercase tracking-[0.2em] flex items-center gap-2">
-                                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div> Formula Intelligence
+                            <span className="px-3 py-1 bg-violet-600 text-white text-[9px] font-black rounded uppercase tracking-widest">Lab Grade</span>
+                            <span className="text-violet-600 font-bold text-xs uppercase tracking-[0.2em] flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse"></div> Formula Intelligence
                             </span>
                         </div>
                         <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none italic">
-                            Ingredient<span className="text-indigo-600">Oracle</span>
+                            Ingredient<span className="text-violet-600">Oracle</span>
                             <span className="ml-4 text-[10px] font-black text-slate-300 not-italic align-top">v2.1</span>
                         </h1>
                         <p className="text-slate-500 font-medium">Decode your skincare. Knowledge is the first step to a better routine.</p>
@@ -84,17 +84,17 @@ const IngredientScanner = () => {
 
                     {/* LEFT: SCAN CONTROLS */}
                     <div className="lg:col-span-4 space-y-8">
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl space-y-8 overflow-hidden relative">
+                        <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm space-y-8 overflow-hidden relative">
                             <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
                                 <button
                                     onClick={() => setActiveTab('scan')}
-                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'scan' ? 'bg-white text-indigo-600 shadow-sm border border-slate-100' : 'text-slate-400'}`}
+                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'scan' ? 'bg-white text-violet-600 shadow-sm border border-slate-100' : 'text-slate-400'}`}
                                 >
                                     AI Photo Scan
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('manual')}
-                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'manual' ? 'bg-white text-indigo-600 shadow-sm border border-slate-100' : 'text-slate-400'}`}
+                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'manual' ? 'bg-white text-violet-600 shadow-sm border border-slate-100' : 'text-slate-400'}`}
                                 >
                                     Manual Entry
                                 </button>
@@ -111,13 +111,13 @@ const IngredientScanner = () => {
                                     >
                                         <div
                                             onClick={() => fileInputRef.current.click()}
-                                            className="aspect-square bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group overflow-hidden relative"
+                                            className="aspect-square bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-violet-400 hover:bg-violet-50/30 transition-all group overflow-hidden relative"
                                         >
                                             {image ? (
                                                 <img src={image} className="w-full h-full object-cover" alt="Preview" />
                                             ) : (
                                                 <>
-                                                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-indigo-500 text-2xl shadow-sm border border-slate-100 group-hover:scale-110 transition-all">
+                                                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-violet-500 text-2xl shadow-sm border border-slate-100 group-hover:scale-110 transition-all">
                                                         <FaCamera />
                                                     </div>
                                                     <div className="text-center px-6">
@@ -129,7 +129,7 @@ const IngredientScanner = () => {
                                         </div>
                                         <button
                                             onClick={() => fileInputRef.current.click()}
-                                            className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-3"
+                                            className="w-full py-4 bg-violet-600 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-violet-500 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-3"
                                         >
                                             <FaUpload /> {image ? "Change Photo" : "Choose Image"}
                                         </button>
@@ -146,7 +146,7 @@ const IngredientScanner = () => {
                                             value={manualText}
                                             onChange={(e) => setManualText(e.target.value)}
                                             placeholder="Paste the ingredient list here... (e.g. Water, Glycerin, Niacinamide...)"
-                                            className="w-full h-64 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none italic"
+                                            className="w-full h-64 p-6 bg-slate-50 rounded-xl border border-slate-100 text-sm font-medium focus:ring-2 focus:ring-violet-500 outline-none transition-all resize-none italic"
                                         />
                                         <button
                                             onClick={handleManualScan}
@@ -172,10 +172,10 @@ const IngredientScanner = () => {
                     {/* RIGHT: RESULTS AREA */}
                     <div className="lg:col-span-8">
                         {loading ? (
-                            <div className="h-[600px] bg-white rounded-[3.5rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center gap-8">
-                                <div className="w-16 h-16 border-[6px] border-slate-100 border-t-indigo-500 rounded-full animate-spin"></div>
+                            <div className="h-[600px] bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-8">
+                                <div className="w-16 h-16 border-[6px] border-slate-100 border-t-violet-600 rounded-full animate-spin"></div>
                                 <div className="text-center space-y-3">
-                                    <p className="text-xs font-black text-indigo-600 uppercase tracking-[0.4em] animate-pulse">Decoding Molecular Structure...</p>
+                                    <p className="text-xs font-black text-violet-600 uppercase tracking-[0.4em] animate-pulse">Decoding Molecular Structure...</p>
                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Cross-referencing Ingredient Database</p>
                                 </div>
                             </div>
@@ -194,7 +194,7 @@ const IngredientScanner = () => {
                                 </div>
 
                                 {/* INGREDIENT LIST */}
-                                <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                                     <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Detailed Component Analysis</h3>
                                         <div className="flex gap-2">
@@ -217,8 +217,8 @@ const IngredientScanner = () => {
                                 </div>
                             </motion.div>
                         ) : (
-                            <div className="h-[600px] bg-white rounded-[3.5rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center gap-8 group">
-                                <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center text-slate-300 text-4xl shadow-inner group-hover:bg-indigo-50 group-hover:text-indigo-200 transition-all duration-700">
+                            <div className="h-[600px] bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-8 group">
+                                <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center text-slate-300 text-4xl shadow-inner group-hover:bg-violet-50 group-hover:text-indigo-200 transition-all duration-700">
                                     <FaFlask />
                                 </div>
                                 <div className="text-center space-y-4 max-w-sm px-10">
@@ -245,7 +245,7 @@ const IngredientScanner = () => {
 
 const SummaryCard = ({ icon, label, value, color }) => {
     const colors = {
-        indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+        indigo: 'bg-indigo-50 text-violet-600 border-indigo-100',
         rose: 'bg-rose-50 text-rose-600 border-rose-100',
         amber: 'bg-amber-50 text-amber-600 border-amber-100',
         emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100'
@@ -272,7 +272,7 @@ const IngredientRow = ({ item }) => {
     };
 
     return (
-        <div className={`p-8 transition-all hover:bg-slate-50 cursor-pointer ${isExpanded ? 'bg-indigo-50/30' : ''}`} onClick={() => setIsExpanded(!isExpanded)}>
+        <div className={`p-8 transition-all hover:bg-slate-50 cursor-pointer ${isExpanded ? 'bg-violet-50/30' : ''}`} onClick={() => setIsExpanded(!isExpanded)}>
             <div className="flex justify-between items-center">
                 <div className="space-y-1">
                     <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
@@ -287,7 +287,7 @@ const IngredientRow = ({ item }) => {
                     <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${getTypeStyles(item.type)}`}>
                         {item.type || "Other"}
                     </span>
-                    <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180 text-indigo-500' : 'text-slate-300'}`}>
+                    <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-180 text-violet-500' : 'text-slate-300'}`}>
                         <FaTimes className="rotate-45" />
                     </div>
                 </div>
@@ -317,7 +317,7 @@ const IngredientRow = ({ item }) => {
                                 </div>
                                 <div className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
                                     <span className="text-[10px] font-black text-slate-400 uppercase">EWG Rating</span>
-                                    <span className="text-xs font-black text-indigo-600">Verified</span>
+                                    <span className="text-xs font-black text-violet-600">Verified</span>
                                 </div>
                             </div>
                         </div>

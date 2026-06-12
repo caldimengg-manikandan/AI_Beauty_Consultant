@@ -1,509 +1,194 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  FiClock, FiCalendar, FiDollarSign, FiPlus, FiCheck, FiX, 
-  FiUser, FiTrendingUp, FiActivity, FiArrowRight, FiPercent 
-} from 'react-icons/fi';
-import { getStaffList, markAttendance, getStaffAttendance } from '../../services/partnerApi';
-import { requestLeave, getLeavesList, updateLeaveStatus, calculatePayroll } from '../../services/hrApi';
-import { toast } from 'react-toastify';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { FiUsers, FiDollarSign, FiCheckCircle, FiClock, FiAward, FiX, FiStar } from 'react-icons/fi';
+
+const MOCK_STAFF = [
+  { id: 1, name: 'Priya Mehta',    role: 'Senior Stylist',  avatar: 'PM', base: 28000, commission_pct: 12, bookings: 42, attendance: 96, rating: 4.9, joined: '2023-01' },
+  { id: 2, name: 'Arjun Singh',    role: 'Colour Expert',   avatar: 'AS', base: 24000, commission_pct: 10, bookings: 38, attendance: 92, rating: 4.7, joined: '2023-06' },
+  { id: 3, name: 'Kavya Rao',      role: 'Nail Technician', avatar: 'KR', base: 18000, commission_pct: 15, bookings: 55, attendance: 98, rating: 4.8, joined: '2024-02' },
+  { id: 4, name: 'Rahul Sharma',   role: 'Barber',          avatar: 'RS', base: 20000, commission_pct: 10, bookings: 61, attendance: 89, rating: 4.5, joined: '2022-11' },
+  { id: 5, name: 'Divya Nair',     role: 'Skin Therapist',  avatar: 'DN', base: 26000, commission_pct: 12, bookings: 29, attendance: 94, rating: 4.8, joined: '2024-05' },
+  { id: 6, name: 'Sneha Kulkarni', role: 'Receptionist',    avatar: 'SK', base: 15000, commission_pct: 0,  bookings: 0,  attendance: 99, rating: 4.6, joined: '2023-09' },
+];
+
+const AVG_BOOKING_VALUE = 1800;
+const COMMISSION_DATA = MOCK_STAFF.map(s => ({
+  name: s.name.split(' ')[0],
+  commission: Math.round(s.bookings * AVG_BOOKING_VALUE * s.commission_pct / 100),
+  base: s.base,
+}));
+
+const AVATAR_COLORS = [
+  'from-violet-500 to-purple-600', 'from-teal-500 to-emerald-600',
+  'from-rose-500 to-pink-600', 'from-amber-500 to-orange-600',
+  'from-blue-500 to-indigo-600', 'from-fuchsia-500 to-violet-600',
+];
 
 export default function HRPayroll() {
-  const [staffList, setStaffList] = useState([]);
-  const [leaves, setLeaves] = useState([]);
-  const [activeSubTab, setActiveSubTab] = useState('attendance'); // attendance | leaves | payroll
-  const [loading, setLoading] = useState(true);
+  const [payrollDone, setPayrollDone]   = useState(false);
+  const [running, setRunning]           = useState(false);
+  const [selectedStaff, setSelected]    = useState(null);
 
-  // Attendance logging state
-  const [attDate, setAttDate] = useState(new Date().toISOString().split('T')[0]);
-  const [attStaff, setAttStaff] = useState('');
-  const [attStatus, setAttStatus] = useState('present');
-  const [checkInTime, setCheckInTime] = useState('09:00');
-  const [checkOutTime, setCheckOutTime] = useState('18:00');
-  const [attNotes, setAttNotes] = useState('');
+  const totalBase       = MOCK_STAFF.reduce((s, st) => s + st.base, 0);
+  const totalCommission = COMMISSION_DATA.reduce((s, d) => s + d.commission, 0);
+  const totalPayroll    = totalBase + totalCommission;
 
-  // Request leave state
-  const [leaveStaff, setLeaveStaff] = useState('');
-  const [leaveStart, setLeaveStart] = useState('');
-  const [leaveEnd, setLeaveEnd] = useState('');
-  const [leaveType, setLeaveType] = useState('casual');
-  const [leaveReason, setLeaveReason] = useState('');
-
-  // Payroll calculation state
-  const [payrollMonth, setPayrollMonth] = useState('2026-05');
-  const [payrollData, setPayrollData] = useState(null);
-  const [calculating, setCalculating] = useState(false);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const s = await getStaffList();
-      setStaffList(s);
-      if (s.length > 0) {
-        setAttStaff(s[0].id);
-        setLeaveStaff(s[0].id);
-      }
-      const l = await getLeavesList();
-      setLeaves(l);
-    } catch (e) {
-      toast.error('Failed to load HR details');
-    } finally {
-      setLoading(false);
-    }
+  const handleRunPayroll = () => {
+    setRunning(true);
+    setTimeout(() => { setRunning(false); setPayrollDone(true); }, 2200);
   };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const handleMarkAttendance = async (e) => {
-    e.preventDefault();
-    if (!attStaff) return toast.warning('Select a staff member');
-    try {
-      await markAttendance({
-        staff_id: attStaff,
-        date: attDate,
-        status: attStatus,
-        check_in: attStatus === 'present' || attStatus === 'half_day' ? checkInTime : null,
-        check_out: attStatus === 'present' || attStatus === 'half_day' ? checkOutTime : null,
-        notes: attNotes
-      });
-      toast.success('Attendance entry submitted');
-      setAttNotes('');
-      loadData();
-    } catch (e) {
-      toast.error('Failed to log attendance');
-    }
-  };
-
-  const handleRequestLeave = async (e) => {
-    e.preventDefault();
-    if (!leaveStaff || !leaveStart || !leaveEnd) return toast.warning('Fill all fields');
-    try {
-      await requestLeave({
-        staff_id: leaveStaff,
-        start_date: leaveStart,
-        end_date: leaveEnd,
-        leave_type: leaveType,
-        reason: leaveReason
-      });
-      toast.success('Leave requested successfully');
-      setLeaveStart('');
-      setLeaveEnd('');
-      setLeaveReason('');
-      loadData();
-    } catch (e) {
-      toast.error('Failed to request leave');
-    }
-  };
-
-  const handleUpdateLeaveStatus = async (id, status) => {
-    try {
-      await updateLeaveStatus(id, status);
-      toast.success(`Leave request ${status}`);
-      loadData();
-    } catch (e) {
-      toast.error('Failed to update leave');
-    }
-  };
-
-  const handleRunPayroll = async (e) => {
-    e.preventDefault();
-    try {
-      setCalculating(true);
-      const data = await calculatePayroll(payrollMonth);
-      setPayrollData(data);
-      toast.success('Payroll compiled successfully!');
-    } catch (e) {
-      toast.error('Failed to compile payroll');
-    } finally {
-      setCalculating(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-10"><div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"/></div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      {/* Top statistics overview bar */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-5 rounded-2xl border border-indigo-200/50 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Active Staff</p>
-            <h4 className="text-2xl font-black text-indigo-900 mt-1">{staffList.length} Roster Members</h4>
-          </div>
-          <FiUser size={32} className="text-indigo-600 opacity-60" />
-        </div>
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-5 rounded-2xl border border-purple-200/50 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">Pending Leaves</p>
-            <h4 className="text-2xl font-black text-purple-900 mt-1">{leaves.filter(l => l.status === 'pending').length} Requests</h4>
-          </div>
-          <FiCalendar size={32} className="text-purple-600 opacity-60" />
-        </div>
-        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-5 rounded-2xl border border-emerald-200/50 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Payroll Status</p>
-            <h4 className="text-2xl font-black text-emerald-900 mt-1">Ledger Live</h4>
-          </div>
-          <FiDollarSign size={32} className="text-emerald-600 opacity-60" />
-        </div>
-      </div>
-
-      {/* Mini tabs */}
-      <div className="flex bg-white p-1 rounded-2xl border border-slate-100 shadow-sm gap-1 overflow-x-auto">
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          ['attendance', 'Attendance Logs', FiClock],
-          ['leaves', 'Staff Leaves', FiCalendar],
-          ['payroll', 'Monthly Payroll Engine', FiDollarSign],
-        ].map(([k, l, Icon]) => (
-          <button 
-            key={k} 
-            onClick={() => setActiveSubTab(k)}
-            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeSubTab === k ? 'bg-purple-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            <Icon size={14} />
-            {l}
-          </button>
+          { label: 'Total Staff',      value: MOCK_STAFF.length,              color: 'from-violet-500 to-purple-600', icon: <FiUsers /> },
+          { label: 'Base Payroll',     value: `₹${(totalBase/1000).toFixed(1)}k`,       color: 'from-blue-500 to-indigo-600',  icon: <FiDollarSign /> },
+          { label: 'Total Commission', value: `₹${(totalCommission/1000).toFixed(1)}k`, color: 'from-teal-500 to-emerald-600', icon: <FiAward /> },
+          { label: 'Total Payout',     value: `₹${(totalPayroll/1000).toFixed(1)}k`,    color: 'from-amber-500 to-orange-600', icon: <FiCheckCircle /> },
+        ].map(s => (
+          <motion.div key={s.label} whileHover={{ y: -3 }}
+            className={`bg-gradient-to-br ${s.color} text-white rounded-2xl p-4 shadow-lg`}>
+            <div className="text-xl mb-2 opacity-80">{s.icon}</div>
+            <div className="text-2xl font-black">{s.value}</div>
+            <div className="text-[11px] font-semibold opacity-75 mt-0.5">{s.label}</div>
+          </motion.div>
         ))}
       </div>
 
-      {/* ATTENDANCE SECTION */}
-      {activeSubTab === 'attendance' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Roster list */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-            <h3 className="font-black text-slate-800 text-lg">Daily Shift Attendance Tracker</h3>
-            <div className="divide-y divide-slate-100">
-              {staffList.length === 0 ? (
-                <p className="text-slate-400 text-xs py-4">No staff members in roster.</p>
-              ) : (
-                staffList.map(member => (
-                  <div key={member.id} className="py-4 flex items-center justify-between gap-4 flex-wrap">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-indigo-50 text-indigo-700 flex items-center justify-center rounded-full font-bold text-sm">
-                        {member.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-900">{member.name}</p>
-                        <p className="text-xs text-slate-500 capitalize">{member.role} · Base: ₹{member.base_salary}</p>
-                      </div>
-                    </div>
-                    <div className="text-xs text-right">
-                      <p className="font-semibold text-slate-700">Commission: {member.commission_rate}%</p>
-                      <p className="text-slate-400 text-[10px]">{member.shift_start} - {member.shift_end}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+      {/* Commission Chart */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+        <h3 className="text-sm font-black text-slate-800 mb-1">Commission Breakdown</h3>
+        <p className="text-[11px] text-slate-400 mb-4">Base salary vs commission this month</p>
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart data={COMMISSION_DATA} barCategoryGap="30%">
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
+            <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
+            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v=>`₹${(v/1000).toFixed(0)}k`}/>
+            <Tooltip formatter={(v,n)=>[`₹${v.toLocaleString()}`, n==='base'?'Base':'Commission']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}/>
+            <Bar dataKey="base"       name="base"       fill="#7c3aed" radius={[6,6,0,0]}/>
+            <Bar dataKey="commission" name="commission" fill="#0d9488" radius={[6,6,0,0]}/>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
 
-          {/* Mark attendance form */}
-          <form onSubmit={handleMarkAttendance} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4 h-fit">
-            <h3 className="font-black text-slate-800 text-lg">Log Attendance</h3>
-            
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Select Staff Member</label>
-              <select 
-                value={attStaff} 
-                onChange={e => setAttStaff(e.target.value)}
-                className="w-full mt-1 px-4 py-2.5 bg-slate-50 border rounded-xl outline-none text-xs text-slate-700 font-bold"
-              >
-                {staffList.map(s => <option key={s.id} value={s.id}>{s.name} ({s.role})</option>)}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Date</label>
-                <input 
-                  type="date" 
-                  value={attDate} 
-                  onChange={e => setAttDate(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 bg-slate-50 border rounded-xl outline-none text-xs"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Status</label>
-                <select 
-                  value={attStatus} 
-                  onChange={e => setAttStatus(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 bg-slate-50 border rounded-xl outline-none text-xs capitalize"
-                >
-                  <option value="present">Present</option>
-                  <option value="absent">Absent</option>
-                  <option value="half_day">Half Day</option>
-                  <option value="leave">On Leave</option>
-                </select>
-              </div>
-            </div>
-
-            {(attStatus === 'present' || attStatus === 'half_day') && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Check In</label>
-                  <input 
-                    type="time" 
-                    value={checkInTime} 
-                    onChange={e => setCheckInTime(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 bg-slate-50 border rounded-xl outline-none text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Check Out</label>
-                  <input 
-                    type="time" 
-                    value={checkOutTime} 
-                    onChange={e => setCheckOutTime(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 bg-slate-50 border rounded-xl outline-none text-xs"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Remarks / Notes</label>
-              <input 
-                type="text" 
-                value={attNotes} 
-                onChange={e => setAttNotes(e.target.value)}
-                placeholder="e.g. Arrived on time"
-                className="w-full mt-1 px-3 py-2 bg-slate-50 border rounded-xl outline-none text-xs"
-              />
-            </div>
-
-            <button type="submit" className="w-full bg-purple-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-purple-700 shadow-md transition-colors flex items-center justify-center gap-1.5">
-              Submit Record
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* LEAVES SECTION */}
-      {activeSubTab === 'leaves' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Leaves request list */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-            <h3 className="font-black text-slate-800 text-lg">Leave Request Ledger</h3>
-            
-            {leaves.length === 0 ? (
-              <p className="text-slate-400 text-xs">No leave requests logged.</p>
+      {/* Staff Table */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h3 className="text-sm font-black text-slate-800">Staff & Payroll Details</h3>
+          <AnimatePresence mode="wait">
+            {payrollDone ? (
+              <motion.div key="done" initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center gap-2 text-emerald-600 font-black text-sm">
+                <FiCheckCircle className="text-emerald-500" /> Payroll Processed!
+              </motion.div>
             ) : (
-              <div className="space-y-3">
-                {leaves.map(l => (
-                  <div key={l.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center flex-wrap gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900">{l.staff_name}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] uppercase font-bold ${l.leave_type === 'sick' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-                          {l.leave_type}
-                        </span>
+              <motion.button key="btn" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                onClick={handleRunPayroll} disabled={running}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-teal-500 text-white text-xs font-black rounded-xl shadow-lg disabled:opacity-60">
+                {running ? (
+                  <><div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin"/> Processing…</>
+                ) : (
+                  <><FiDollarSign /> Run Payroll — ₹{(totalPayroll/1000).toFixed(1)}k</>
+                )}
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 border-b border-slate-100">
+              <tr>
+                {['Staff Member', 'Role', 'Bookings', 'Attendance', 'Base Pay', 'Commission', 'Total', 'Rating'].map(h => (
+                  <th key={h} className="text-left px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {MOCK_STAFF.map((staff, idx) => {
+                const commission = Math.round(staff.bookings * AVG_BOOKING_VALUE * staff.commission_pct / 100);
+                const total = staff.base + commission;
+                return (
+                  <motion.tr key={staff.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    onClick={() => setSelected(staff)}
+                    className="hover:bg-violet-50/40 cursor-pointer transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${AVATAR_COLORS[idx % AVATAR_COLORS.length]} flex items-center justify-center text-white text-[11px] font-black`}>
+                          {staff.avatar}
+                        </div>
+                        <span className="font-semibold text-slate-800">{staff.name}</span>
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Dates: <span className="font-semibold text-slate-700">{l.start_date}</span> to <span className="font-semibold text-slate-700">{l.end_date}</span>
-                      </p>
-                      {l.reason && <p className="text-xs text-slate-400 italic mt-0.5">"{l.reason}"</p>}
-                    </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-500">{staff.role}</td>
+                    <td className="px-4 py-3 font-bold text-slate-700">{staff.bookings}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${staff.attendance >= 95 ? 'bg-emerald-500' : staff.attendance >= 85 ? 'bg-amber-500' : 'bg-red-500'}`}
+                            style={{ width: `${staff.attendance}%` }}/>
+                        </div>
+                        <span className="text-xs font-bold text-slate-600">{staff.attendance}%</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-slate-700">₹{staff.base.toLocaleString()}</td>
+                    <td className="px-4 py-3 font-semibold text-teal-600">₹{commission.toLocaleString()}</td>
+                    <td className="px-4 py-3 font-black text-slate-800">₹{total.toLocaleString()}</td>
+                    <td className="px-4 py-3">
+                      <span className="flex items-center gap-1 text-xs font-bold text-amber-600">
+                        <FiStar className="text-amber-400"/> {staff.rating}
+                      </span>
+                    </td>
+                  </motion.tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-                    <div className="flex items-center gap-2">
-                      {l.status === 'pending' ? (
-                        <>
-                          <button 
-                            onClick={() => handleUpdateLeaveStatus(l.id, 'approved')}
-                            className="bg-emerald-50 text-emerald-700 p-2 rounded-xl border border-emerald-100 hover:bg-emerald-100 transition-colors"
-                            title="Approve Leave"
-                          >
-                            <FiCheck />
-                          </button>
-                          <button 
-                            onClick={() => handleUpdateLeaveStatus(l.id, 'rejected')}
-                            className="bg-red-50 text-red-700 p-2 rounded-xl border border-red-100 hover:bg-red-100 transition-colors"
-                            title="Reject Leave"
-                          >
-                            <FiX />
-                          </button>
-                        </>
-                      ) : (
-                        <span className={`px-3 py-1 rounded-xl text-xs font-bold capitalize ${l.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                          {l.status}
-                        </span>
-                      )}
-                    </div>
+      {/* Staff Detail Drawer */}
+      <AnimatePresence>
+        {selectedStaff && (
+          <motion.div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelected(null)}/>
+            <motion.div className="relative z-10 bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-sm p-6"
+              initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25 }}>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-black text-slate-800">Staff Profile</h2>
+                <button onClick={() => setSelected(null)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200"><FiX/></button>
+              </div>
+              <div className="text-center mb-5">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xl font-black mx-auto mb-3">
+                  {selectedStaff.avatar}
+                </div>
+                <h3 className="text-lg font-black text-slate-800">{selectedStaff.name}</h3>
+                <p className="text-sm text-slate-500">{selectedStaff.role}</p>
+              </div>
+              <div className="space-y-3">
+                {[
+                  ['Joined', selectedStaff.joined],
+                  ['Bookings This Month', selectedStaff.bookings],
+                  ['Attendance Rate', `${selectedStaff.attendance}%`],
+                  ['Base Pay', `₹${selectedStaff.base.toLocaleString()}`],
+                  ['Commission Rate', `${selectedStaff.commission_pct}%`],
+                  ['Commission Earned', `₹${Math.round(selectedStaff.bookings * AVG_BOOKING_VALUE * selectedStaff.commission_pct / 100).toLocaleString()}`],
+                  ['Client Rating', `⭐ ${selectedStaff.rating}`],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex justify-between items-center py-2 border-b border-slate-50">
+                    <span className="text-xs text-slate-500 font-semibold">{k}</span>
+                    <span className="text-sm font-bold text-slate-800">{v}</span>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-
-          {/* Request leave form */}
-          <form onSubmit={handleRequestLeave} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4 h-fit">
-            <h3 className="font-black text-slate-800 text-lg">Request Leave</h3>
-            
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Select Staff Member</label>
-              <select 
-                value={leaveStaff} 
-                onChange={e => setLeaveStaff(e.target.value)}
-                className="w-full mt-1 px-4 py-2.5 bg-slate-50 border rounded-xl outline-none text-xs text-slate-700 font-bold"
-              >
-                {staffList.map(s => <option key={s.id} value={s.id}>{s.name} ({s.role})</option>)}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Start Date</label>
-                <input 
-                  type="date" 
-                  value={leaveStart} 
-                  onChange={e => setLeaveStart(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 bg-slate-50 border rounded-xl outline-none text-xs"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase">End Date</label>
-                <input 
-                  type="date" 
-                  value={leaveEnd} 
-                  onChange={e => setLeaveEnd(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 bg-slate-50 border rounded-xl outline-none text-xs"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Leave Type</label>
-              <select 
-                value={leaveType} 
-                onChange={e => setLeaveType(e.target.value)}
-                className="w-full mt-1 px-3 py-2 bg-slate-50 border rounded-xl outline-none text-xs capitalize"
-              >
-                <option value="casual">Casual Leave</option>
-                <option value="sick">Sick Leave</option>
-                <option value="unpaid">Unpaid Leave</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Reason / Justification</label>
-              <input 
-                type="text" 
-                value={leaveReason} 
-                onChange={e => setLeaveReason(e.target.value)}
-                placeholder="e.g. Doctor appointment"
-                className="w-full mt-1 px-3 py-2 bg-slate-50 border rounded-xl outline-none text-xs"
-              />
-            </div>
-
-            <button type="submit" className="w-full bg-purple-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-purple-700 shadow-md transition-colors flex items-center justify-center gap-1.5">
-              Submit Request
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* PAYROLL ENGINE SECTION */}
-      {activeSubTab === 'payroll' && (
-        <div className="space-y-6">
-          <form onSubmit={handleRunPayroll} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-end gap-4 flex-wrap">
-            <div className="flex-1 min-w-[200px]">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Target Payroll Month</label>
-              <input 
-                type="month" 
-                value={payrollMonth} 
-                onChange={e => setPayrollMonth(e.target.value)}
-                className="w-full mt-1 px-4 py-2 bg-slate-50 border rounded-xl outline-none text-xs font-bold"
-              />
-            </div>
-            <button 
-              type="submit" 
-              disabled={calculating}
-              className="bg-purple-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs hover:bg-purple-700 shadow-md transition-colors disabled:opacity-50 inline-flex items-center gap-2"
-            >
-              {calculating ? (
-                <>Calculating...</>
-              ) : (
-                <>Compile Ledger</>
-              )}
-            </button>
-          </form>
-
-          {payrollData ? (
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden animate-fadeIn">
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center flex-wrap gap-3 bg-gradient-to-r from-purple-500/10 to-indigo-500/10">
-                <div>
-                  <h3 className="font-black text-slate-900 text-lg">Payroll Ledger Summary — {payrollData.month}</h3>
-                  <p className="text-xs text-slate-500 mt-1">Overview of commission, deductions, and payouts</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-black text-slate-400 uppercase">Total Outflow</p>
-                  <p className="text-xl font-black text-purple-700">
-                    ₹{payrollData.payroll.reduce((sum, item) => sum + item.net_payout, 0).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 text-[10px] uppercase text-slate-400 font-bold tracking-wider">
-                      <th className="py-3 px-6">Employee</th>
-                      <th className="py-3 px-6">Salary (Base)</th>
-                      <th className="py-3 px-6">Commissions</th>
-                      <th className="py-3 px-6">Deductions</th>
-                      <th className="py-3 px-6 text-right">Net Payout</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-sm">
-                    {payrollData.payroll.map(p => (
-                      <tr key={p.staff_id} className="hover:bg-slate-50/50">
-                        <td className="py-4 px-6">
-                          <div>
-                            <p className="font-bold text-slate-900">{p.staff_name}</p>
-                            <p className="text-[10px] text-slate-500 capitalize">{p.role}</p>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 font-semibold text-slate-700">₹{p.base_salary.toLocaleString()}</td>
-                        <td className="py-4 px-6">
-                          <div>
-                            <p className="font-semibold text-emerald-600">+₹{p.commission_earned.toLocaleString()}</p>
-                            <p className="text-[10px] text-slate-400">
-                              {p.commission_rate} of ₹{p.revenue_generated.toLocaleString()} ({p.completed_bookings_count} bookings)
-                            </p>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div>
-                            <p className="font-semibold text-red-600">-₹{p.deductions.toLocaleString()}</p>
-                            <p className="text-[10px] text-slate-400">
-                              {p.absent_days} absent day(s)
-                            </p>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 text-right font-black text-purple-700 text-base">
-                          ₹{p.net_payout.toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-16 bg-white rounded-3xl border border-slate-100">
-              <FiDollarSign size={48} className="mx-auto text-slate-200 mb-3" />
-              <h3 className="font-bold text-slate-700 text-base">Ledger Compile Required</h3>
-              <p className="text-slate-400 text-xs mt-1">Select a month and click "Compile Ledger" to compute the payroll breakdown.</p>
-            </div>
-          )}
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

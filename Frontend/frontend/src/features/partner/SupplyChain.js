@@ -1,220 +1,187 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { FiBox, FiTruck, FiCreditCard, FiCheckCircle, FiShoppingCart, FiRefreshCw } from 'react-icons/fi';
-import { getB2BCatalog, getB2BOrders, placeB2BOrder } from '../../services/supplyChainApi';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { FiTruck, FiShoppingCart, FiPackage, FiCheckCircle, FiClock, FiX, FiPlus, FiMinus } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
+const CATALOG = [
+  { id: 1, name: 'Kerastase Shampoo 1L',        sku: 'KER-SH-1L',   price: 2400, unit: 'bottle', category: 'Hair Care',  img_color: 'from-violet-500 to-purple-600', moq: 6 },
+  { id: 2, name: 'Wella Colour Developer',        sku: 'WEL-DEV-1L',  price: 680,  unit: 'bottle', category: 'Hair Colour',img_color: 'from-amber-500 to-orange-600',  moq: 12 },
+  { id: 3, name: 'Dermalogica Cleanser',          sku: 'DRM-CL-250',  price: 1800, unit: 'tube',   category: 'Skin Care',  img_color: 'from-teal-500 to-emerald-600',  moq: 6 },
+  { id: 4, name: 'OPI Base Coat',                 sku: 'OPI-BC-15',   price: 420,  unit: 'bottle', category: 'Nail',       img_color: 'from-rose-500 to-pink-600',     moq: 12 },
+  { id: 5, name: 'GHD Heat Protect Spray',        sku: 'GHD-HP-120',  price: 1650, unit: 'spray',  category: 'Tools',      img_color: 'from-blue-500 to-indigo-600',   moq: 6 },
+  { id: 6, name: 'L\'Oréal Pro-Keratin',          sku: 'LOR-PK-500',  price: 3200, unit: 'pack',   category: 'Hair Care',  img_color: 'from-fuchsia-500 to-violet-600',moq: 3 },
+];
+
+const MOCK_ORDERS = [
+  { id: 'PO-2041', date: '2026-06-07', items: 'Kerastase Shampoo × 12, Wella Developer × 24', total: 44520, status: 'delivered' },
+  { id: 'PO-2040', date: '2026-06-02', items: 'OPI Base Coat × 24', total: 10080, status: 'in_transit' },
+  { id: 'PO-2039', date: '2026-05-25', items: 'Dermalogica Cleanser × 6, GHD Spray × 6', total: 20700, status: 'delivered' },
+  { id: 'PO-2038', date: '2026-05-18', items: 'L\'Oréal Keratin × 3', total: 9600, status: 'delivered' },
+];
+
+const SPEND_TREND = [
+  { month: 'Jan', spend: 28000 }, { month: 'Feb', spend: 32000 }, { month: 'Mar', spend: 41000 },
+  { month: 'Apr', spend: 38000 }, { month: 'May', spend: 45000 }, { month: 'Jun', spend: 52000 },
+];
+
+const STATUS_CFG = {
+  delivered:  { cls: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: <FiCheckCircle size={11}/>, label: 'Delivered' },
+  in_transit: { cls: 'bg-blue-100 text-blue-700 border-blue-200',         icon: <FiTruck size={11}/>,       label: 'In Transit' },
+  pending:    { cls: 'bg-amber-100 text-amber-700 border-amber-200',       icon: <FiClock size={11}/>,       label: 'Pending' },
+};
+
 export default function SupplyChain() {
-  const [catalog, setCatalog] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  const [cart, setCart] = useState({}); // { product_id: quantity }
-  const [useFinancing, setUseFinancing] = useState(false);
+  const [tab, setTab]       = useState('catalog');
+  const [cart, setCart]     = useState({});
+  const [orders, setOrders] = useState(MOCK_ORDERS);
+  const [placing, setPlacing] = useState(false);
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [catRes, ordRes] = await Promise.all([getB2BCatalog(), getB2BOrders()]);
-      setCatalog(catRes);
-      setOrders(ordRes);
-    } catch (e) {
-      toast.error('Failed to load supply chain data');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
-  const addToCart = (product) => {
-    setCart(prev => ({
-      ...prev,
-      [product.id]: (prev[product.id] || 0) + 1
-    }));
-    toast.success(`${product.name} added to cart`);
-  };
-
-  const removeFromCart = (productId) => {
-    setCart(prev => {
-      const newCart = { ...prev };
-      if (newCart[productId] > 1) {
-        newCart[productId] -= 1;
-      } else {
-        delete newCart[productId];
-      }
-      return newCart;
-    });
-  };
-
-  const cartTotal = Object.entries(cart).reduce((total, [id, qty]) => {
-    const prod = catalog.find(p => p.id === id);
-    return total + (prod ? prod.price * qty : 0);
+  const cartTotal = Object.entries(cart).reduce((s, [id, qty]) => {
+    const item = CATALOG.find(c => c.id === +id);
+    return s + (item ? item.price * qty : 0);
   }, 0);
+  const cartCount = Object.values(cart).reduce((s, q) => s + q, 0);
 
-  const handleCheckout = async () => {
-    const items = Object.entries(cart).map(([id, qty]) => ({ product_id: id, quantity: qty }));
-    if (items.length === 0) return toast.warning("Cart is empty");
+  const add = (id) => setCart(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+  const sub = (id) => setCart(prev => { const q = (prev[id] || 1) - 1; if (q <= 0) { const n = {...prev}; delete n[id]; return n; } return { ...prev, [id]: q }; });
 
-    try {
-      await placeB2BOrder({ items, use_invoice_financing: useFinancing });
-      toast.success("B2B Order placed successfully!");
+  const placeOrder = () => {
+    if (cartCount === 0) return toast.error('Add items to your order');
+    setPlacing(true);
+    setTimeout(() => {
+      const items = Object.entries(cart).map(([id, qty]) => {
+        const it = CATALOG.find(c => c.id === +id);
+        return `${it?.name} × ${qty}`;
+      }).join(', ');
+      const newOrder = { id: `PO-${2042 + orders.length}`, date: new Date().toISOString().slice(0,10), items, total: cartTotal, status: 'pending' };
+      setOrders(prev => [newOrder, ...prev]);
       setCart({});
-      setUseFinancing(false);
-      loadData();
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed to place order");
-    }
+      setPlacing(false);
+      setTab('orders');
+      toast.success(`Order ${newOrder.id} placed!`);
+    }, 1800);
   };
-
-  if (loading) return (
-    <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"/></div>
-  );
 
   return (
-    <div className="space-y-8 animate-fade-in-up p-2">
-      {/* Header */}
-      <div className="flex justify-between items-end">
-        <div>
-          <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-            <FiBox className="text-indigo-500" /> B2B Supply Chain
-          </h2>
-          <p className="text-slate-500 text-sm mt-1">Wholesale ordering, auto-replenishment, and Net-30 invoice financing.</p>
-        </div>
+    <div className="space-y-6">
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Orders', value: orders.length, color: 'from-violet-500 to-purple-600', icon: <FiPackage /> },
+          { label: 'In Transit',   value: orders.filter(o=>o.status==='in_transit').length, color: 'from-blue-500 to-indigo-600', icon: <FiTruck /> },
+          { label: 'Spend (Jun)',  value: '₹52k', color: 'from-teal-500 to-emerald-600', icon: <FiShoppingCart /> },
+          { label: 'Cart Items',   value: cartCount, color: 'from-amber-500 to-orange-600', icon: <FiShoppingCart /> },
+        ].map(s => (
+          <motion.div key={s.label} whileHover={{ y: -3 }}
+            className={`bg-gradient-to-br ${s.color} text-white rounded-2xl p-4 shadow-lg`}>
+            <div className="text-xl mb-2 opacity-80">{s.icon}</div>
+            <div className="text-2xl font-black">{s.value}</div>
+            <div className="text-[11px] font-semibold opacity-75 mt-0.5">{s.label}</div>
+          </motion.div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Col: Catalog */}
-        <div className="lg:col-span-2 space-y-6">
-          <h3 className="text-lg font-bold text-slate-900">Wholesale Catalog</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {catalog.map(prod => (
-              <div key={prod.id} className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm flex flex-col hover:shadow-md transition-shadow">
-                <div className="h-40 bg-slate-100 overflow-hidden relative">
-                  <img src={prod.image_url} alt={prod.name} className="w-full h-full object-cover" />
-                  {prod.auto_replenish_eligible && (
-                    <div className="absolute top-2 right-2 bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg flex items-center gap-1">
-                      <FiRefreshCw /> Auto-Restock
-                    </div>
-                  )}
+      {/* Spend Trend */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+        <h3 className="text-sm font-black text-slate-800 mb-1">Supply Spend Trend</h3>
+        <p className="text-[11px] text-slate-400 mb-4">Monthly procurement cost</p>
+        <ResponsiveContainer width="100%" height={140}>
+          <LineChart data={SPEND_TREND}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
+            <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
+            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v=>`₹${(v/1000).toFixed(0)}k`}/>
+            <Tooltip formatter={v=>[`₹${v.toLocaleString()}`, 'Spend']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}/>
+            <Line type="monotone" dataKey="spend" stroke="#7c3aed" strokeWidth={2.5} dot={{ r: 4, fill: '#7c3aed' }}/>
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+        {[['catalog','🛒 B2B Catalog'], ['orders','📦 My Orders']].map(([k,l]) => (
+          <button key={k} onClick={() => setTab(k)}
+            className={`px-5 py-2 rounded-lg text-xs font-black transition-all ${tab===k ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {/* CATALOG */}
+      {tab === 'catalog' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {CATALOG.map((item, idx) => (
+              <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06 }}
+                whileHover={{ y: -3 }} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className={`h-20 bg-gradient-to-br ${item.img_color} flex items-center justify-center`}>
+                  <FiPackage className="text-white text-3xl opacity-60"/>
                 </div>
-                <div className="p-5 flex flex-col flex-1">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{prod.category} • {prod.supplier}</div>
-                  <h4 className="font-bold text-slate-900 leading-tight mb-2">{prod.name}</h4>
-                  <div className="text-lg font-black text-slate-900 mt-auto">₹{prod.price.toLocaleString()}</div>
-                  <div className="text-xs text-slate-500 mb-4">MOQ: {prod.moq} • In Stock: {prod.in_stock}</div>
-                  
-                  <div className="flex items-center gap-2">
-                    {cart[prod.id] ? (
-                      <div className="flex items-center justify-between w-full bg-slate-100 rounded-xl p-1">
-                        <button onClick={() => removeFromCart(prod.id)} className="w-8 h-8 flex justify-center items-center bg-white rounded-lg font-bold shadow-sm">-</button>
-                        <span className="font-bold text-sm">{cart[prod.id]}</span>
-                        <button onClick={() => addToCart(prod)} className="w-8 h-8 flex justify-center items-center bg-white rounded-lg font-bold shadow-sm">+</button>
-                      </div>
-                    ) : (
-                      <button onClick={() => {
-                        for(let i=0; i<prod.moq; i++) addToCart(prod); // auto add MOQ
-                      }} className="w-full py-2 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors">
-                        Add to Order (MOQ {prod.moq})
-                      </button>
-                    )}
+                <div className="p-4">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.category}</span>
+                  <h4 className="text-sm font-bold text-slate-800 mt-0.5 leading-tight">{item.name}</h4>
+                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">{item.sku}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <div>
+                      <p className="text-base font-black text-slate-800">₹{item.price.toLocaleString()}</p>
+                      <p className="text-[10px] text-slate-400">MOQ: {item.moq} {item.unit}s</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {cart[item.id] ? (
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => sub(item.id)} className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 text-slate-700"><FiMinus size={12}/></button>
+                          <span className="text-sm font-black text-violet-600 w-5 text-center">{cart[item.id]}</span>
+                          <button onClick={() => add(item.id)} className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center hover:bg-violet-700 text-white"><FiPlus size={12}/></button>
+                        </div>
+                      ) : (
+                        <button onClick={() => add(item.id)} className="flex items-center gap-1 px-3 py-1.5 bg-violet-600 text-white text-xs font-bold rounded-xl hover:bg-violet-700">
+                          <FiPlus size={11}/> Add
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
-
-        {/* Right Col: Cart & Orders */}
-        <div className="space-y-6">
-          {/* Cart */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm sticky top-4">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4"><FiShoppingCart /> Current Order</h3>
-            
-            {Object.keys(cart).length === 0 ? (
-              <div className="text-center py-6 text-slate-400 text-sm">Cart is empty</div>
-            ) : (
-              <div className="space-y-4">
-                {Object.entries(cart).map(([id, qty]) => {
-                  const p = catalog.find(x => x.id === id);
-                  if (!p) return null;
-                  return (
-                    <div key={id} className="flex justify-between items-center text-sm border-b border-slate-50 pb-2">
-                      <div className="truncate pr-4 flex-1">
-                        <span className="font-bold text-slate-900">{qty}x</span> <span className="text-slate-600">{p.name}</span>
-                      </div>
-                      <div className="font-bold text-slate-900 shrink-0">₹{(p.price * qty).toLocaleString()}</div>
-                    </div>
-                  );
-                })}
-                
-                <div className="pt-2 border-t border-slate-200">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-slate-500 text-sm">Subtotal</span>
-                    <span className="font-bold text-slate-900">₹{cartTotal.toLocaleString()}</span>
-                  </div>
-                  
-                  {useFinancing && (
-                    <div className="flex justify-between items-center text-indigo-600 mb-1">
-                      <span className="text-sm">Financing Fee (2%)</span>
-                      <span className="font-bold">₹{Math.floor(cartTotal * 0.02).toLocaleString()}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
-                    <span className="font-black text-slate-900 text-lg">Total</span>
-                    <span className="font-black text-slate-900 text-lg">
-                      ₹{(cartTotal + (useFinancing ? Math.floor(cartTotal * 0.02) : 0)).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 mt-4">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={useFinancing} 
-                      onChange={e => setUseFinancing(e.target.checked)}
-                      disabled={cartTotal < 20000}
-                      className="mt-1 w-4 h-4 text-indigo-600 rounded"
-                    />
-                    <div>
-                      <div className={`font-bold text-sm ${cartTotal < 20000 ? 'text-slate-400' : 'text-slate-900'}`}>Use Invoice Financing (Net-30)</div>
-                      <div className="text-xs text-slate-500 mt-0.5">Pay 30 days later. 2% fee. Orders over ₹20k only.</div>
-                    </div>
-                  </label>
-                </div>
-
-                <button onClick={handleCheckout} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-md transition-all flex items-center justify-center gap-2 mt-2">
-                  <FiCheckCircle /> Place Order
-                </button>
+          {cartCount > 0 && (
+            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+              className="sticky bottom-4 bg-gradient-to-r from-violet-600 to-teal-500 rounded-2xl p-4 shadow-xl flex items-center justify-between">
+              <div className="text-white">
+                <p className="text-xs opacity-75">{cartCount} item{cartCount > 1 ? 's' : ''} in cart</p>
+                <p className="text-lg font-black">₹{cartTotal.toLocaleString()}</p>
               </div>
-            )}
-          </div>
-
-          {/* Recent Orders */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4"><FiTruck /> Past Orders</h3>
-            <div className="space-y-3">
-              {orders.slice(0, 5).map(o => (
-                <div key={o.id} className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold text-slate-900 text-sm">₹{o.grand_total.toLocaleString()}</span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">{new Date(o.created_at).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center mt-2 text-xs font-bold">
-                    <span className={o.status === 'Processing' ? 'text-amber-500' : 'text-emerald-500'}>{o.status}</span>
-                    <span className={o.financed ? 'text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded' : 'text-slate-500'}>
-                      {o.payment_status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {orders.length === 0 && <div className="text-sm text-slate-400 text-center py-4">No past orders.</div>}
-            </div>
-          </div>
+              <motion.button whileTap={{ scale: 0.97 }} onClick={placeOrder} disabled={placing}
+                className="flex items-center gap-2 px-5 py-2.5 bg-white text-violet-700 font-black rounded-xl text-sm shadow-md disabled:opacity-60">
+                {placing ? <><div className="w-4 h-4 border-2 border-violet-300 border-t-violet-700 rounded-full animate-spin"/> Placing…</> : <><FiShoppingCart/> Place Order</>}
+              </motion.button>
+            </motion.div>
+          )}
         </div>
+      )}
 
-      </div>
+      {/* ORDERS */}
+      {tab === 'orders' && (
+        <div className="space-y-3">
+          {orders.map((order, idx) => {
+            const st = STATUS_CFG[order.status] || STATUS_CFG.pending;
+            return (
+              <motion.div key={order.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06 }}
+                className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-xs font-black text-violet-600">{order.id}</span>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border flex items-center gap-1 ${st.cls}`}>{st.icon}{st.label}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 leading-relaxed max-w-xs truncate">{order.items}</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">{order.date}</p>
+                </div>
+                <p className="text-lg font-black text-slate-800">₹{order.total.toLocaleString()}</p>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

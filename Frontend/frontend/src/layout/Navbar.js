@@ -1,46 +1,71 @@
-import { useState, useEffect, useRef } from 'react';
-import { FaBell, FaCog, FaSignOutAlt, FaCircle, FaInfoCircle, FaMagic, FaUserAstronaut } from 'react-icons/fa';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { FaBell, FaCog, FaSignOutAlt, FaCircle, FaInfoCircle, FaMagic,
+         FaUserAstronaut, FaSpa, FaCalendarCheck, FaSpinner } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useAuth, ROLE_LABELS } from '../context/AuthContext';
+import api from '../services/api';
+
+// ── Icon map for notification types ──────────────────────────────────────────
+const TYPE_ICON = {
+    scan:        <FaUserAstronaut className="text-blue-500" />,
+    appointment: <FaCalendarCheck  className="text-emerald-500" />,
+    booking:     <FaSpa            className="text-pink-500" />,
+    default:     <FaInfoCircle     className="text-indigo-500" />,
+};
 
 const Navbar = ({ onMenuClick }) => {
-    const [currentTime, setCurrentTime] = useState(new Date());
+    const [currentTime, setCurrentTime]           = useState(new Date());
     const [showNotifications, setShowNotifications] = useState(false);
+    const [notifications, setNotifications]       = useState([]);
+    const [unreadCount, setUnreadCount]           = useState(0);
+    const [loadingNotifs, setLoadingNotifs]        = useState(false);
     const notificationRef = useRef(null);
-    const location = useLocation();
-    const navigate = useNavigate();
+    const location        = useLocation();
+    const navigate        = useNavigate();
     const { user, logout, role } = useAuth();
     const roleInfo = ROLE_LABELS[role] || ROLE_LABELS.user;
 
-    const notifications = [
-        {
-            id: 1,
-            title: "Neural VisionCore Update",
-            message: "Morphology analysis accuracy improved for round face profiles.",
-            time: "Just now",
-            icon: <FaUserAstronaut className="text-blue-500" />,
-            unread: true
-        },
-        {
-            id: 2,
-            title: "Aesthetic Insight",
-            message: "Your hydration levels are peaking! High radiance detected in your last scan.",
-            time: "2 hours ago",
-            icon: <FaMagic className="text-purple-500" />,
-            unread: true
-        },
-        {
-            id: 3,
-            title: "Studio Recommendation",
-            message: "New 'Obsidian' hair color tone now available in your styling report.",
-            time: "5 hours ago",
-            icon: <FaInfoCircle className="text-indigo-500" />,
-            unread: false
+    // ── Fetch real notifications from backend ─────────────────────────────────
+    const fetchNotifications = useCallback(async () => {
+        setLoadingNotifs(true);
+        try {
+            const res = await api.get('/api/notifications/in-app?limit=10');
+            setNotifications(res.data?.notifications || []);
+            setUnreadCount(res.data?.unread_count   || 0);
+        } catch {
+            // Silent fail — don't break the navbar if API is down
+            setNotifications([]);
+            setUnreadCount(0);
+        } finally {
+            setLoadingNotifs(false);
         }
-    ];
+    }, []);
 
-    // Close notifications when clicking outside
+    // Fetch on first render
+    useEffect(() => {
+        if (user) fetchNotifications();
+    }, [user, fetchNotifications]);
+
+    // Re-fetch when dropdown opens
+    const handleBellClick = () => {
+        const next = !showNotifications;
+        setShowNotifications(next);
+        if (next && user) fetchNotifications();
+    };
+
+    // ── Clear all ─────────────────────────────────────────────────────────────
+    const handleClearAll = async () => {
+        try {
+            await api.delete('/api/notifications/in-app/clear');
+            setNotifications([]);
+            setUnreadCount(0);
+        } catch {
+            // ignore
+        }
+    };
+
+    // Close on outside click
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (notificationRef.current && !notificationRef.current.contains(event.target)) {
@@ -51,56 +76,38 @@ const Navbar = ({ onMenuClick }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Get username from JWT via AuthContext
     const username = user?.name || user?.sub?.split('@')[0] || 'User';
 
-    // Update time every minute
     useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 60000);
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         return () => clearInterval(timer);
     }, []);
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
+    const handleLogout = () => { logout(); navigate('/login'); };
+    const handleSettings = () => navigate('/dashboard/settings');
 
-    const handleSettings = () => {
-        navigate('/dashboard/settings');
-    };
-
-    // Get page title from route
     const getPageTitle = () => {
         const path = location.pathname;
         if (path.includes('/analyze')) return 'Neural VisionCore';
-        if (path.includes('/live')) return 'Live AI Scan';
-        if (path.includes('/hair')) return 'Hair Clinic';
-        if (path.includes('/nails')) return 'Nail Studio';
+        if (path.includes('/live'))    return 'Live AI Scan';
+        if (path.includes('/hair'))    return 'Hair Clinic';
+        if (path.includes('/nails'))   return 'Nail Studio';
         if (path.includes('/services')) return 'Studio Services';
         if (path.includes('/history')) return 'Diagnostic History';
-        if (path.includes('/trends')) return 'Skin Metrics';
+        if (path.includes('/trends'))  return 'Skin Metrics';
         if (path.includes('/settings')) return 'System Settings';
         return 'Control Center';
     };
 
-    // Get greeting based on time
     const getGreeting = () => {
-        const hour = currentTime.getHours();
-        if (hour < 12) return 'Good Morning';
-        if (hour < 18) return 'Good Afternoon';
+        const h = currentTime.getHours();
+        if (h < 12) return 'Good Morning';
+        if (h < 18) return 'Good Afternoon';
         return 'Good Evening';
     };
 
-    // Format time as HH:MM AM/PM
-    const formatTime = (date) => {
-        return date.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
-    };
+    const formatTime = (date) =>
+        date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     return (
         <nav className="bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 md:px-8 py-4 sticky top-0 z-50 shadow-sm flex items-center justify-between gap-4">
@@ -153,29 +160,48 @@ const Navbar = ({ onMenuClick }) => {
                 {/* NOTIFICATION HUB */}
                 <div className="relative" ref={notificationRef}>
                     <button
-                        onClick={() => setShowNotifications(!showNotifications)}
+                        onClick={handleBellClick}
                         className={`p-3 rounded-2xl transition-all duration-300 relative ${showNotifications ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
                     >
                         <FaBell size={18} />
-                        {notifications.some(n => n.unread) && (
+                        {unreadCount > 0 && (
                             <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
                         )}
                     </button>
 
-                    {/* Notification Dropdown — responsive width */}
+                    {/* Notification Dropdown */}
                     {showNotifications && (
                         <div className="absolute right-0 mt-4 w-[calc(100vw-2rem)] sm:w-[380px] max-w-[420px] bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100 overflow-hidden animate-fade-in-up">
                             <div className="p-6 border-b border-slate-50 flex items-center justify-between">
                                 <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Notification Center</h3>
-                                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-full">3 Messages</span>
+                                {loadingNotifs
+                                    ? <FaSpinner className="animate-spin text-indigo-400" size={14} />
+                                    : <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-full">
+                                        {unreadCount > 0 ? `${unreadCount} New` : 'All Read'}
+                                      </span>
+                                }
                             </div>
 
                             <div className="max-h-[400px] overflow-y-auto">
+                                {loadingNotifs && notifications.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-12 gap-3">
+                                        <FaSpinner className="animate-spin text-indigo-300" size={24} />
+                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Loading…</p>
+                                    </div>
+                                )}
+
+                                {!loadingNotifs && notifications.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-12 gap-3">
+                                        <FaBell className="text-slate-200" size={36} />
+                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">No new notifications</p>
+                                    </div>
+                                )}
+
                                 {notifications.map((n) => (
-                                    <div key={n.id} className={`p-6 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 relative cursor-pointer group`}>
+                                    <div key={n.id} className="p-6 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 relative cursor-pointer group">
                                         <div className="flex gap-4">
                                             <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-xl shrink-0">
-                                                {n.icon}
+                                                {TYPE_ICON[n.type] || TYPE_ICON.default}
                                             </div>
                                             <div className="flex flex-col">
                                                 <h4 className="font-black text-slate-900 text-sm mb-1 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{n.title}</h4>
@@ -192,18 +218,20 @@ const Navbar = ({ onMenuClick }) => {
                                 ))}
                             </div>
 
-                            <button className="w-full py-5 bg-slate-50 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 hover:text-slate-600 transition-all">
-                                Clear All Notifications
-                            </button>
+                            {notifications.length > 0 && (
+                                <button
+                                    onClick={handleClearAll}
+                                    className="w-full py-5 bg-slate-50 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 hover:text-slate-600 transition-all"
+                                >
+                                    Clear All Notifications
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
 
                 {/* Settings Toggle */}
-                <button
-                    onClick={handleSettings}
-                    className="p-3 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-2xl transition-all"
-                >
+                <button onClick={handleSettings} className="p-3 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-2xl transition-all">
                     <FaCog size={18} />
                 </button>
 

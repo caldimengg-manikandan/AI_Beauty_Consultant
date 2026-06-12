@@ -7,17 +7,16 @@ import {
 import { getMySalon, registerSalon, updateMySalon, getOwnerBookings, updateBookingStatus } from '../../services/salonApi';
 import { toast } from 'react-toastify';
 
-// ── New Enterprise B2B Modules ────────────────────────────────────────────────
+// ── Core B2B Modules ──────────────────────────────────────────────────────────
 import StaffManagement from '../partner/StaffManagement';
-import BillingPOS from '../partner/BillingPOS';
-import InventoryPanel from '../partner/InventoryPanel';
-import MarketingTools from '../partner/MarketingTools';
 import BusinessInsights from '../partner/BusinessInsights';
 import LiveWaitlist from '../partner/LiveWaitlist';
+
+// ── Extended Enterprise Modules ───────────────────────────────────────────────
+import MarketingTools from '../partner/MarketingTools';
 import DeveloperAPI from '../partner/DeveloperAPI';
-import SupplyChain from '../partner/SupplyChain';
-import CustomForms from '../partner/CustomForms';
-import HRPayroll from '../partner/HRPayroll';
+import ClientIntelligence from '../partner/ClientIntelligence';
+import NoShowPredictor from '../partner/NoShowPredictor';
 
 const STATUS_COLORS = {
   confirmed: 'bg-green-100 text-green-700',
@@ -169,13 +168,9 @@ const RegisterForm = ({ onSuccess }) => {
 // Map URL section names to internal tab keys
 const SECTION_TO_TAB = {
   staff: 'staff',
-  hr: 'payroll',
-  inventory: 'inventory',
-  invoices: 'billing',
   campaigns: 'marketing',
   coupons: 'marketing',
   insights: 'insights',
-  'supply-chain': 'supply',
   forms: 'forms',
   webhooks: 'developer',
 };
@@ -198,7 +193,15 @@ const ShopOwnerDashboard = ({ section }) => {
       const b = await getOwnerBookings();
       setBookings(b);
     } catch (err) {
-      if (err.response?.status === 404) setHasNoSalon(true);
+      const status = err.response?.status;
+      if (status === 404) {
+        setHasNoSalon(true);
+      } else if (status === 403) {
+        toast.error('Access denied. Please log in as a Shop Owner.');
+      } else if (status !== 401) {
+        // 401 is handled by the global interceptor (auto-redirect to login)
+        toast.error('Failed to load salon data. Please refresh the page.');
+      }
     } finally {
       setLoading(false);
     }
@@ -274,21 +277,18 @@ const ShopOwnerDashboard = ({ section }) => {
       {/* Tabs */}
       <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
         {[
-          ['bookings', 'Bookings'], 
-          ['waitlist', 'Live Waitlist'],
-          ['insights', 'AI Insights'],
-          ['staff', 'Staff'], 
-          ['payroll', 'HR & Payroll'],
-          ['forms', 'Custom Forms'],
-          ['billing', 'Billing POS'], 
-          ['inventory', 'Inventory'], 
-          ['marketing', 'Marketing'], 
-          ['supply', 'B2B Supply Chain'],
-          ['developer', 'API & Webhooks'],
-          ['profile', 'My Profile']
+          ['bookings',   '📅 Bookings'],
+          ['waitlist',   '⏳ Waitlist'],
+          ['insights',   '📊 AI Insights'],
+          ['staff',      '👥 Staff'],
+          ['marketing',  '📣 Marketing'],
+          ['developer',  '🔑 Developer API'],
+          ['clients',    '🧠 Client Intel'],
+          ['noshow',     '🔔 No-Show AI'],
+          ['profile',    '🏪 My Profile'],
         ].map(([k, l]) => (
           <button key={k} onClick={() => setActiveTab(k)}
-            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${activeTab === k ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${activeTab === k ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
             {l}
           </button>
         ))}
@@ -456,17 +456,16 @@ const ShopOwnerDashboard = ({ section }) => {
         </div>
       )}
 
-      {/* New Enterprise Tabs */}
-      {activeTab === 'waitlist' && <LiveWaitlist />}
-      {activeTab === 'insights' && <BusinessInsights />}
-      {activeTab === 'staff' && <StaffManagement />}
-      {activeTab === 'payroll' && <HRPayroll />}
-      {activeTab === 'forms' && <CustomForms />}
-      {activeTab === 'billing' && <BillingPOS />}
-      {activeTab === 'inventory' && <InventoryPanel />}
+      {/* Core Tabs */}
+      {activeTab === 'waitlist'  && <LiveWaitlist salonId={salon?.id} />}
+      {activeTab === 'insights'  && <BusinessInsights />}
+      {activeTab === 'staff'     && <StaffManagement />}
+
+      {/* Extended Enterprise Modules */}
       {activeTab === 'marketing' && <MarketingTools />}
-      {activeTab === 'supply' && <SupplyChain />}
       {activeTab === 'developer' && <DeveloperAPI />}
+      {activeTab === 'clients'   && <ClientIntelligence />}
+      {activeTab === 'noshow'    && <NoShowPredictor />}
 
     </div>
   );

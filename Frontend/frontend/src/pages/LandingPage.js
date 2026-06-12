@@ -3,13 +3,6 @@ import { useState, useEffect } from 'react';
 import DemoModal from '../components/DemoModal';
 import { getDemoResultById } from '../data/demoData';
 
-const STATS = [
-  { value: '50K+', label: 'Happy Customers', icon: '👥' },
-  { value: '500+', label: 'Partner Salons', icon: '🏪' },
-  { value: '98%', label: 'AI Accuracy', icon: '🎯' },
-  { value: '12', label: 'Countries', icon: '🌍' },
-];
-
 const PRICING = [
   {
     name: 'Free',
@@ -218,19 +211,6 @@ const LandingPage = () => {
               </div>
             </>
           )}
-        </div>
-      </section>
-
-      {/* ── Stats ── */}
-      <section className="bg-slate-900 py-12">
-        <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {STATS.map(s => (
-            <div key={s.label} className="text-center">
-              <div className="text-3xl mb-1">{s.icon}</div>
-              <div className="text-3xl font-black text-white">{s.value}</div>
-              <div className="text-xs text-slate-400 font-semibold mt-1">{s.label}</div>
-            </div>
-          ))}
         </div>
       </section>
 

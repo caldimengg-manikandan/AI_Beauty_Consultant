@@ -13,7 +13,7 @@ const NAIL_CURRICULUM = {
             tags: ["Daily", "Luminous", "Daylight"],
             colors: [{ hex: "#F3E8FF", finish: "Creme" }, { hex: "#E9D5FF", finish: "Jelly" }, { hex: "#D8B4FE", finish: "Shimmer" }],
             desc: "A soft, ethereal lavender sequence designed to neutralize cool undertones while providing a luminous, high-gloss finish.",
-            img: "/assets/premium_nail.png",
+            img: "https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?auto=format&fit=crop&w=800&q=80",
             specs: { shape: "Almond", durability: "High", complexity: "Level 1" }
         },
         {
@@ -21,7 +21,7 @@ const NAIL_CURRICULUM = {
             tags: ["Work", "Classic", "High-Key"],
             colors: [{ hex: "#DC2626", finish: "Matte" }, { hex: "#B91C1C", finish: "Luxe" }],
             desc: "A sophisticated blue-based crimson designed for maximum contrast. Perfect for formal architectures and high-key environments.",
-            img: "/assets/premium_nail.png",
+            img: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=800&q=80",
             specs: { shape: "Square", durability: "Medium", complexity: "Level 2" }
         }
     ],
@@ -31,7 +31,7 @@ const NAIL_CURRICULUM = {
             tags: ["Daily", "Minimal", "Clinical"],
             colors: [{ hex: "#FDE68A", finish: "Nude" }, { hex: "#FCD34D", finish: "Cream" }],
             desc: "Minimalist beige tones that align with the skin's natural melanin profile, creating a seamless, elongated look for everyday wear.",
-            img: "/assets/premium_nail.png",
+            img: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
             specs: { shape: "Almond", durability: "High", complexity: "Level 1" }
         },
         {
@@ -39,7 +39,7 @@ const NAIL_CURRICULUM = {
             tags: ["Party", "Reflective", "Night"],
             colors: [{ hex: "#B45309", finish: "Chrome" }, { hex: "#D97706", finish: "Metalic" }],
             desc: "High-reflective copper and bronze pigments that amplify the warmth in medium skin tones. Engineered for high-impact visual presence.",
-            img: "/assets/premium_nail.png",
+            img: "https://images.unsplash.com/photo-1595868228392-1b15c9d96c9c?auto=format&fit=crop&w=800&q=80",
             specs: { shape: "Stiletto", durability: "Medium", complexity: "Level 3" }
         }
     ],
@@ -49,7 +49,7 @@ const NAIL_CURRICULUM = {
             tags: ["Party", "Vibrant", "Contrast"],
             colors: [{ hex: "#22C55E", finish: "Neon" }, { hex: "#EC4899", finish: "Vivid" }],
             desc: "Saturated neon green and magenta architectures that create extreme contrast against deep skin tones. Bold, edgy, and trend-forward.",
-            img: "/assets/premium_nail.png",
+            img: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80",
             specs: { shape: "Coffin", durability: "High", complexity: "Level 3" }
         },
         {
@@ -57,7 +57,7 @@ const NAIL_CURRICULUM = {
             tags: ["Work", "Regal", "Matte"],
             colors: [{ hex: "#064E3B", finish: "Velvet" }, { hex: "#1E3A8A", finish: "Gloss" }],
             desc: "Deep, saturated jewel tones including forest emerald and navy sapphire. Blends multi-finish textures for a regal aesthetic.",
-            img: "/assets/premium_nail.png",
+            img: "https://images.unsplash.com/photo-1516975080661-460d3ce30cd7?auto=format&fit=crop&w=800&q=80",
             specs: { shape: "Oval", durability: "High", complexity: "Level 2" }
         }
     ]
@@ -66,7 +66,7 @@ const NAIL_CURRICULUM = {
 const SHAPE_DEEP_DIVE = {
     "Almond": {
         desc: "Elongates the fingers and adds a feminine touch. Best for weak nails as it maintains structural integrity.",
-        img: "/assets/premium_nail.png",
+        img: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
         suitability: "Short to Medium Fingers",
         strength: "High",
         maintenance: "Low - Bi-weekly",
@@ -75,7 +75,7 @@ const SHAPE_DEEP_DIVE = {
     },
     "Coffin": {
         desc: "A bold, avant-garde silhouette that requires length. High visual impact for trend-setting environments.",
-        img: "/assets/premium_nail.png",
+        img: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80",
         suitability: "Narrow Nail Beds",
         strength: "Medium",
         maintenance: "High - Precision Filing",
@@ -84,7 +84,7 @@ const SHAPE_DEEP_DIVE = {
     },
     "Square": {
         desc: "A powerful, classic formation. Excellent for wide nail beds and providing maximum surface area for art.",
-        img: "/assets/premium_nail.png",
+        img: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=800&q=80",
         suitability: "Long Fingers",
         strength: "Maximum",
         maintenance: "Medium - Corner Care",
@@ -93,7 +93,7 @@ const SHAPE_DEEP_DIVE = {
     },
     "Stiletto": {
         desc: "An aggressive, dramatic peak. Engineered for high-fashion contexts and extreme length enthusiasts.",
-        img: "/assets/premium_nail.png",
+        img: "https://images.unsplash.com/photo-1595868228392-1b15c9d96c9c?auto=format&fit=crop&w=800&q=80",
         suitability: "Short Fingers",
         strength: "Low",
         maintenance: "Extreme - Professional Only",
@@ -102,7 +102,7 @@ const SHAPE_DEEP_DIVE = {
     },
     "Oval": {
         desc: "A natural, high-performance shape that mirrors the cuticle. Offers the most versatile and durable daily wear.",
-        img: "/assets/premium_nail.png",
+        img: "https://images.unsplash.com/photo-1516975080661-460d3ce30cd7?auto=format&fit=crop&w=800&q=80",
         suitability: "All Hand Types",
         strength: "High",
         maintenance: "Very Low",
@@ -111,7 +111,7 @@ const SHAPE_DEEP_DIVE = {
     },
     "Squoval": {
         desc: "The hybrid of square and oval. Provides the strength of a square with the soft elegance of an oval curve.",
-        img: "/assets/premium_nail.png",
+        img: "https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?auto=format&fit=crop&w=800&q=80",
         suitability: "Wide/Short Beds",
         strength: "High",
         maintenance: "Low",
@@ -120,7 +120,7 @@ const SHAPE_DEEP_DIVE = {
     },
     "Ballerina": {
         desc: "A refined variation of the coffin shape, tapering more steeply. Best for adding a sophisticated edge to long nails.",
-        img: "/assets/premium_nail.png",
+        img: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80",
         suitability: "Petite Hands",
         strength: "Medium",
         maintenance: "High",
@@ -134,25 +134,24 @@ const ColorSwatchModal = ({ color, onClose }) => (
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-2xl p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4"
         onClick={onClose}
     >
         <div 
-            className="w-full max-w-sm rounded-[3rem] p-1 shadow-2xl relative overflow-hidden"
-            style={{ background: `linear-gradient(145deg, ${color.hex}80, #0f172a)` }}
+            className="w-full max-w-sm rounded-[3rem] p-1 shadow-2xl relative overflow-hidden bg-white/50"
             onClick={e => e.stopPropagation()}
         >
-            <div className="bg-slate-900 rounded-[2.8rem] p-8 relative overflow-hidden">
-                <button onClick={onClose} className="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">
+            <div className="bg-white rounded-[2.8rem] p-8 relative overflow-hidden border border-slate-100 shadow-xl">
+                <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 transition-colors">
                     <FaTimes />
                 </button>
-                <div className="w-32 h-32 mx-auto rounded-full shadow-2xl mb-8 relative border-4 border-slate-800" style={{ backgroundColor: color.hex }}>
-                    <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-white/30 rounded-full mix-blend-overlay"></div>
+                <div className="w-32 h-32 mx-auto rounded-full shadow-md mb-8 relative border-4 border-white" style={{ backgroundColor: color.hex }}>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-white/40 rounded-full mix-blend-overlay"></div>
                 </div>
-                <h3 className="text-3xl font-black text-center text-white uppercase tracking-tighter mb-2">{color.finish}</h3>
-                <p className="text-center text-slate-400 font-mono text-xs uppercase tracking-widest">{color.hex}</p>
+                <h3 className="text-3xl font-black text-center text-slate-900 uppercase tracking-tighter mb-2">{color.finish}</h3>
+                <p className="text-center text-slate-500 font-mono text-xs uppercase tracking-widest">{color.hex}</p>
                 <div className="mt-8 flex justify-center">
-                    <button onClick={onClose} className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-black uppercase tracking-widest transition-all">
+                    <button onClick={onClose} className="px-8 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-full text-xs font-black uppercase tracking-widest transition-all">
                         Apply Formula
                     </button>
                 </div>
@@ -196,16 +195,15 @@ const NailStyling = () => {
     );
 
     return (
-        <div className="min-h-screen bg-[#0A0F1C] text-slate-200 relative overflow-hidden font-sans selection:bg-teal-500/30">
+        <div className="min-h-screen bg-[#F8FAFC] text-slate-800 relative overflow-hidden font-sans selection:bg-teal-500/30">
             <AnimatePresence>
                 {selectedColor && <ColorSwatchModal color={selectedColor} onClose={() => setSelectedColor(null)} />}
             </AnimatePresence>
 
             {/* ATMOSPHERIC BACKGROUND */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-teal-900/30 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-900/20 rounded-full blur-[150px]" />
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]"></div>
+                <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-teal-400/10 rounded-full blur-[150px]" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-400/10 rounded-full blur-[150px]" />
             </div>
 
             <div className="max-w-7xl mx-auto relative z-10 p-4 md:p-12">
@@ -213,26 +211,26 @@ const NailStyling = () => {
                 <header className="mb-16 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10">
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <span className="px-3 py-1 bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-900 text-[10px] font-black rounded uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(20,184,166,0.5)]">Studio Module</span>
-                            <span className="text-teal-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse"></div> Artistry Engine
+                            <span className="px-3 py-1 bg-gradient-to-r from-teal-50 to-emerald-50 text-teal-800 border border-teal-200 text-[10px] font-black rounded uppercase tracking-[0.2em] shadow-sm">Studio Module</span>
+                            <span className="text-teal-600 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse"></div> Artistry Engine
                             </span>
                         </div>
-                        <h1 className="text-6xl md:text-7xl font-black tracking-tighter uppercase leading-none italic text-white">
-                            Nail Art<span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-400">Studio</span> <span className="text-slate-700">PRO</span>
+                        <h1 className="text-6xl md:text-7xl font-black tracking-tighter uppercase leading-none italic text-slate-900">
+                            Nail Art<span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-emerald-500">Studio</span> <span className="text-slate-400">PRO</span>
                         </h1>
-                        <p className="text-slate-400 font-medium text-sm max-w-xl leading-relaxed">
+                        <p className="text-slate-600 font-medium text-sm max-w-xl leading-relaxed">
                             Precision-mapped color palettes and architectural designs tailored to your biometric profile. Validating the intersection of pigment science and aesthetic form.
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-4 bg-slate-900/50 backdrop-blur-xl p-3 rounded-[2.5rem] shadow-2xl border border-slate-800">
+                    <div className="flex items-center gap-4 bg-white/80 backdrop-blur-xl p-3 rounded-[2.5rem] shadow-sm border border-slate-200">
                         {hasAnalysis && (
-                            <div className="px-6 py-4 bg-teal-900/20 rounded-2xl border border-teal-500/20 flex items-center gap-4">
-                                <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 text-slate-900 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(45,212,191,0.3)]"><FaFingerprint size={18} /></div>
+                            <div className="px-6 py-4 bg-teal-50 rounded-2xl border border-teal-100 flex items-center gap-4">
+                                <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 text-white rounded-xl flex items-center justify-center shadow-md"><FaFingerprint size={18} /></div>
                                 <div className="text-left">
-                                    <p className="text-[9px] font-black text-teal-400 uppercase tracking-widest">Biometric Sync</p>
-                                    <p className="text-[10px] font-bold text-white uppercase italic">{skinTone} Profile Active</p>
+                                    <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest">Biometric Sync</p>
+                                    <p className="text-[10px] font-bold text-slate-900 uppercase italic">{skinTone} Profile Active</p>
                                 </div>
                             </div>
                         )}
@@ -242,38 +240,38 @@ const NailStyling = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                     {/* CONTROLS SIDEBAR */}
                     <aside className="lg:col-span-4 space-y-8">
-                        <div className="bg-slate-900/60 backdrop-blur-xl p-10 rounded-[3.5rem] border border-slate-800 shadow-2xl space-y-10">
+                        <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-10">
                             <div className="space-y-6">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                                    <FaPalette className="text-teal-400" /> Biometric Profile
+                                <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                                    <FaPalette className="text-teal-500" /> Biometric Profile
                                 </h3>
                                 <div className="grid grid-cols-3 gap-3">
                                     {["Light", "Medium", "Dark"].map(tone => (
                                         <button
                                             key={tone}
                                             onClick={() => setSkinTone(tone)}
-                                            className={`group relative flex flex-col items-center gap-3 p-4 rounded-3xl border transition-all ${skinTone === tone ? 'border-teal-500/50 bg-teal-900/20 shadow-[0_0_30px_rgba(20,184,166,0.1)]' : 'border-slate-800 bg-slate-900 hover:border-slate-700'}`}
+                                            className={`group relative flex flex-col items-center gap-3 p-4 rounded-3xl border transition-all ${skinTone === tone ? 'border-teal-300 bg-teal-50 shadow-sm' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'}`}
                                         >
                                             <div
-                                                className={`w-12 h-12 rounded-2xl shadow-inner transition-transform group-hover:scale-110 ${skinTone === tone ? 'ring-2 ring-teal-400 ring-offset-2 ring-offset-[#0A0F1C]' : ''}`}
+                                                className={`w-12 h-12 rounded-2xl shadow-inner transition-transform group-hover:scale-110 ${skinTone === tone ? 'ring-2 ring-teal-400 ring-offset-2 ring-offset-white' : ''}`}
                                                 style={{ backgroundColor: tone === "Light" ? "#F9EBDF" : tone === "Medium" ? "#EAC096" : "#825334" }}
                                             />
-                                            <span className={`text-[9px] font-black uppercase tracking-widest ${skinTone === tone ? 'text-teal-400' : 'text-slate-500'}`}>{tone}</span>
+                                            <span className={`text-[9px] font-black uppercase tracking-widest ${skinTone === tone ? 'text-teal-600' : 'text-slate-500'}`}>{tone}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
                             <div className="space-y-6">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                                    <FaCalendarAlt className="text-emerald-400" /> Ambience Filter
+                                <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                                    <FaCalendarAlt className="text-emerald-500" /> Ambience Filter
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
                                     {["All", "Daily", "Party", "Work"].map(occ => (
                                         <button
                                             key={occ}
                                             onClick={() => setOccasion(occ)}
-                                            className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border transition-all ${occasion === occ ? "bg-white text-slate-900 border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]" : "bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-600 hover:text-slate-300"}`}
+                                            className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border transition-all ${occasion === occ ? "bg-slate-900 text-white border-slate-900 shadow-md" : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100 hover:text-slate-700"}`}
                                         >
                                             {occ}
                                         </button>
@@ -283,20 +281,20 @@ const NailStyling = () => {
                         </div>
 
                         {/* SHAPE GUIDE MINI */}
-                        <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-10 rounded-[3.5rem] border border-slate-800 text-white space-y-8 shadow-2xl relative overflow-hidden">
+                        <div className="bg-gradient-to-br from-slate-50 to-white p-10 rounded-[3.5rem] border border-slate-200 text-slate-900 space-y-8 shadow-sm relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 blur-[50px]"></div>
-                            <h3 className="text-xs font-black text-teal-400 uppercase tracking-[0.3em] flex items-center gap-2 relative z-10">
+                            <h3 className="text-xs font-black text-teal-600 uppercase tracking-[0.3em] flex items-center gap-2 relative z-10">
                                 <FaMagic /> Architectural Guide
                             </h3>
-                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar relative z-10">
+                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 relative z-10">
                                 {Object.keys(SHAPE_DEEP_DIVE).map(shape => (
                                     <button
                                         key={shape}
                                         onClick={() => setActiveShape(shape)}
-                                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all group ${activeShape === shape ? 'bg-teal-900/30 border-teal-500/50 text-teal-400' : 'bg-slate-900/50 border-slate-800 hover:bg-slate-800 text-slate-400'}`}
+                                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all group ${activeShape === shape ? 'bg-teal-50 border-teal-200 text-teal-700' : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-600'}`}
                                     >
                                         <span className="text-[10px] font-black uppercase tracking-widest">{shape}</span>
-                                        <FaArrowRight className={`transition-transform ${activeShape === shape ? 'translate-x-1 text-teal-400' : 'text-slate-600'}`} size={10} />
+                                        <FaArrowRight className={`transition-transform ${activeShape === shape ? 'translate-x-1 text-teal-600' : 'text-slate-400'}`} size={10} />
                                     </button>
                                 ))}
                             </div>
@@ -312,31 +310,31 @@ const NailStyling = () => {
                                     initial={{ opacity: 0, scale: 0.98 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.98 }}
-                                    className="h-full bg-slate-900/60 backdrop-blur-xl rounded-[4rem] shadow-2xl border border-slate-800 p-8 md:p-12 flex flex-col lg:flex-row gap-12 items-center relative group overflow-hidden"
+                                    className="h-full bg-white rounded-[4rem] shadow-xl border border-slate-200 p-8 md:p-12 flex flex-col lg:flex-row gap-12 items-center relative group overflow-hidden"
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-teal-900/20 via-transparent to-slate-900/50 pointer-events-none" />
+                                    <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-transparent to-slate-50 pointer-events-none" />
 
                                     <button
                                         onClick={() => setActiveShape(null)}
-                                        className="absolute top-8 right-8 z-20 p-4 bg-slate-800 hover:bg-white hover:text-slate-900 rounded-full text-slate-400 transition-all shadow-xl border border-slate-700"
+                                        className="absolute top-8 right-8 z-20 p-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-all shadow-sm border border-slate-200"
                                     >
                                         <FaTimes />
                                     </button>
 
                                     {/* VISUAL SHOWCASE */}
                                     <div className="w-full lg:w-1/2 relative group/img shrink-0">
-                                        <div className="aspect-[4/5] w-full bg-slate-950 rounded-[3rem] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-slate-800 relative">
+                                        <div className="aspect-[4/5] w-full bg-slate-100 rounded-[3rem] overflow-hidden shadow-lg border border-slate-200 relative">
                                             <img
                                                 src={SHAPE_DEEP_DIVE[activeShape].img}
                                                 alt={activeShape}
-                                                className="w-full h-full object-cover transition-all duration-1000 opacity-90 group-hover/img:opacity-100 group-hover/img:scale-105"
+                                                className="w-full h-full object-cover transition-all duration-1000 opacity-95 group-hover/img:opacity-100 group-hover/img:scale-105"
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
 
                                             {/* VISION OVERLAY */}
                                             <div className="absolute top-6 left-6 flex items-center gap-2">
-                                                <span className="px-3 py-1 bg-black/50 backdrop-blur-md border border-white/10 text-white rounded-lg text-[8px] font-black uppercase tracking-widest shadow-sm">Analysis Active</span>
-                                                <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
+                                                <span className="px-3 py-1 bg-white/80 backdrop-blur-md border border-slate-200 text-slate-800 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-sm">Analysis Active</span>
+                                                <div className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse" />
                                             </div>
                                         </div>
                                     </div>
@@ -346,39 +344,39 @@ const NailStyling = () => {
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-3">
                                                 <span className="w-8 h-[1px] bg-teal-500/50" />
-                                                <span className="text-teal-400 font-black text-[10px] uppercase tracking-[0.3em]">Architectural Profile</span>
+                                                <span className="text-teal-600 font-black text-[10px] uppercase tracking-[0.3em]">Architectural Profile</span>
                                             </div>
-                                            <h2 className="text-6xl md:text-7xl font-black text-white uppercase tracking-tighter italic leading-none">{activeShape}</h2>
+                                            <h2 className="text-6xl md:text-7xl font-black text-slate-900 uppercase tracking-tighter italic leading-none">{activeShape}</h2>
                                         </div>
 
-                                        <p className="text-slate-400 text-lg font-medium leading-relaxed italic border-l-4 border-teal-500/30 pl-6 py-2">
+                                        <p className="text-slate-600 text-lg font-medium leading-relaxed italic border-l-4 border-teal-500/30 pl-6 py-2">
                                             "{SHAPE_DEEP_DIVE[activeShape].desc}"
                                         </p>
 
                                         {/* PRECISION SPECS GRID */}
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-slate-800/50 p-5 rounded-3xl border border-slate-700 space-y-1">
+                                            <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 space-y-1">
                                                 <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Suitability</p>
-                                                <p className="text-[11px] font-bold text-white uppercase">{SHAPE_DEEP_DIVE[activeShape].suitability}</p>
+                                                <p className="text-[11px] font-bold text-slate-900 uppercase">{SHAPE_DEEP_DIVE[activeShape].suitability}</p>
                                             </div>
-                                            <div className="bg-slate-800/50 p-5 rounded-3xl border border-slate-700 space-y-1">
+                                            <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 space-y-1">
                                                 <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Strength Grade</p>
-                                                <p className="text-[11px] font-bold text-white uppercase">{SHAPE_DEEP_DIVE[activeShape].strength}</p>
+                                                <p className="text-[11px] font-bold text-slate-900 uppercase">{SHAPE_DEEP_DIVE[activeShape].strength}</p>
                                             </div>
-                                            <div className="bg-slate-800/50 p-5 rounded-3xl border border-slate-700 space-y-1">
+                                            <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 space-y-1">
                                                 <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Maintenance</p>
-                                                <p className="text-[11px] font-bold text-white uppercase">{SHAPE_DEEP_DIVE[activeShape].maintenance}</p>
+                                                <p className="text-[11px] font-bold text-slate-900 uppercase">{SHAPE_DEEP_DIVE[activeShape].maintenance}</p>
                                             </div>
-                                            <div className="bg-slate-800/50 p-5 rounded-3xl border border-slate-700 space-y-1">
+                                            <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 space-y-1">
                                                 <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Ideal Length</p>
-                                                <p className="text-[11px] font-bold text-white uppercase">{SHAPE_DEEP_DIVE[activeShape].idealLength}</p>
+                                                <p className="text-[11px] font-bold text-slate-900 uppercase">{SHAPE_DEEP_DIVE[activeShape].idealLength}</p>
                                             </div>
                                         </div>
 
                                         <div className="pt-4 flex items-center justify-between">
                                             <div className="flex flex-col">
-                                                <span className="text-[8px] font-black text-teal-400 uppercase tracking-widest">Visual Vibe</span>
-                                                <span className="text-sm font-black text-white italic uppercase">{SHAPE_DEEP_DIVE[activeShape].vibe}</span>
+                                                <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest">Visual Vibe</span>
+                                                <span className="text-sm font-black text-slate-900 italic uppercase">{SHAPE_DEEP_DIVE[activeShape].vibe}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -395,20 +393,20 @@ const NailStyling = () => {
                                         <motion.div
                                             key={idx}
                                             whileHover={{ y: -10 }}
-                                            className="bg-slate-900 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden border border-slate-800 flex flex-col relative group"
+                                            className="bg-white rounded-[3rem] shadow-md hover:shadow-xl overflow-hidden border border-slate-200 flex flex-col relative group transition-all"
                                         >
-                                            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                                             
-                                            <div className="relative h-72 overflow-hidden border-b border-slate-800">
+                                            <div className="relative h-72 overflow-hidden border-b border-slate-100">
                                                 <img
                                                     src={trend.img}
                                                     alt={trend.name}
-                                                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-80 group-hover:opacity-100"
+                                                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-90 group-hover:opacity-100"
                                                 />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
+                                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
                                                 <div className="absolute top-8 left-8 flex gap-2">
                                                     {trend.tags.map(tag => (
-                                                        <span key={tag} className="px-3 py-1.5 bg-black/40 backdrop-blur-md border border-white/10 text-white rounded-xl text-[8px] font-black uppercase tracking-widest shadow-sm">{tag}</span>
+                                                        <span key={tag} className="px-3 py-1.5 bg-white/80 backdrop-blur-md border border-slate-200 text-slate-800 rounded-xl text-[8px] font-black uppercase tracking-widest shadow-sm">{tag}</span>
                                                     ))}
                                                 </div>
                                             </div>
@@ -416,22 +414,22 @@ const NailStyling = () => {
                                             <div className="p-8 space-y-6 relative z-10 flex-1 flex flex-col">
                                                 <div className="flex justify-between items-start">
                                                     <div>
-                                                        <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic">{trend.name}</h3>
-                                                        <p className="text-[9px] font-black text-teal-400 uppercase tracking-widest mt-1">Recommended Architecture: {trend.specs.shape}</p>
+                                                        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">{trend.name}</h3>
+                                                        <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest mt-1">Recommended Architecture: {trend.specs.shape}</p>
                                                     </div>
-                                                    <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-slate-400 border border-slate-700 shadow-inner"><FaGem size={14} /></div>
+                                                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 border border-slate-200 shadow-sm"><FaGem size={14} /></div>
                                                 </div>
 
-                                                <p className="text-slate-400 text-xs font-medium leading-relaxed flex-1">
+                                                <p className="text-slate-600 text-xs font-medium leading-relaxed flex-1">
                                                     {trend.desc}
                                                 </p>
 
-                                                <div className="pt-6 border-t border-slate-800 flex items-center justify-between">
+                                                <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
                                                     <div className="flex gap-4">
                                                         {trend.colors.map((c, i) => (
                                                             <div key={i} className="group/color relative cursor-pointer" onClick={() => setSelectedColor(c)}>
                                                                 <div
-                                                                    className="w-10 h-10 rounded-2xl shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all group-hover/color:scale-125 border-2 border-slate-700 group-hover/color:border-white"
+                                                                    className="w-10 h-10 rounded-2xl shadow-sm transition-all group-hover/color:scale-125 border-2 border-slate-200 group-hover/color:border-teal-400"
                                                                     style={{ backgroundColor: c.hex }}
                                                                 />
                                                                 <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[7px] font-black text-slate-500 uppercase opacity-0 group-hover/color:opacity-100 transition-opacity whitespace-nowrap">
@@ -442,25 +440,25 @@ const NailStyling = () => {
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="text-[8px] font-black text-slate-500 uppercase">Grade</p>
-                                                        <p className="text-[10px] font-black text-white uppercase">{trend.specs.complexity}</p>
+                                                        <p className="text-[10px] font-black text-slate-900 uppercase">{trend.specs.complexity}</p>
                                                     </div>
                                                 </div>
                                             </div>
                                         </motion.div>
                                     )) : (
-                                        <div className="col-span-2 py-20 bg-slate-900/50 rounded-[4rem] border border-dashed border-slate-700 flex flex-col items-center gap-6 text-center px-10">
-                                            <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center text-slate-500 text-2xl shadow-inner">
+                                        <div className="col-span-2 py-20 bg-slate-50 rounded-[4rem] border border-dashed border-slate-300 flex flex-col items-center gap-6 text-center px-10">
+                                            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-slate-400 text-2xl shadow-sm border border-slate-200">
                                                 <FaPalette />
                                             </div>
                                             <div className="space-y-2">
-                                                <h4 className="text-xl font-black text-white uppercase tracking-tighter italic">Niche Filtering Conflict</h4>
-                                                <p className="text-slate-400 text-xs font-medium max-w-sm">
-                                                    Our neural engine found no curriculum matching this exact combination of <b className="text-teal-400">{skinTone}</b> tone and <b className="text-emerald-400">{occasion}</b> ambience.
+                                                <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">Niche Filtering Conflict</h4>
+                                                <p className="text-slate-500 text-xs font-medium max-w-sm">
+                                                    Our neural engine found no curriculum matching this exact combination of <b className="text-teal-600">{skinTone}</b> tone and <b className="text-emerald-500">{occasion}</b> ambience.
                                                 </p>
                                             </div>
                                             <button
                                                 onClick={() => setOccasion('All')}
-                                                className="px-8 py-3 bg-white text-slate-900 hover:bg-slate-200 transition-colors font-black rounded-2xl text-[9px] uppercase tracking-widest shadow-xl"
+                                                className="px-8 py-3 bg-slate-900 text-white hover:bg-slate-800 transition-colors font-black rounded-2xl text-[9px] uppercase tracking-widest shadow-md"
                                             >
                                                 Reset Filter
                                             </button>
@@ -472,11 +470,6 @@ const NailStyling = () => {
                     </main>
                 </div>
             </div>
-            <style jsx>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-            `}</style>
         </div>
     );
 };

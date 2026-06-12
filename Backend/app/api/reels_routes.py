@@ -18,7 +18,7 @@ def seed_reels_if_empty():
     if count == 0:
         # Fetch some salon to attribute the reels to
         salon = salons_collection.find_one({})
-        salon_id = str(salon["_id"]) if salon else "default_salon_123"
+        salon_id = salon["id"] if salon else "default_salon_123"
         salon_name = salon.get("name", "Luxe Studio") if salon else "Luxe Studio"
 
         mock_reels = [
@@ -143,7 +143,7 @@ async def upload_reel(
     # Create a new reel document
     # Assign some dummy salon properties if the user isn't a salon owner yet
     salon = salons_collection.find_one({})
-    salon_id = str(salon["_id"]) if salon else "default_salon_123"
+    salon_id = salon["id"] if salon else "default_salon_123"
     salon_name = salon.get("name", "Luxe Studio") if salon else "Luxe Studio"
 
     new_reel = {

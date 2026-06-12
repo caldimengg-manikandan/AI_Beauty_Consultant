@@ -30,15 +30,7 @@ const TYPE_CONFIG = {
   spa:     { label: 'Spa',     icon: <FaSpa />,  color: 'bg-teal-100 text-teal-700' },
 };
 
-// ─── Demo seed data (used when backend is not yet seeded) ─────────────────────
-const DEMO_SALONS = [
-  { id: 'd1', name: 'Bliss Beauty Parlour', salon_type: 'parlour', gender_served: 'Female', city: 'Chennai', address: '12, Anna Salai, Teynampet', avg_rating: 4.8, review_count: 124, is_active: true, description: 'Premium skincare, threading, and bridal packages.', services_offered: ['Facial', 'Threading', 'Waxing', 'Bridal Makeup'], opening_time: '9:00 AM', closing_time: '8:00 PM' },
-  { id: 'd2', name: 'Royal Unisex Salon', salon_type: 'salon', gender_served: 'Unisex', city: 'Chennai', address: '45, T. Nagar, Pondy Bazaar', avg_rating: 4.6, review_count: 89, is_active: true, description: 'Hair styling, colouring, and keratin treatments.', services_offered: ['Hair Cut', 'Hair Color', 'Keratin', 'Beard Styling'], opening_time: '10:00 AM', closing_time: '9:00 PM' },
-  { id: 'd3', name: 'Serenity Spa & Wellness', salon_type: 'spa', gender_served: 'Unisex', city: 'Bangalore', address: '8, Indiranagar 100ft Road', avg_rating: 4.9, review_count: 213, is_active: true, description: 'Full-body massages, aromatherapy, and detox therapies.', services_offered: ['Swedish Massage', 'Hot Stone', 'Aromatherapy', 'Body Wrap'], opening_time: '9:00 AM', closing_time: '9:00 PM' },
-  { id: 'd4', name: "Gentleman's Grooming Studio", salon_type: 'salon', gender_served: 'Male', city: 'Mumbai', address: '22, Bandra West, Linking Road', avg_rating: 4.7, review_count: 156, is_active: true, description: 'Haircuts, beard sculpting, and skin care for men.', services_offered: ['Hair Cut', 'Beard Trim', 'Facial', 'Head Massage'], opening_time: '8:00 AM', closing_time: '9:00 PM' },
-  { id: 'd5', name: 'Glow & Glamour Beauty Lounge', salon_type: 'parlour', gender_served: 'Female', city: 'Hyderabad', address: '56, Jubilee Hills Road No 36', avg_rating: 4.5, review_count: 78, is_active: true, description: 'Anti-ageing facials, hydra facials, and nail studio.', services_offered: ['HydraFacial', 'Anti-Aging', 'Nail Art', 'Mani-Pedi'], opening_time: '10:00 AM', closing_time: '8:00 PM' },
-  { id: 'd6', name: 'The Lotus Ayurvedic Spa', salon_type: 'spa', gender_served: 'Unisex', city: 'Pune', address: '3, Koregaon Park Lane', avg_rating: 4.9, review_count: 302, is_active: true, description: 'Authentic Ayurvedic treatments, Panchakarma, and herbal therapies.', services_offered: ['Abhyanga', 'Shirodhara', 'Panchakarma', 'Herbal Steam'], opening_time: '7:00 AM', closing_time: '8:00 PM' },
-];
+// Removed DEMO_SALONS array as per user request
 
 // ─── Salon Card ───────────────────────────────────────────────────────────────
 const SalonCard = ({ salon, onBook, onViewDetails }) => {
@@ -165,7 +157,6 @@ const SalonMarketplace = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [usedDemo, setUsedDemo] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [nearMeActive, setNearMeActive] = useState(false);
@@ -179,79 +170,9 @@ const SalonMarketplace = () => {
       const dbData = await getNearbySalons(lat, lon, { radius_km: 15, limit: 10 });
       let finalSalons = dbData.salons || [];
       
-      // 2. Try Google Places for highly accurate real-world salons
-      let externalSalons = [];
-      try {
-        const googleData = await getGooglePlacesNearby(lat, lon, { radius_m: 10000 });
-        if (googleData && googleData.places && googleData.places.length > 0) {
-          externalSalons = googleData.places.map(p => ({
-            id: `google-${p.google_place_id}`,
-            name: p.name,
-            salon_type: p.name.toLowerCase().includes('spa') ? 'spa' : 'salon',
-            gender_served: 'Unisex',
-            city: 'Nearby Area',
-            address: p.address,
-            avg_rating: p.avg_rating || (Math.random() * (5.0 - 3.8) + 3.8).toFixed(1),
-            review_count: p.review_count || Math.floor(Math.random() * 300) + 20,
-            is_active: true,
-            description: 'Verified business from Google Places.',
-            services_offered: ['Facial', 'Hair Cut', 'Threading'],
-            opening_time: p.open_now ? 'Open Now' : 'Check Timing',
-            closing_time: '...',
-            distance_km: p.distance_km,
-            isReal: true
-          }));
-        } else {
-          throw new Error('No Google Places results');
-        }
-      } catch (err) {
-        // Fallback to OpenStreetMap (Overpass API) if Google Places fails (e.g. no API key)
-        externalSalons = await fetchRealWorldSalons(lat, lon, 10000); // 10km radius
-      }
-      
-      // 3. Merge them, keeping DB salons first
-      if (externalSalons.length > 0) {
-        finalSalons = [...finalSalons, ...externalSalons];
-      }
-      
-      if (finalSalons.length > 0) {
-        setSalons(finalSalons);
-        setUsedDemo(false);
-      } else {
-        // 4. Ultimate Fallback: Generate hyper-local mock data using reverse geocoding
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
-          const geoData = await res.json();
-          const city = geoData.address?.city || geoData.address?.town || geoData.address?.county || 'Your Area';
-          
-          const localMocks = [
-            { id: 'loc1', name: `The Elite Salon ${city}`, salon_type: 'salon', gender_served: 'Unisex', city: city, address: `Main High Street, ${city}`, avg_rating: 4.8, review_count: 142, is_active: true, description: 'Premium local styling and grooming.', services_offered: ['Hair Cut', 'Coloring', 'Keratin'], opening_time: '9:00 AM', closing_time: '8:00 PM', distance_km: 0.1 },
-            { id: 'loc2', name: `${city} Wellness & Spa`, salon_type: 'spa', gender_served: 'Female', city: city, address: `Park Avenue, ${city}`, avg_rating: 4.9, review_count: 89, is_active: true, description: 'Relaxing massages and skin therapies.', services_offered: ['Massage', 'Facial', 'Spa'], opening_time: '10:00 AM', closing_time: '9:00 PM', distance_km: 0.3 },
-            { id: 'loc3', name: `Glow Up Beauty Parlour`, salon_type: 'parlour', gender_served: 'Female', city: city, address: `Market Road, ${city}`, avg_rating: 4.6, review_count: 234, is_active: true, description: 'Expert threading, waxing, and bridal services.', services_offered: ['Threading', 'Waxing', 'Bridal'], opening_time: '8:30 AM', closing_time: '7:30 PM', distance_km: 0.8 },
-            { id: 'loc4', name: `Urban Grooming Men's Salon`, salon_type: 'salon', gender_served: 'Male', city: city, address: `Downtown Center, ${city}`, avg_rating: 4.7, review_count: 310, is_active: true, description: 'Sharp fades and beard styling.', services_offered: ['Fade', 'Beard Trim', 'Head Massage'], opening_time: '8:00 AM', closing_time: '10:00 PM', distance_km: 1.5 },
-            { id: 'loc5', name: `Serenity Aura Spa ${city}`, salon_type: 'spa', gender_served: 'Unisex', city: city, address: `Lakeview Drive, ${city}`, avg_rating: 4.8, review_count: 112, is_active: true, description: 'Holistic healing and aromatherapy.', services_offered: ['Aromatherapy', 'Deep Tissue', 'Sauna'], opening_time: '9:00 AM', closing_time: '9:00 PM', distance_km: 1.8 },
-            { id: 'loc6', name: `Luxe Beauty Lounge`, salon_type: 'parlour', gender_served: 'Female', city: city, address: `Shopping Mall Plaza, ${city}`, avg_rating: 4.5, review_count: 45, is_active: true, description: 'Nail art, extensions and manicures.', services_offered: ['Nail Art', 'Manicure', 'Pedicure'], opening_time: '11:00 AM', closing_time: '9:00 PM', distance_km: 2.1 },
-            { id: 'loc7', name: `Gentlemen's Cut & Shave`, salon_type: 'salon', gender_served: 'Male', city: city, address: `Station Road, ${city}`, avg_rating: 4.4, review_count: 87, is_active: true, description: 'Classic haircuts and hot towel shaves.', services_offered: ['Hair Cut', 'Hot Towel Shave', 'Facial'], opening_time: '7:00 AM', closing_time: '8:00 PM', distance_km: 2.6 },
-            { id: 'loc8', name: `Blossom Bridal Studio`, salon_type: 'parlour', gender_served: 'Female', city: city, address: `Heritage Lane, ${city}`, avg_rating: 4.9, review_count: 201, is_active: true, description: 'Specialized in bridal makeovers.', services_offered: ['Bridal Makeup', 'Hair Styling', 'Saree Draping'], opening_time: '10:00 AM', closing_time: '7:00 PM', distance_km: 3.2 },
-            { id: 'loc9', name: `The Zen Room Massage`, salon_type: 'spa', gender_served: 'Unisex', city: city, address: `Quiet Court, ${city}`, avg_rating: 4.7, review_count: 156, is_active: true, description: 'Thai massage and reflexology specialists.', services_offered: ['Thai Massage', 'Reflexology', 'Acupressure'], opening_time: '9:00 AM', closing_time: '10:00 PM', distance_km: 3.5 },
-            { id: 'loc10', name: `Kutz & Color Studio`, salon_type: 'salon', gender_served: 'Unisex', city: city, address: `College Road, ${city}`, avg_rating: 4.3, review_count: 98, is_active: true, description: 'Trendy coloring, balayage, and styling.', services_offered: ['Balayage', 'Hair Color', 'Styling'], opening_time: '10:00 AM', closing_time: '8:00 PM', distance_km: 4.0 },
-            { id: 'loc11', name: `Pure Elegance Parlour`, salon_type: 'parlour', gender_served: 'Female', city: city, address: `Rose Gardens, ${city}`, avg_rating: 4.6, review_count: 67, is_active: true, description: 'Organic facials and skin treatments.', services_offered: ['Organic Facial', 'Bleach', 'Threading'], opening_time: '9:30 AM', closing_time: '7:30 PM', distance_km: 4.8 },
-            { id: 'loc12', name: `The Modern Man Barber`, salon_type: 'salon', gender_served: 'Male', city: city, address: `Commercial Link, ${city}`, avg_rating: 4.8, review_count: 122, is_active: true, description: 'Modern styling for the modern man.', services_offered: ['Hair Cut', 'Beard Styling', 'Detan'], opening_time: '8:00 AM', closing_time: '9:00 PM', distance_km: 5.2 },
-            { id: 'loc13', name: `Oasis Day Spa`, salon_type: 'spa', gender_served: 'Female', city: city, address: `River View Road, ${city}`, avg_rating: 4.9, review_count: 340, is_active: true, description: 'Luxury day spa for complete rejuvenation.', services_offered: ['Body Scrub', 'Swedish Massage', 'Mud Wrap'], opening_time: '8:00 AM', closing_time: '8:00 PM', distance_km: 6.5 },
-            { id: 'loc14', name: `Snip & Style Unisex`, salon_type: 'salon', gender_served: 'Unisex', city: city, address: `North Avenue, ${city}`, avg_rating: 4.2, review_count: 54, is_active: true, description: 'Quick and affordable styling for everyone.', services_offered: ['Hair Cut', 'Wash & Blowdry'], opening_time: '9:00 AM', closing_time: '9:00 PM', distance_km: 7.1 },
-            { id: 'loc15', name: `Ayurvedic Healing Center`, salon_type: 'spa', gender_served: 'Unisex', city: city, address: `Green Valley, ${city}`, avg_rating: 4.9, review_count: 215, is_active: true, description: 'Traditional Ayurvedic treatments.', services_offered: ['Shirodhara', 'Panchakarma', 'Abhyanga'], opening_time: '7:00 AM', closing_time: '7:00 PM', distance_km: 8.4 },
-          ];
-          setSalons(localMocks);
-          setUsedDemo(true);
-        } catch (e) {
-          // If even reverse geocoding fails, use static demo
-          setSalons(DEMO_SALONS);
-          setUsedDemo(true);
-        }
-      }
+      setSalons(finalSalons);
     } catch {
-      setSalons(DEMO_SALONS);
-      setUsedDemo(true);
+      setSalons([]);
     } finally {
       setLoading(false);
     }
@@ -278,9 +199,28 @@ const SalonMarketplace = () => {
       },
       (err) => {
         setLocationLoading(false);
-        alert('Location access denied. Please enable location in your browser settings.');
+        // Fallback to list mode if location is denied
+        setNearMeActive(false);
+        fetchSalons();
       }
     );
+  };
+
+  const handleSearchSubmit = () => {
+    // Manually trigger the fetch when search button is clicked
+    if (nearMeActive && userLocation) {
+      // In Near Me mode, we can refetch or just let filtering handle it
+      // Let's refetch from the main API if they want to search, 
+      // or we can just filter the already fetched nearby ones below.
+      // But actually, we want the search to apply via API or local filter.
+      // Easiest is to disable nearMe if they do a manual search that is not loc based,
+      // or just call fetchSalons() which respects the filters.
+      // Let's just call fetchSalons and it will use the filters including search.
+      setNearMeActive(false); 
+      fetchSalons();
+    } else {
+      fetchSalons();
+    }
   };
 
   const fetchSalons = useCallback(async () => {
@@ -293,24 +233,12 @@ const SalonMarketplace = () => {
       if (filters.search) params.search = filters.search;
 
       const data = await listSalons(params);
-      if (data.salons?.length > 0) {
+      if (data.salons?.length >= 0) {
         setSalons(data.salons);
         setTotalPages(data.pages || 1);
-        setUsedDemo(false);
-      } else {
-        // Fallback to demo data with local filter
-        let filtered = DEMO_SALONS;
-        if (filters.city) filtered = filtered.filter(s => s.city.toLowerCase().includes(filters.city.toLowerCase()));
-        if (filters.salon_type) filtered = filtered.filter(s => s.salon_type === filters.salon_type);
-        if (filters.gender_served) filtered = filtered.filter(s => s.gender_served === filters.gender_served || s.gender_served === 'Unisex');
-        if (filters.search) filtered = filtered.filter(s => s.name.toLowerCase().includes(filters.search.toLowerCase()) || s.address.toLowerCase().includes(filters.search.toLowerCase()));
-        setSalons(filtered);
-        setUsedDemo(true);
       }
     } catch {
-      // fallback
-      setSalons(DEMO_SALONS);
-      setUsedDemo(true);
+      setSalons([]);
     } finally {
       setLoading(false);
     }
@@ -339,7 +267,11 @@ const SalonMarketplace = () => {
   const handleBook = (salon) => navigate(`/dashboard/salon/${salon.id}`, { state: { salon, activeTab: 'book' } });
   const handleViewDetails = (salon) => navigate(`/dashboard/salon/${salon.id}`, { state: { salon, activeTab: 'overview' } });
 
-  const cities = ['Chennai', 'Bangalore', 'Mumbai', 'Hyderabad', 'Pune', 'Delhi', 'Kolkata'];
+  const filteredSalons = salons.filter(s => {
+    if (!filters.search) return true;
+    const searchLower = filters.search.toLowerCase();
+    return s.name?.toLowerCase().includes(searchLower) || s.address?.toLowerCase().includes(searchLower);
+  });
 
   return (
     <div className="min-h-full">
@@ -375,8 +307,15 @@ const SalonMarketplace = () => {
               placeholder="Search salons, parlours, spas..."
               value={filters.search}
               onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-              className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-gray-50"
+              onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
+              className="w-full pl-10 pr-24 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-gray-50"
             />
+            <button 
+              onClick={handleSearchSubmit}
+              className="absolute right-1 top-1/2 -translate-y-1/2 bg-purple-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors"
+            >
+              Search
+            </button>
           </div>
 
           {/* Near Me Button */}
@@ -464,12 +403,6 @@ const SalonMarketplace = () => {
       </div>
 
       {/* Results */}
-      {usedDemo && (
-        <div className="mb-4 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 flex items-center gap-2">
-          <FaShieldAlt /> Showing demo listings. Register your salon or sign in to see real listings.
-        </div>
-      )}
-
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {Array(6).fill(0).map((_, i) => (
@@ -484,13 +417,13 @@ const SalonMarketplace = () => {
             </div>
           ))}
         </div>
-      ) : salons.length === 0 ? (
+      ) : filteredSalons.length === 0 ? (
         <div className="py-20 text-center">
           <div className="text-5xl mb-4">🔍</div>
           <p className="text-lg font-bold text-gray-700">No salons found</p>
           <p className="text-sm text-gray-400 mt-1">Try different filters or search terms</p>
           <button
-            onClick={() => setFilters({ city: '', salon_type: '', gender_served: '', search: '' })}
+            onClick={() => { setFilters({ city: '', salon_type: '', gender_served: '', search: '' }); if (nearMeActive) fetchNearby(userLocation?.lat, userLocation?.lon); else fetchSalons(); }}
             className="mt-4 px-5 py-2 bg-purple-600 text-white text-sm font-semibold rounded-xl hover:bg-purple-700 transition-colors"
           >
             Clear all filters
@@ -500,12 +433,12 @@ const SalonMarketplace = () => {
         <>
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-gray-500">
-              <span className="font-semibold text-gray-900">{salons.length}</span> results
+              <span className="font-semibold text-gray-900">{filteredSalons.length}</span> results
               {filters.city && <> in <span className="font-semibold text-purple-600">{filters.city}</span></>}
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {salons.map(salon => (
+            {filteredSalons.map(salon => (
               <SalonCard
                 key={salon.id}
                 salon={salon}
@@ -516,7 +449,7 @@ const SalonMarketplace = () => {
           </div>
 
           {/* Pagination */}
-          {!usedDemo && totalPages > 1 && (
+          {totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-8">
               {Array(totalPages).fill(0).map((_, i) => (
                 <button

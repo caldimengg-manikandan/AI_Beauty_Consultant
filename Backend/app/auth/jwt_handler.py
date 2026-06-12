@@ -23,7 +23,7 @@ import os
 
 SECRET_KEY = os.getenv("JWT_SECRET", "super_secret_key")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 hours – shop owners run long sessions
 
 def create_access_token(data: dict):
     to_encode = data.copy()

@@ -153,7 +153,7 @@ async def handle_chat_message(req: ChatMessage, current_user: dict = Depends(get
             
             # Create the actual appointment
             salon = salons_collection.find_one({}) # Just pick the first salon for demo
-            salon_id = str(salon["_id"]) if salon else "demo_salon"
+            salon_id = salon["id"] if salon else "demo_salon"
             salon_name = salon["name"] if salon else "Luxe Beauty Lounge"
             
             new_appt = {

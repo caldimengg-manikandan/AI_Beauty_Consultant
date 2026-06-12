@@ -57,7 +57,7 @@ export const getSalonCoupons = (salonId) =>
 // ─── Inventory Management ─────────────────────────────────────────────────────
 
 export const getInventory = (params = {}) =>
-  api.get('/api/inventory/', { params }).then(r => r.data);
+  api.get('/api/inventory/', { params }).then(r => r.data.products || r.data);
 
 export const addProduct = (productData) =>
   api.post('/api/inventory/', productData).then(r => r.data);
@@ -125,9 +125,29 @@ export const toggleAutomation = async (autoId) => {
   return res.data;
 };
 
+export const runAutomation = async (autoId) => {
+  const res = await api.post(`/api/campaigns/automations/${autoId}/run`);
+  return res.data;
+};
+
 // --- INSIGHTS ---
-export const getBusinessInsights = async () => {
-  const res = await api.get('/api/insights/dashboard');
+export const getBusinessInsights = async (days = 30) => {
+  const res = await api.get('/api/insights/dashboard', { params: { days } });
+  return res.data;
+};
+
+export const getServicesBreakdown = async (days = 30) => {
+  const res = await api.get('/api/insights/services-breakdown', { params: { days } });
+  return res.data;
+};
+
+export const getCustomerRetention = async (days = 30) => {
+  const res = await api.get('/api/insights/customer-retention', { params: { days } });
+  return res.data;
+};
+
+export const getChurnRisk = async () => {
+  const res = await api.get('/api/insights/churn-risk');
   return res.data;
 };
 

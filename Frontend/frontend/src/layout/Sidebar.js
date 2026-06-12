@@ -4,16 +4,17 @@ import {
   FaHome, FaCamera, FaChartLine, FaHistory, FaMagic, FaCut,
   FaPaintBrush, FaSpa, FaUserCircle, FaShieldAlt, FaStethoscope,
   FaMicroscope, FaRoute, FaBullseye, FaBuilding, FaStore,
-  FaCalendarCheck, FaGift, FaShoppingBag, FaVideo, FaNetworkWired,
+  FaCalendarCheck, FaGift, FaShoppingBag, FaVideo,
   FaCrown, FaMoon, FaSun, FaGlobe, FaUsers, FaFileInvoiceDollar,
   FaChartBar, FaTag, FaBullhorn, FaBoxOpen, FaTruck, FaWpforms,
-  FaKey, FaLock, FaChevronDown, FaChevronRight,
+  FaChevronDown, FaChevronRight, FaWarehouse, FaNetworkWired,
+  FaUsersCog, FaLayerGroup, FaConciergeBell, FaPassport,
+  FaFlask, FaBrain, FaExclamationTriangle,
 } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-// ── NavItem ───────────────────────────────────────────────────────────────────
 const NavItem = ({ to, icon, label, badge, badgeColor }) => (
   <NavLink
     to={to}
@@ -45,7 +46,6 @@ const NavItem = ({ to, icon, label, badge, badgeColor }) => (
   </NavLink>
 );
 
-// ── Section ───────────────────────────────────────────────────────────────────
 const NavSection = ({ title, color = "text-slate-400", children, collapsible = false }) => {
   const [open, setOpen] = useState(true);
   return (
@@ -62,12 +62,224 @@ const NavSection = ({ title, color = "text-slate-400", children, collapsible = f
   );
 };
 
-// ── Sidebar ───────────────────────────────────────────────────────────────────
+const UserNav = ({ can, profile, role, t }) => {
+  const [latestGender, setLatestGender] = useState(null);
+
+  useEffect(() => {
+    import("../services/api").then(module => {
+      module.default.get("/api/analyze/history?limit=1")
+        .then(r => {
+          if (r.data?.analyses?.length > 0) {
+            setLatestGender(r.data.analyses[0].gender);
+          } else if (r.data?.length > 0) {
+            setLatestGender(r.data[0].gender);
+          }
+        })
+        .catch(() => {});
+    });
+  }, []);
+
+  const isMale = profile?.gender?.toLowerCase() === "male" || latestGender?.toLowerCase() === "male";
+
+  return (
+    <>
+      <NavSection title="Beauty AI" collapsible>
+        <NavItem to="/dashboard/analyze"      icon={<FaMagic />}      label="Face Analysis"    badge="AI"  badgeColor="bg-violet-100 text-violet-600" />
+        <NavItem to="/dashboard/live-analyze" icon={<FaCamera />}     label="Live Camera" />
+        <NavItem to="/dashboard/scan"         icon={<FaMicroscope />} label="Ingredient Scan"  badge="NEW" badgeColor="bg-teal-100 text-teal-600" />
+          {can("skin_journey")  && <NavItem to="/dashboard/journey"  icon={<FaRoute />}       label="Skin Journey" />}
+        {can("goals_tracker") && <NavItem to="/dashboard/goals"    icon={<FaBullseye />}    label="Goals Tracker" />}
+      </NavSection>
+
+      <NavSection title="Styling Studio" collapsible>
+        <NavItem to="/dashboard/hair-styling"   icon={<FaCut />}         label="Hair Styling" />
+        {!isMale && (
+          <NavItem to="/dashboard/nail-styling" icon={<FaPaintBrush />}  label="Nail Studio" />
+        )}
+        <NavItem to="/dashboard/virtual-studio" icon={<FaUserCircle />}  label="Vision Studio"  badge="AR"  badgeColor="bg-indigo-100 text-indigo-600" />
+      </NavSection>
+
+    <NavSection title="Smart Tools" collapsible>
+      {can("ingredient_conflict") && <NavItem to="/dashboard/conflict-checker" icon={<FaFlask />}             label="Conflict Checker"     badge="AI"  badgeColor="bg-rose-100 text-rose-600" />}
+    </NavSection>
+
+    <NavSection title="Marketplace" collapsible>
+      <NavItem to="/dashboard/marketplace" icon={<FaBuilding />}    label="Find Salons" />
+      <NavItem to="/dashboard/services"    icon={<FaSpa />}         label="Spa Services"   badge="HOT" badgeColor="bg-rose-100 text-rose-600" />
+      <NavItem to="/dashboard/reels"       icon={<FaVideo />}       label="Beauty Reels" />
+      <NavItem to="/dashboard/store"       icon={<FaShoppingBag />} label="Beauty Store" />
+      {can("routine_shop") && (
+        <NavItem to="/dashboard/routine-shop" icon={<FaMagic />}   label="AI Routine Shop" badge="NEW" badgeColor="bg-indigo-100 text-indigo-600" />
+      )}
+      <NavItem to="/dashboard/my-bookings" icon={<FaCalendarCheck />} label={t("my_bookings") || "My Bookings"} />
+    </NavSection>
+
+    <NavSection title="Rewards" collapsible>
+      {can("memberships")    && <NavItem to="/dashboard/memberships" icon={<FaCrown />} label="Memberships"    badge="PRO" badgeColor="bg-amber-100 text-amber-600" />}
+      {can("loyalty_rewards") && <NavItem to="/dashboard/loyalty"    icon={<FaGift />}  label="Loyalty & Rewards" />}
+    </NavSection>
+
+    {can("evolution") ? (
+      <NavSection title="Insights" collapsible>
+        <NavItem to="/dashboard/evolution" icon={<FaMagic />}      label="Evolution"    badge="PRO" badgeColor="bg-purple-100 text-purple-600" />
+        <NavItem to="/dashboard/trends"    icon={<FaChartLine />}  label="Skin Trends" />
+        <NavItem to="/dashboard/history"   icon={<FaHistory />}    label={t("history") || "History"} />
+        <NavItem to="/dashboard/products"  icon={<FaShoppingBag />} label="Products" />
+      </NavSection>
+    ) : (
+      <NavSection title="My Activity" collapsible>
+        <NavItem to="/dashboard/history"  icon={<FaHistory />}     label={t("history") || "History"} />
+        <NavItem to="/dashboard/products" icon={<FaShoppingBag />} label="Products" />
+      </NavSection>
+    )}
+
+    {role === "user" && (
+      <div className="mt-5 mx-1 p-3 rounded-2xl bg-gradient-to-br from-violet-50 to-teal-50 border border-violet-100">
+        <div className="flex items-center gap-2 mb-2">
+          <FaCrown className="text-amber-500 text-sm" />
+          <span className="text-xs font-black text-slate-700">Upgrade to Premium</span>
+        </div>
+        <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
+          Unlock unlimited scans, advanced AI insights, and more.
+        </p>
+        <Link
+          to="/premium"
+          className="block w-full text-center py-1.5 bg-gradient-to-r from-violet-600 to-teal-500 text-white text-[10px] font-black rounded-xl hover:opacity-90 transition-opacity"
+        >
+          Explore Plans
+        </Link>
+      </div>
+    )}
+  </>
+  );
+};
+
+const ShopOwnerNav = ({ can }) => (
+  <>
+    <NavSection title="My Business" collapsible color="text-amber-500">
+      <NavItem to="/dashboard/shop-owner" icon={<FaStore />}    label="Shop Dashboard"      badge="B2B" badgeColor="bg-amber-100 text-amber-700" />
+      {can("ai_insights")  && <NavItem to="/dashboard/insights"  icon={<FaChartBar />}   label="AI Business Insights" badge="AI" badgeColor="bg-violet-100 text-violet-600" />}
+    </NavSection>
+
+    <NavSection title="Smart Tools" collapsible color="text-violet-500">
+      {can("client_intelligence") && <NavItem to="/dashboard/client-intelligence" icon={<FaBrain />}              label="Client Intelligence" badge="NEW" badgeColor="bg-violet-100 text-violet-600" />}
+      {can("noshow_predictor")    && <NavItem to="/dashboard/noshow-predictor"    icon={<FaExclamationTriangle />} label="No-Show Predictor"   badge="AI"  badgeColor="bg-rose-100 text-rose-600" />}
+    </NavSection>
+
+    <NavSection title="Operations" collapsible color="text-amber-400">
+      {can("shop_appointments") && <NavItem to="/dashboard/shop-owner" icon={<FaCalendarCheck />} label="Appointments" />}
+      {can("shop_services")     && <NavItem to="/dashboard/shop-services" icon={<FaConciergeBell />} label="Services" />}
+      {can("shop_products")     && <NavItem to="/dashboard/shop-products" icon={<FaBoxOpen />}       label="Products" />}
+    </NavSection>
+
+    <NavSection title="People" collapsible color="text-blue-400">
+      {can("staff_management") && <NavItem to="/dashboard/staff" icon={<FaUsers />}    label="Staff Management" />}
+    </NavSection>
+
+    <NavSection title="Marketing" collapsible color="text-rose-400">
+      {can("campaigns") && <NavItem to="/dashboard/campaigns" icon={<FaBullhorn />} label="Campaigns" />}
+      {can("coupons")   && <NavItem to="/dashboard/coupons"   icon={<FaTag />}      label="Coupons & Offers" />}
+    </NavSection>
+
+    <NavSection title="Developer" collapsible color="text-slate-400">
+      {can("custom_forms")  && <NavItem to="/dashboard/forms"    icon={<FaWpforms />}     label="Custom Forms" />}
+      {can("webhooks_api")  && <NavItem to="/dashboard/webhooks" icon={<FaNetworkWired />} label="Webhooks & API" />}
+    </NavSection>
+  </>
+);
+
+const AdminNav = ({ can, t }) => (
+  <>
+    <NavSection title="System Control" color="text-red-400">
+      <NavItem to="/dashboard/admin" icon={<FaShieldAlt />} label="Admin Console" badge="SYS" badgeColor="bg-red-100 text-red-600" />
+    </NavSection>
+
+    {can("expert_panel") && (
+      <NavSection title="Expert Tools" color="text-blue-500">
+        <NavItem to="/dashboard/expert" icon={<FaStethoscope />} label="Expert Review Queue" badge="DOC" badgeColor="bg-blue-100 text-blue-600" />
+      </NavSection>
+    )}
+
+    <NavSection title="Platform Analytics" collapsible color="text-violet-500">
+      {can("ai_insights") && <NavItem to="/dashboard/insights" icon={<FaChartBar />}  label="AI Business Insights" badge="AI" badgeColor="bg-violet-100 text-violet-600" />}
+      <NavItem to="/dashboard/trends" icon={<FaChartLine />} label="Platform Trends" />
+    </NavSection>
+
+    <NavSection title="Users & Shops" collapsible color="text-teal-500">
+      <NavItem to="/dashboard/shop-owner" icon={<FaStore />}    label="Shop Management" />
+      <NavItem to="/dashboard/staff"      icon={<FaUsers />}   label="User Management" />
+    </NavSection>
+
+    <NavSection title="Smart Tools" collapsible color="text-violet-500">
+      <NavItem to="/dashboard/client-intelligence" icon={<FaBrain />}              label="Client Intelligence" badge="AI"  badgeColor="bg-violet-100 text-violet-600" />
+      <NavItem to="/dashboard/noshow-predictor"    icon={<FaExclamationTriangle />} label="No-Show Predictor"   badge="AI"  badgeColor="bg-rose-100 text-rose-600" />
+      <NavItem to="/dashboard/conflict-checker"    icon={<FaFlask />}               label="Conflict Checker"    badge="AI"  badgeColor="bg-rose-100 text-rose-600" />
+    </NavSection>
+
+    <NavSection title="Operations" collapsible color="text-amber-400">
+      <NavItem to="/dashboard/inventory"    icon={<FaWarehouse />}        label="Inventory" />
+      <NavItem to="/dashboard/invoices"     icon={<FaFileInvoiceDollar />} label="POS & Invoices" />
+      <NavItem to="/dashboard/supply-chain" icon={<FaTruck />}            label="Supply Chain" />
+    </NavSection>
+
+    <NavSection title="Marketing" collapsible color="text-rose-400">
+      <NavItem to="/dashboard/campaigns" icon={<FaBullhorn />} label="Campaigns" />
+      <NavItem to="/dashboard/coupons"   icon={<FaTag />}      label="Coupons & Offers" />
+    </NavSection>
+
+    <NavSection title="Beauty AI" collapsible>
+      <NavItem to="/dashboard/analyze"      icon={<FaMagic />}      label="Face Analysis"  badge="AI" badgeColor="bg-violet-100 text-violet-600" />
+      <NavItem to="/dashboard/live-analyze" icon={<FaCamera />}     label="Live Camera" />
+      <NavItem to="/dashboard/scan"         icon={<FaMicroscope />} label="Ingredient Scan" />
+      <NavItem to="/dashboard/marketplace"  icon={<FaBuilding />}   label="Marketplace" />
+      <NavItem to="/dashboard/store"        icon={<FaShoppingBag />} label="Beauty Store" />
+    </NavSection>
+
+    <NavSection title="Developer" collapsible color="text-slate-400">
+      <NavItem to="/dashboard/forms"    icon={<FaWpforms />}     label="Custom Forms" />
+      <NavItem to="/dashboard/webhooks" icon={<FaNetworkWired />} label="Webhooks & API" />
+    </NavSection>
+  </>
+);
+
+const ExpertNav = ({ can, profile, t }) => (
+  <>
+    <NavSection title="Professional" color="text-blue-500">
+      <NavItem to="/dashboard/expert" icon={<FaStethoscope />} label="Expert Review Queue" badge="DOC" badgeColor="bg-blue-100 text-blue-600" />
+    </NavSection>
+
+    <NavSection title="Smart Tools" collapsible color="text-violet-500">
+      {can("ingredient_conflict") && <NavItem to="/dashboard/conflict-checker" icon={<FaFlask />}    label="Conflict Checker" badge="AI"  badgeColor="bg-rose-100 text-rose-600" />}
+    </NavSection>
+
+    <NavSection title="Beauty AI" collapsible>
+      <NavItem to="/dashboard/analyze"      icon={<FaMagic />}       label="Face Analysis"  badge="AI" badgeColor="bg-violet-100 text-violet-600" />
+      <NavItem to="/dashboard/live-analyze" icon={<FaCamera />}      label="Live Camera" />
+      <NavItem to="/dashboard/scan"         icon={<FaMicroscope />}  label="Ingredient Scan" />
+      {can("skin_journey")    && <NavItem to="/dashboard/journey"  icon={<FaRoute />}       label="Skin Journey" />}
+      {can("goals_tracker")   && <NavItem to="/dashboard/goals"    icon={<FaBullseye />}    label="Goals Tracker" />}
+    </NavSection>
+
+    {can("evolution") && (
+      <NavSection title="Insights" collapsible>
+        <NavItem to="/dashboard/evolution" icon={<FaMagic />}      label="Evolution"   badge="PRO" badgeColor="bg-purple-100 text-purple-600" />
+        <NavItem to="/dashboard/trends"    icon={<FaChartLine />}  label="Skin Trends" />
+        <NavItem to="/dashboard/history"   icon={<FaHistory />}    label={t("history") || "History"} />
+      </NavSection>
+    )}
+
+    <NavSection title="Marketplace" collapsible>
+      <NavItem to="/dashboard/marketplace" icon={<FaBuilding />}    label="Find Salons" />
+      <NavItem to="/dashboard/services"    icon={<FaSpa />}         label="Spa Services" />
+      <NavItem to="/dashboard/store"       icon={<FaShoppingBag />} label="Beauty Store" />
+    </NavSection>
+  </>
+);
+
 const Sidebar = ({ onClose }) => {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { user, can, role, profile } = useAuth();
-
   const roleInfo = ROLE_LABELS[role] || ROLE_LABELS.user;
 
   const changeLanguage = (lng) => {
@@ -84,7 +296,6 @@ const Sidebar = ({ onClose }) => {
   return (
     <aside className="w-64 h-full bg-white/90 backdrop-blur-xl shadow-2xl flex flex-col z-20 border-r border-slate-100 overflow-hidden">
 
-      {/* ── Logo ── */}
       <div className="px-4 pt-5 pb-4 border-b border-slate-100 flex items-center justify-between">
         <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2.5 group">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-teal-500 p-px">
@@ -109,14 +320,10 @@ const Sidebar = ({ onClose }) => {
         </button>
       </div>
 
-      {/* ── Role Badge ── */}
       <div className="px-4 py-2.5 border-b border-slate-50">
         <div className="flex items-center gap-2">
-          <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
-            style={{ background: roleInfo.bg, color: roleInfo.color }}
-          >
-            <div className="w-1.5 h-1.5 rounded-full" style={{ background: roleInfo.color }} />
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${roleInfo.color}`}>
+            <div className="w-1.5 h-1.5 rounded-full bg-current opacity-60" />
             {roleInfo.label}
           </div>
           <span className="text-[11px] text-slate-400 font-medium truncate">
@@ -125,151 +332,23 @@ const Sidebar = ({ onClose }) => {
         </div>
       </div>
 
-      {/* ── Nav ── */}
       <nav className="flex-1 px-3 pb-4 overflow-y-auto custom-scrollbar">
-
-        {/* Home */}
         <div className="mt-3">
           <NavItem to="/dashboard" icon={<FaHome />} label={t("dashboard")} />
         </div>
 
-        {/* ── ADMIN ONLY ── */}
-        {can("admin_console") && (
-          <NavSection title="⚙ System" color="text-red-400">
-            <NavItem to="/dashboard/admin" icon={<FaShieldAlt />} label="Admin Console" badge="SYS" badgeColor="bg-red-100 text-red-600" />
-          </NavSection>
+        {role === "admin"      && <AdminNav can={can} t={t} />}
+        {role === "expert"     && <ExpertNav can={can} profile={profile} t={t} />}
+        {role === "shop_owner" && <ShopOwnerNav can={can} />}
+        {(role === "user" || role === "premium") && (
+          <UserNav can={can} profile={profile} role={role} t={t} />
         )}
 
-        {/* ── EXPERT / ADMIN ── */}
-        {can("expert_panel") && (
-          <NavSection title="🩺 Professional" color="text-blue-500">
-            <NavItem to="/dashboard/expert" icon={<FaStethoscope />} label="Expert Review Queue" badge="DOC" badgeColor="bg-blue-100 text-blue-600" />
-          </NavSection>
-        )}
-
-        {/* ── BEAUTY AI — all roles ── */}
-        <NavSection title="✨ Beauty AI" collapsible>
-          <NavItem to="/dashboard/analyze" icon={<FaMagic />} label="Face Analysis" badge="AI" badgeColor="bg-violet-100 text-violet-600" />
-          <NavItem to="/dashboard/live-analyze" icon={<FaCamera />} label="Live Camera" />
-          <NavItem to="/dashboard/scan" icon={<FaMicroscope />} label="Ingredient Scan" badge="NEW" badgeColor="bg-teal-100 text-teal-600" />
-          {can("skin_health") && (
-            <NavItem to="/dashboard/lookbook" icon={<FaChartLine />} label="Skin Health" />
-          )}
-          {can("skin_journey") && (
-            <NavItem to="/dashboard/journey" icon={<FaRoute />} label="Skin Journey" />
-          )}
-          {can("goals_tracker") && (
-            <NavItem to="/dashboard/goals" icon={<FaBullseye />} label="Goals Tracker" />
-          )}
-        </NavSection>
-
-        {/* ── STYLING STUDIO — all roles ── */}
-        <NavSection title="💅 Styling Studio" collapsible>
-          <NavItem to="/dashboard/hair-styling" icon={<FaCut />} label="Hair Styling" />
-          {profile?.gender?.toLowerCase() !== 'male' && (
-            <NavItem to="/dashboard/nail-styling" icon={<FaPaintBrush />} label="Nail Studio" />
-          )}
-          <NavItem to="/dashboard/virtual-studio" icon={<FaUserCircle />} label="Vision Studio" badge="AR" badgeColor="bg-indigo-100 text-indigo-600" />
-          {can("routine_builder") && (
-            <NavItem to="/dashboard/routine" icon={<FaStethoscope />} label="Routine Builder" />
-          )}
-        </NavSection>
-
-        {/* ── MARKETPLACE — all roles ── */}
-        <NavSection title="🏪 Marketplace" collapsible>
-          <NavItem to="/dashboard/marketplace" icon={<FaBuilding />} label="Find Salons" />
-          <NavItem to="/dashboard/services" icon={<FaSpa />} label="Spa Services" badge="HOT" badgeColor="bg-rose-100 text-rose-600" />
-          <NavItem to="/dashboard/reels" icon={<FaVideo />} label="Beauty Reels" />
-          <NavItem to="/dashboard/store" icon={<FaShoppingBag />} label="Beauty Store" />
-          <NavItem to="/dashboard/routine-shop" icon={<FaMagic />} label="AI Routine Shop" badge="NEW" badgeColor="bg-indigo-100 text-indigo-600" />
-          <NavItem to="/dashboard/my-bookings" icon={<FaCalendarCheck />} label={t("my_bookings") || "My Bookings"} />
-        </NavSection>
-
-        {/* ── REWARDS ── */}
-        <NavSection title="🎁 Rewards" collapsible>
-          {can("memberships") && (
-            <NavItem to="/dashboard/memberships" icon={<FaCrown />} label="Memberships" badge="PRO" badgeColor="bg-amber-100 text-amber-600" />
-          )}
-          {can("loyalty_rewards") && (
-            <NavItem to="/dashboard/loyalty" icon={<FaGift />} label="Loyalty & Rewards" />
-          )}
-        </NavSection>
-
-        {/* ── INSIGHTS — premium+ ── */}
-        {can("evolution") && (
-          <NavSection title="📊 Insights" collapsible>
-            <NavItem to="/dashboard/evolution" icon={<FaMagic />} label="Evolution" badge="PRO" badgeColor="bg-purple-100 text-purple-600" />
-            <NavItem to="/dashboard/trends" icon={<FaChartLine />} label="Skin Trends" />
-            <NavItem to="/dashboard/history" icon={<FaHistory />} label={t("history") || "History"} />
-          </NavSection>
-        )}
-
-        {/* ── SHOP OWNER / ADMIN ONLY ── */}
-        {can("my_shop") && (
-          <NavSection title="🏢 Business Hub" color="text-amber-500" collapsible>
-            <NavItem to="/dashboard/shop-owner" icon={<FaStore />} label="My Shop Dashboard" badge="B2B" badgeColor="bg-amber-100 text-amber-700" />
-            {can("franchise_hq") && (
-              <NavItem to="/dashboard/franchise" icon={<FaNetworkWired />} label="Franchise HQ" badge="HQ" badgeColor="bg-amber-100 text-amber-700" />
-            )}
-            {can("staff_management") && (
-              <NavItem to="/dashboard/staff" icon={<FaUsers />} label="Staff Management" />
-            )}
-            {can("hr_payroll") && (
-              <NavItem to="/dashboard/hr" icon={<FaFileInvoiceDollar />} label="HR & Payroll" />
-            )}
-            {can("inventory") && (
-              <NavItem to="/dashboard/inventory" icon={<FaBoxOpen />} label="Inventory" />
-            )}
-            {can("pos_invoices") && (
-              <NavItem to="/dashboard/invoices" icon={<FaFileInvoiceDollar />} label="POS & Invoices" />
-            )}
-            {can("campaigns") && (
-              <NavItem to="/dashboard/campaigns" icon={<FaBullhorn />} label="Campaigns" />
-            )}
-            {can("coupons") && (
-              <NavItem to="/dashboard/coupons" icon={<FaTag />} label="Coupons" />
-            )}
-            {can("ai_insights") && (
-              <NavItem to="/dashboard/insights" icon={<FaChartBar />} label="AI Business Insights" badge="AI" badgeColor="bg-violet-100 text-violet-600" />
-            )}
-            {can("supply_chain") && (
-              <NavItem to="/dashboard/supply-chain" icon={<FaTruck />} label="Supply Chain" />
-            )}
-            {can("custom_forms") && (
-              <NavItem to="/dashboard/forms" icon={<FaWpforms />} label="Custom Forms" />
-            )}
-            {can("webhooks_api") && (
-              <NavItem to="/dashboard/webhooks" icon={<FaKey />} label="Webhooks & API Keys" />
-            )}
-          </NavSection>
-        )}
-
-        {/* ── SETTINGS — always last ── */}
-        <NavSection title="⚙ Account">
+        <NavSection title="Account">
           <NavItem to="/dashboard/settings" icon={<FaUserCircle />} label="Settings" />
         </NavSection>
-
-        {/* Upgrade Prompt for free users */}
-        {role === "user" && (
-          <div className="mt-5 mx-1 p-3 rounded-2xl bg-gradient-to-br from-violet-50 to-teal-50 border border-violet-100">
-            <div className="flex items-center gap-2 mb-2">
-              <FaCrown className="text-amber-500 text-sm" />
-              <span className="text-xs font-black text-slate-700">Upgrade to Premium</span>
-            </div>
-            <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
-              Unlock unlimited scans, advanced AI insights, and more.
-            </p>
-            <Link
-              to="/premium"
-              className="block w-full text-center py-1.5 bg-gradient-to-r from-violet-600 to-teal-500 text-white text-[10px] font-black rounded-xl hover:opacity-90 transition-opacity"
-            >
-              Explore Plans →
-            </Link>
-          </div>
-        )}
       </nav>
 
-      {/* ── Theme & Language ── */}
       <div className="px-3 py-3 border-t border-slate-100 bg-slate-50/50">
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-wrap gap-1">

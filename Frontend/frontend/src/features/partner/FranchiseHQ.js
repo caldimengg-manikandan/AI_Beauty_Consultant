@@ -1,153 +1,107 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { FiGrid, FiTrendingUp, FiUsers, FiMapPin, FiRepeat, FiAward } from 'react-icons/fi';
-import { getFranchiseDashboard } from '../../services/franchiseApi';
-import { toast } from 'react-toastify';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { FiMapPin, FiTrendingUp, FiUsers, FiStar, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+
+const BRANCHES = [
+  { id: 1, name: 'Koramangala Flagship', city: 'Bangalore', mgr: 'Priya Nair',    revenue: 182000, rating: 4.8, staff: 12, bookings: 340, trend: +12, color: 'from-violet-500 to-purple-600' },
+  { id: 2, name: 'Indiranagar',          city: 'Bangalore', mgr: 'Rohit Sharma',  revenue: 124000, rating: 4.5, staff: 8,  bookings: 218, trend: +5,  color: 'from-teal-500 to-emerald-600' },
+  { id: 3, name: 'Whitefield',           city: 'Bangalore', mgr: 'Divya Menon',   revenue: 98000,  rating: 4.3, staff: 6,  bookings: 176, trend: -3,  color: 'from-amber-500 to-orange-600' },
+  { id: 4, name: 'MG Road',              city: 'Bangalore', mgr: 'Anil Kumar',    revenue: 156000, rating: 4.6, staff: 10, bookings: 295, trend: +9,  color: 'from-rose-500 to-pink-600'    },
+  { id: 5, name: 'HSR Layout',           city: 'Bangalore', mgr: 'Sneha Patil',   revenue: 87000,  rating: 4.2, staff: 5,  bookings: 149, trend: +2,  color: 'from-blue-500 to-indigo-600'  },
+];
+
+const REVENUE_CHART = BRANCHES.map(b => ({ name: b.name.split(' ')[0], revenue: b.revenue }));
+
+const METRICS = [
+  { label: 'Total Revenue', value: `₹${(BRANCHES.reduce((s,b)=>s+b.revenue,0)/1000).toFixed(0)}k`, icon: <FiTrendingUp/>, color: 'from-violet-500 to-purple-600' },
+  { label: 'Total Staff',   value: BRANCHES.reduce((s,b)=>s+b.staff,0),                             icon: <FiUsers/>,      color: 'from-teal-500 to-emerald-600' },
+  { label: 'Avg Rating',    value: (BRANCHES.reduce((s,b)=>s+b.rating,0)/BRANCHES.length).toFixed(1), icon: <FiStar/>,     color: 'from-amber-500 to-orange-600' },
+  { label: 'Branches',      value: BRANCHES.length,                                                  icon: <FiMapPin/>,     color: 'from-rose-500 to-pink-600'    },
+];
 
 export default function FranchiseHQ() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await getFranchiseDashboard();
-      setData(res);
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Failed to load Franchise HQ data');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
-  if (loading) return (
-    <div className="flex items-center justify-center py-20 min-h-screen">
-      <div className="w-10 h-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
-
-  if (!data) return (
-    <div className="p-8 text-center bg-white rounded-3xl border border-slate-200">
-      <p className="text-slate-500">Franchise data unavailable.</p>
-    </div>
-  );
+  const [expanded, setExpanded] = useState(null);
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto animate-fade-in-up">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            <FiGrid className="text-slate-900" /> Franchise HQ
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">Enterprise Dashboard for Multi-Branch Management</p>
-        </div>
+    <div className="space-y-6">
+      {/* KPI row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {METRICS.map(m => (
+          <motion.div key={m.label} whileHover={{ y: -3 }}
+            className={`bg-gradient-to-br ${m.color} text-white rounded-2xl p-4 shadow-lg`}>
+            <div className="text-xl mb-2 opacity-80">{m.icon}</div>
+            <div className="text-2xl font-black">{m.value}</div>
+            <div className="text-[11px] font-semibold opacity-75 mt-0.5">{m.label}</div>
+          </motion.div>
+        ))}
       </div>
 
-      {/* Aggregate Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
-          <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
-          <h3 className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-2 flex items-center gap-2"><FiMapPin /> Total Branches</h3>
-          <div className="text-4xl font-black">{data.overview.total_branches}</div>
-        </div>
-        <div className="bg-indigo-600 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
-          <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
-          <h3 className="text-indigo-200 font-bold text-xs uppercase tracking-widest mb-2 flex items-center gap-2"><FiTrendingUp /> Network Revenue (30d)</h3>
-          <div className="text-3xl font-black">₹{data.overview.network_revenue.toLocaleString()}</div>
-          <p className="text-xs text-indigo-200 mt-1">{data.overview.yoy_growth} vs last year</p>
-        </div>
-        <div className="bg-emerald-500 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
-           <h3 className="text-emerald-100 font-bold text-xs uppercase tracking-widest mb-2 flex items-center gap-2"><FiGrid /> Network Bookings</h3>
-          <div className="text-3xl font-black">{data.overview.network_bookings.toLocaleString()}</div>
-        </div>
-        <div className="bg-amber-500 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
-           <h3 className="text-amber-100 font-bold text-xs uppercase tracking-widest mb-2 flex items-center gap-2"><FiUsers /> Total Staff</h3>
-          <div className="text-3xl font-black">{data.overview.network_staff}</div>
-        </div>
+      {/* Revenue Bar Chart */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+        <h3 className="text-sm font-black text-slate-800 mb-1">Revenue by Branch</h3>
+        <p className="text-[11px] text-slate-400 mb-4">This month's performance</p>
+        <ResponsiveContainer width="100%" height={160}>
+          <BarChart data={REVENUE_CHART} barSize={28}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false}/>
+            <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
+            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v=>`₹${(v/1000).toFixed(0)}k`}/>
+            <Tooltip formatter={v=>[`₹${v.toLocaleString()}`, 'Revenue']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}/>
+            <Bar dataKey="revenue" fill="#7c3aed" radius={[6,6,0,0]}/>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
-      {/* Multi-Branch Comparison Chart */}
-      <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm">
-        <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Branch Revenue Comparison (6 Months)</h3>
-        <div className="h-[350px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.monthly_trend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 'bold'}} />
-              <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} tickFormatter={(value) => `₹${value/1000}k`} />
-              <Tooltip 
-                contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
-              />
-              <Legend iconType="circle" wrapperStyle={{fontSize: '12px', fontWeight: 'bold', paddingTop: '20px'}} />
-              
-              {/* Dynamically create lines for each branch */}
-              {data.branches.map((branch, idx) => {
-                const colors = ['#6366f1', '#14b8a6', '#f59e0b', '#ec4899', '#8b5cf6'];
-                return (
-                  <Line 
-                    key={branch.id} 
-                    type="monotone" 
-                    dataKey={branch.name} 
-                    stroke={colors[idx % colors.length]} 
-                    strokeWidth={4}
-                    dot={{r: 4, strokeWidth: 2}}
-                    activeDot={{r: 6, strokeWidth: 0}}
-                  />
-                );
-              })}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      {/* Branch Cards */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-black text-slate-800">All Locations</h3>
+        {BRANCHES.map((branch, idx) => (
+          <motion.div key={branch.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06 }}
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            {/* Header row */}
+            <button className="w-full text-left p-4 flex items-center gap-4" onClick={() => setExpanded(expanded === branch.id ? null : branch.id)}>
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${branch.color} flex items-center justify-center text-white text-sm font-black shrink-0`}>
+                {branch.name[0]}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-black text-slate-800 truncate">{branch.name}</p>
+                <p className="text-[11px] text-slate-400 flex items-center gap-1"><FiMapPin size={10}/>{branch.city} · {branch.mgr}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-sm font-black text-slate-800">₹{(branch.revenue/1000).toFixed(0)}k</p>
+                <p className={`text-[11px] font-bold ${branch.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {branch.trend >= 0 ? '▲' : '▼'} {Math.abs(branch.trend)}%
+                </p>
+              </div>
+              <div className="ml-2 text-slate-400">
+                {expanded === branch.id ? <FiChevronUp size={14}/> : <FiChevronDown size={14}/>}
+              </div>
+            </button>
 
-      {/* Branch Directory */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Branch Directory</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-100">
-                <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Branch Name</th>
-                <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Revenue (30d)</th>
-                <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Bookings</th>
-                <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Staff</th>
-                <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.branches.map(branch => (
-                <tr key={branch.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors group">
-                  <td className="p-4">
-                    <div className="font-bold text-slate-900">{branch.name}</div>
-                    <div className="text-xs text-slate-500 max-w-[200px] truncate">{branch.address}</div>
-                  </td>
-                  <td className="p-4 font-black text-slate-900">₹{branch.revenue.toLocaleString()}</td>
-                  <td className="p-4 font-bold text-slate-700">{branch.bookings_30d}</td>
-                  <td className="p-4 font-bold text-slate-700">{branch.staff_count}</td>
-                  <td className="p-4">
-                    <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full ${
-                      branch.status === 'Excellent' ? 'bg-emerald-100 text-emerald-700' :
-                      branch.status === 'Average' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {branch.status}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <button onClick={() => toast.info('Staff transfer modal would open here in full prod')} className="opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1">
-                      <FiRepeat /> Transfer Staff
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            {/* Expanded detail */}
+            {expanded === branch.id && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                className="border-t border-slate-100 px-4 pb-4">
+                <div className="grid grid-cols-3 gap-3 mt-3">
+                  {[
+                    { label: 'Staff',     value: branch.staff    },
+                    { label: 'Bookings',  value: branch.bookings },
+                    { label: 'Rating',    value: `⭐ ${branch.rating}` },
+                  ].map(d => (
+                    <div key={d.label} className="bg-slate-50 rounded-xl p-3 text-center">
+                      <p className="text-base font-black text-slate-800">{d.value}</p>
+                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{d.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <button className="flex-1 py-2 text-xs font-black bg-violet-50 text-violet-700 rounded-xl hover:bg-violet-100">View Report</button>
+                  <button className="flex-1 py-2 text-xs font-black bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">Message Manager</button>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        ))}
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ class B2BOrderCreate(BaseModel):
     use_invoice_financing: bool = False
 
 def _get_owner_salon(current_user: dict):
-    salon = salons_collection.find_one({"owner_user_id": current_user.get("sub") or str(current_user["_id"])})
+    salon = salons_collection.find_one({"owner_user_id": current_user.get("sub")})
     if not salon:
         raise HTTPException(status_code=404, detail="No salon found for this account")
     return salon
@@ -87,7 +87,7 @@ async def get_b2b_catalog():
 async def get_b2b_orders(current_user: dict = Depends(get_current_user)):
     """Fetch past wholesale orders for the salon."""
     salon = _get_owner_salon(current_user)
-    orders = list(b2b_orders_collection.find({"salon_id": str(salon["_id"])}).sort("created_at", -1))
+    orders = list(b2b_orders_collection.find({"salon_id": salon["id"]}).sort("created_at", -1))
     for o in orders:
         o.pop("_id", None)
     return orders
@@ -96,7 +96,7 @@ async def get_b2b_orders(current_user: dict = Depends(get_current_user)):
 async def place_b2b_order(req: B2BOrderCreate, current_user: dict = Depends(get_current_user)):
     """Place a new B2B order, optionally using invoice financing (Net-30 / BNPL)."""
     salon = _get_owner_salon(current_user)
-    salon_id = str(salon["_id"])
+    salon_id = salon["id"]
     
     if not req.items:
         raise HTTPException(status_code=400, detail="Order is empty.")

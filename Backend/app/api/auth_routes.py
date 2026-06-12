@@ -6,6 +6,9 @@ from app.auth.jwt_handler import create_access_token
 from app.auth.schemas import UserAuth
 from pydantic import BaseModel
 from typing import Optional
+import random
+from datetime import datetime, timedelta
+from app.utils.email_utils import send_otp_email
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
@@ -32,6 +35,15 @@ class LoginRequest(BaseModel):
     role_type: str = "customer"  # "customer" | "shop_owner"
 
 
+class EmailVerifyRequest(BaseModel):
+    email: str
+    code: str
+
+
+class ResendOTPRequest(BaseModel):
+    email: str
+
+
 # ─── Customer Signup ──────────────────────────────────────────────────────────
 @router.post("/customer/signup")
 def customer_signup(user: CustomerSignup):
@@ -40,6 +52,9 @@ def customer_signup(user: CustomerSignup):
             raise HTTPException(status_code=400, detail="Email already registered")
 
         hashed = hash_password(user.password.strip())
+        otp = f"{random.randint(100000, 999999)}"
+        otp_expiry = datetime.utcnow() + timedelta(minutes=15)
+        
         user_doc = {
             "email": user.email,
             "password": hashed,
@@ -47,10 +62,18 @@ def customer_signup(user: CustomerSignup):
             "phone": user.phone,
             "role": "user",
             "account_type": "customer",
-            "created_at": __import__('datetime').datetime.utcnow(),
+            "email_verified": False,
+            "verification_otp": otp,
+            "otp_expiry": otp_expiry,
+            "created_at": datetime.utcnow(),
         }
         user_collection.insert_one(user_doc)
-        return {"message": "Account created successfully! Please log in."}
+        send_otp_email(user.email, otp)
+        
+        return {
+            "message": "Account created successfully! Please verify your email.",
+            "email": user.email
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -65,6 +88,9 @@ def shop_owner_signup(user: ShopOwnerSignup):
             raise HTTPException(status_code=400, detail="Email already registered")
 
         hashed = hash_password(user.password.strip())
+        otp = f"{random.randint(100000, 999999)}"
+        otp_expiry = datetime.utcnow() + timedelta(minutes=15)
+        
         user_doc = {
             "email": user.email,
             "password": hashed,
@@ -75,10 +101,18 @@ def shop_owner_signup(user: ShopOwnerSignup):
             "business_name": user.business_name,
             "business_city": user.business_city,
             "business_type": user.business_type,
-            "created_at": __import__('datetime').datetime.utcnow(),
+            "email_verified": False,
+            "verification_otp": otp,
+            "otp_expiry": otp_expiry,
+            "created_at": datetime.utcnow(),
         }
         user_collection.insert_one(user_doc)
-        return {"message": "Shop owner account created! Please log in to set up your salon."}
+        send_otp_email(user.email, otp)
+        
+        return {
+            "message": "Shop owner account created! Please verify your email.",
+            "email": user.email
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -97,6 +131,13 @@ def login(user: LoginRequest):
 
         if not verify_password(user.password.strip(), db_user["password"]):
             raise HTTPException(status_code=401, detail="Invalid email or password")
+
+        # Email verification check
+        if not db_user.get("email_verified", True):
+            raise HTTPException(
+                status_code=403,
+                detail="Email not verified"
+            )
 
         user_role = db_user.get("role", "user")
         account_type = db_user.get("account_type", "customer")
@@ -194,3 +235,76 @@ def delete_account(current_user: dict = Depends(get_current_user)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     return {"message": "Account and all associated data deleted successfully"}
+
+
+# ─── OTP Verification and Resending ───────────────────────────────────────────
+@router.post("/verify-email")
+def verify_email(req: EmailVerifyRequest):
+    try:
+        user = user_collection.find_one({"email": req.email.strip()})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Check if already verified
+        if user.get("email_verified", False):
+            return {"message": "Email is already verified"}
+
+        stored_otp = user.get("verification_otp")
+        otp_expiry = user.get("otp_expiry")
+
+        if not stored_otp or not otp_expiry:
+            raise HTTPException(status_code=400, detail="Verification code not initialized or expired")
+
+        # Check expiry
+        if datetime.utcnow() > otp_expiry:
+            raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new one.")
+
+        # Verify code
+        if stored_otp != req.code.strip():
+            raise HTTPException(status_code=400, detail="Invalid verification code")
+
+        # Verify user
+        user_collection.update_one(
+            {"email": req.email.strip()},
+            {
+                "$set": {"email_verified": True},
+                "$unset": {"verification_otp": "", "otp_expiry": ""}
+            }
+        )
+        return {"message": "Email verified successfully! You can now log in."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/resend-otp")
+def resend_otp(req: ResendOTPRequest):
+    try:
+        user = user_collection.find_one({"email": req.email.strip()})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if user.get("email_verified", False):
+            raise HTTPException(status_code=400, detail="Email is already verified")
+
+        # Generate new OTP
+        otp = f"{random.randint(100000, 999999)}"
+        expiry = datetime.utcnow() + timedelta(minutes=15)
+
+        user_collection.update_one(
+            {"email": req.email.strip()},
+            {
+                "$set": {
+                    "verification_otp": otp,
+                    "otp_expiry": expiry
+                }
+            }
+        )
+
+        send_otp_email(user["email"], otp)
+        return {"message": "Verification code resent successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

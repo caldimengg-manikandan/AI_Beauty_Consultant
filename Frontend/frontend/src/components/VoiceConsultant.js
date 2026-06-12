@@ -15,6 +15,7 @@ export default function VoiceConsultant({ onTranscript }) {
   const synthRef = useRef(window.speechSynthesis);
   // Use a ref so onend callback always reads the latest value (no stale closure)
   const transcriptRef = useRef('');
+  const isMountedRef = useRef(true);
 
   const sendToAI = useCallback(async (text) => {
     if (onTranscript) onTranscript(text);
@@ -62,14 +63,35 @@ export default function VoiceConsultant({ onTranscript }) {
     };
 
     recognition.onerror = (e) => {
+      if (!isMountedRef.current) return;
       setIsListening(false);
       setPulse(false);
-      if (e.error !== 'no-speech') toast.error('Microphone error. Please try again.');
+      // 'no-speech'  → user was silent, ignore silently
+      // 'aborted'    → we called abort() ourselves during cleanup / restart, ignore
+      if (e.error === 'no-speech' || e.error === 'aborted') return;
+      if (e.error === 'not-allowed') {
+        toast.error('Microphone access denied. Please allow microphone in your browser settings.');
+      } else if (e.error === 'audio-capture') {
+        toast.error('No microphone detected. Please connect one and try again.');
+      } else if (e.error === 'network') {
+        toast.error('Voice recognition needs an internet connection. Please check and retry.');
+      } else {
+        toast.error('Microphone error. Please try again.');
+      }
     };
 
     recognitionRef.current = recognition;
-    return () => recognition.abort();
+    return () => {
+      isMountedRef.current = false;
+      recognition.abort();
+    };
   }, [sendToAI]); // only re-register when sendToAI changes (stable)
+
+  // Reset isMounted on first mount; flip false only on final unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
 
 
   const speak = (text) => {
@@ -109,7 +131,14 @@ export default function VoiceConsultant({ onTranscript }) {
     } else {
       transcriptRef.current = '';
       setDisplayTranscript('');
-      recognitionRef.current?.start();
+      try {
+        recognitionRef.current?.start();
+      } catch (err) {
+        // InvalidStateError means recognition already started — safe to ignore
+        if (!err?.message?.toLowerCase().includes('already started')) {
+          toast.error('Could not start microphone. Please try again.');
+        }
+      }
     }
   };
 

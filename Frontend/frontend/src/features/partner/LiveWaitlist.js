@@ -4,7 +4,7 @@ import { getWaitlist, addWalkIn, updateWaitlistStatus } from '../../services/wai
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 
-export default function LiveWaitlist() {
+export default function LiveWaitlist({ salonId }) {
   const { user } = useAuth();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,17 +28,18 @@ export default function LiveWaitlist() {
 
   useEffect(() => {
     loadInitialData();
-
+ 
+    const activeSalonId = salonId;
+    if (!activeSalonId) return; // Don't connect if salon not loaded yet
+ 
     // Establish WebSocket Connection
-    // Assuming backend runs on the same host but different port, or relative path
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsHost = process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('http://', '').replace('https://', '') : 'localhost:8000';
+    // Use Vite env variable (not CRA's process.env.REACT_APP_*)
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const wsHost = apiBase.replace('https://', '').replace('http://', '');
     
-    // We use a mock salon_id 'salon_demo' for testing if user context salon_id isn't easily available,
-    // but we can extract it or just rely on backend resolving it if we pass a generic token (simplified for demo).
-    const salonId = user?.salon_id || 'demo_salon'; 
-    
-    wsRef.current = new WebSocket(`${wsProtocol}//${wsHost}/api/waitlist/ws/${salonId}`);
+    wsRef.current = new WebSocket(`${wsProtocol}//${wsHost}/api/waitlist/ws/${activeSalonId}`);
+
 
     wsRef.current.onopen = () => console.log('WebSocket connected for Live Waitlist');
     
@@ -59,7 +60,7 @@ export default function LiveWaitlist() {
     return () => {
       if (wsRef.current) wsRef.current.close();
     };
-  }, [loadInitialData, user]);
+  }, [loadInitialData, user, salonId]);
 
   const handleAdd = async () => {
     if (!form.customer_name || !form.service_name) return toast.warning("Name and Service required");

@@ -21,7 +21,7 @@ class WebhookRegister(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _get_owner_salon(current_user: dict):
-    salon = salons_collection.find_one({"owner_user_id": current_user.get("sub") or str(current_user["_id"])})
+    salon = salons_collection.find_one({"owner_user_id": current_user.get("sub")})
     if not salon:
         raise HTTPException(status_code=404, detail="No salon found for this account")
     return salon
@@ -46,7 +46,7 @@ async def dispatch_webhook(url: str, payload: dict, secret: str = None):
 @router.get("/keys")
 async def get_api_keys(current_user: dict = Depends(get_current_user)):
     salon = _get_owner_salon(current_user)
-    keys = list(api_keys_collection.find({"salon_id": str(salon["_id"])}).sort("created_at", -1))
+    keys = list(api_keys_collection.find({"salon_id": salon["id"]}).sort("created_at", -1))
     for k in keys:
         k.pop("_id", None)
         # Obfuscate secret key for security (only show first and last 4 chars)
@@ -62,7 +62,7 @@ async def generate_api_key(current_user: dict = Depends(get_current_user)):
     
     new_key = {
         "id": str(uuid.uuid4()),
-        "salon_id": str(salon["_id"]),
+        "salon_id": salon["id"],
         "name": f"API Key - {datetime.utcnow().strftime('%b %d, %Y')}",
         "secret_key": client_id,
         "is_active": True,
@@ -79,7 +79,7 @@ async def generate_api_key(current_user: dict = Depends(get_current_user)):
 @router.delete("/keys/{key_id}")
 async def revoke_api_key(key_id: str, current_user: dict = Depends(get_current_user)):
     salon = _get_owner_salon(current_user)
-    res = api_keys_collection.delete_one({"id": key_id, "salon_id": str(salon["_id"])})
+    res = api_keys_collection.delete_one({"id": key_id, "salon_id": salon["id"]})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Key not found")
     return {"status": "success"}
@@ -89,7 +89,7 @@ async def revoke_api_key(key_id: str, current_user: dict = Depends(get_current_u
 @router.get("/webhooks")
 async def get_webhooks(current_user: dict = Depends(get_current_user)):
     salon = _get_owner_salon(current_user)
-    hooks = list(webhooks_collection.find({"salon_id": str(salon["_id"])}).sort("created_at", -1))
+    hooks = list(webhooks_collection.find({"salon_id": salon["id"]}).sort("created_at", -1))
     for h in hooks:
         h.pop("_id", None)
         if h.get("secret"):
@@ -105,7 +105,7 @@ async def register_webhook(hook: WebhookRegister, current_user: dict = Depends(g
         
     new_hook = {
         "id": str(uuid.uuid4()),
-        "salon_id": str(salon["_id"]),
+        "salon_id": salon["id"],
         "url": hook.url,
         "events": hook.events,
         "secret": hook.secret or secrets.token_urlsafe(16),
@@ -121,7 +121,7 @@ async def register_webhook(hook: WebhookRegister, current_user: dict = Depends(g
 @router.post("/webhooks/{hook_id}/test")
 async def test_webhook(hook_id: str, background_tasks: BackgroundTasks, current_user: dict = Depends(get_current_user)):
     salon = _get_owner_salon(current_user)
-    hook = webhooks_collection.find_one({"id": hook_id, "salon_id": str(salon["_id"])})
+    hook = webhooks_collection.find_one({"id": hook_id, "salon_id": salon["id"]})
     
     if not hook:
         raise HTTPException(status_code=404, detail="Webhook not found")
@@ -133,7 +133,7 @@ async def test_webhook(hook_id: str, background_tasks: BackgroundTasks, current_
         "created_at": datetime.utcnow().isoformat(),
         "data": {
             "message": "Hello from your AI Salon Webhook Gateway!",
-            "salon_id": str(salon["_id"])
+            "salon_id": salon["id"]
         }
     }
     
@@ -148,7 +148,7 @@ async def test_webhook(hook_id: str, background_tasks: BackgroundTasks, current_
 @router.delete("/webhooks/{hook_id}")
 async def delete_webhook(hook_id: str, current_user: dict = Depends(get_current_user)):
     salon = _get_owner_salon(current_user)
-    res = webhooks_collection.delete_one({"id": hook_id, "salon_id": str(salon["_id"])})
+    res = webhooks_collection.delete_one({"id": hook_id, "salon_id": salon["id"]})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Webhook not found")
     return {"status": "success"}

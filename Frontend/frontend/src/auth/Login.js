@@ -48,7 +48,15 @@ const Login = () => {
         navigate("/dashboard");
       }
     } catch (err) {
-      setError(err.response?.data?.detail || "Invalid email or password");
+      const detail = err.response?.data?.detail;
+      if (detail === "Email not verified") {
+        setError("Your email is not verified. Redirecting to verification...");
+        setTimeout(() => {
+          navigate(`/verify-email?email=${encodeURIComponent(email)}&role=${roleType}`);
+        }, 1500);
+      } else {
+        setError(detail || "Invalid email or password");
+      }
     } finally {
       setLoading(false);
     }

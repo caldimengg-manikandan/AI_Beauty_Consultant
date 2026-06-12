@@ -6,7 +6,11 @@ class ServiceItem(BaseModel):
     name: str
     price: float = 0.0
     duration_mins: int = 60
-    category: str = "General"  # Hair | Skin | Spa | Makeup | Nail
+    category: str = "General"  # Hair | Skin | Spa | Makeup | Nail | General
+    # ── New optional fields (backward-compatible — existing documents unaffected) ──
+    is_active: Optional[bool] = True          # per-service soft-toggle
+    image_url: Optional[str] = None          # per-service photo URL
+    description: Optional[str] = None        # short service description (max 500 chars)
 
 
 class SalonCreate(BaseModel):
@@ -86,3 +90,35 @@ class SlotBookingCreate(BaseModel):
     payment_status: Optional[str] = "pending"  # pending | paid | refunded
     payment_id: Optional[str] = None
     amount: Optional[float] = None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NEW — Service management schemas (additive — do not replace existing schemas)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class SalonServiceAdd(BaseModel):
+    """Schema for adding a single new service to a salon."""
+    name: str
+    price: float
+    duration_mins: int = 60
+    category: str = "General"
+    image_url: Optional[str] = None
+    description: Optional[str] = None
+
+
+class SalonServiceUpdate(BaseModel):
+    """Schema for updating fields on an existing service (all optional)."""
+    name: Optional[str] = None
+    price: Optional[float] = None
+    duration_mins: Optional[int] = None
+    category: Optional[str] = None
+    image_url: Optional[str] = None
+    description: Optional[str] = None
+
+
+class SalonHoursUpdate(BaseModel):
+    """Schema for atomically updating business hours."""
+    opening_time: str
+    closing_time: str
+    slot_duration_minutes: Optional[int] = None
+    max_concurrent_slots: Optional[int] = None

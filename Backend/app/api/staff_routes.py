@@ -104,6 +104,58 @@ async def add_staff(staff: StaffCreate, current_user: dict = Depends(get_current
     return {"status": "success", "message": "Staff added successfully", "data": new_staff}
 
 
+# ── Analytics ─────────────────────────────────────────────────────────────────────────────
+# IMPORTANT: This must be registered BEFORE /{staff_id} to avoid routing conflicts
+@router.get("/analytics/overview")
+async def staff_analytics(current_user: dict = Depends(get_current_user)):
+    """Overall staff performance analytics for the salon."""
+    salon = _get_owner_salon(current_user)
+    all_staff = list(staff_collection.find({"salon_id": salon["id"], "is_active": True}))
+    result = []
+    for member in all_staff:
+        bookings = list(slot_bookings_collection.find({
+            "salon_id": salon["id"],
+            "stylist_id": member["id"],
+            "status": "completed"
+        }))
+        member.pop("_id", None)
+        result.append({
+            "id": member["id"],
+            "name": member["name"],
+            "role": member.get("role"),
+            "completed_bookings": len(bookings),
+            "total_revenue": sum(b.get("service_price", 0) for b in bookings),
+            "avg_rating": member.get("avg_rating", 0),
+            "specializations": member.get("specializations", [])
+        })
+    result.sort(key=lambda x: x["completed_bookings"], reverse=True)
+    return {"staff": result, "total_active": len(all_staff)}
+
+
+# ── Attendance ──────────────────────────────────────────────────────────────────────
+# IMPORTANT: Register POST /attendance BEFORE /{staff_id} routes to avoid conflicts
+@router.post("/attendance")
+async def mark_attendance(record: AttendanceRecord, current_user: dict = Depends(get_current_user)):
+    """Mark attendance for a staff member."""
+    salon = _get_owner_salon(current_user)
+    member = staff_collection.find_one({"id": record.staff_id, "salon_id": salon["id"]})
+    if not member:
+        raise HTTPException(status_code=404, detail="Staff not found")
+    attendance_entry = {
+        "id": str(uuid.uuid4()),
+        **record.dict(),
+        "recorded_by": current_user.get("sub"),
+        "created_at": datetime.utcnow()
+    }
+    staff_collection.update_one(
+        {"id": record.staff_id},
+        {"$push": {"attendance": attendance_entry}}
+    )
+    return {"status": "success", "message": "Attendance recorded", "data": attendance_entry}
+
+
+# ── CRUD (parameterized routes come AFTER fixed-path routes) ────────────────────────────────
+
 @router.get("/{staff_id}")
 async def get_staff(staff_id: str, current_user: dict = Depends(get_current_user)):
     salon = _get_owner_salon(current_user)
@@ -139,28 +191,6 @@ async def deactivate_staff(staff_id: str, current_user: dict = Depends(get_curre
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Staff not found")
     return {"status": "success", "message": "Staff deactivated"}
-
-
-# ── Attendance ─────────────────────────────────────────────────────────────────
-
-@router.post("/attendance")
-async def mark_attendance(record: AttendanceRecord, current_user: dict = Depends(get_current_user)):
-    """Mark attendance for a staff member."""
-    salon = _get_owner_salon(current_user)
-    member = staff_collection.find_one({"id": record.staff_id, "salon_id": salon["id"]})
-    if not member:
-        raise HTTPException(status_code=404, detail="Staff not found")
-    attendance_entry = {
-        "id": str(uuid.uuid4()),
-        **record.dict(),
-        "recorded_by": current_user.get("sub"),
-        "created_at": datetime.utcnow()
-    }
-    staff_collection.update_one(
-        {"id": record.staff_id},
-        {"$push": {"attendance": attendance_entry}}
-    )
-    return {"status": "success", "message": "Attendance recorded", "data": attendance_entry}
 
 
 @router.get("/{staff_id}/attendance")
@@ -226,28 +256,3 @@ async def get_staff_commissions(
         } for b in bookings]
     }
 
-
-@router.get("/analytics/overview")
-async def staff_analytics(current_user: dict = Depends(get_current_user)):
-    """Overall staff performance analytics for the salon."""
-    salon = _get_owner_salon(current_user)
-    all_staff = list(staff_collection.find({"salon_id": salon["id"], "is_active": True}))
-    result = []
-    for member in all_staff:
-        bookings = list(slot_bookings_collection.find({
-            "salon_id": salon["id"],
-            "stylist_id": member["id"],
-            "status": "completed"
-        }))
-        member.pop("_id", None)
-        result.append({
-            "id": member["id"],
-            "name": member["name"],
-            "role": member.get("role"),
-            "completed_bookings": len(bookings),
-            "total_revenue": sum(b.get("service_price", 0) for b in bookings),
-            "avg_rating": member.get("avg_rating", 0),
-            "specializations": member.get("specializations", [])
-        })
-    result.sort(key=lambda x: x["completed_bookings"], reverse=True)
-    return {"staff": result, "total_active": len(all_staff)}

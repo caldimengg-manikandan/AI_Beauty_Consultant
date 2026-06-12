@@ -7,6 +7,8 @@ import {
 } from 'react-icons/fa';
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCart } from '../context/CartContext';
+import CartDrawer from '../features/ecommerce/CartDrawer';
 
 // ─── PRODUCT DATA ─────────────────────────────────────────────────────────────
 const ALL_PRODUCTS = [
@@ -62,6 +64,8 @@ const ProductCatalog = () => {
     const afterRef = useRef(null);
 
     const categories = ['All', 'Cleanser', 'Serum', 'Moisturizer', 'Sunscreen', 'Exfoliant'];
+    const { addToCart, cartCount } = useCart();
+    const [cartOpen, setCartOpen] = useState(false);
 
     const filtered = ALL_PRODUCTS.filter(p => {
         const matchCat = filter === 'All' || p.category === filter;
@@ -115,6 +119,7 @@ const ProductCatalog = () => {
     ];
 
     return (
+        <>
         <div className="min-h-screen bg-slate-50 p-4 md:p-8 space-y-8">
 
             {/* Floating notification */}
@@ -135,17 +140,29 @@ const ProductCatalog = () => {
                     <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight uppercase italic">
                         Product<span className="text-indigo-600">Curations</span>
                     </h1>
-                    <p className="text-slate-500 mt-2 font-medium text-sm">AI-matched skincare with safety scores, wishlist & price comparison.</p>
+                    <p className="text-slate-500 mt-2 font-medium text-sm">AI-matched skincare with safety scores, wishlist &amp; price comparison.</p>
                 </div>
-                <div className="relative w-full md:w-72">
-                    <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder="Search products or brands..."
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm"
-                    />
+                <div className="flex items-center gap-3">
+                    <div className="relative w-full md:w-72">
+                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Search products or brands..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm"
+                        />
+                    </div>
+                    {/* Cart Icon */}
+                    <button onClick={() => setCartOpen(true)}
+                        className="relative w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center hover:bg-indigo-700 transition-colors shadow-md flex-shrink-0">
+                        <FaShoppingCart size={18} />
+                        {cartCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                                {cartCount}
+                            </span>
+                        )}
+                    </button>
                 </div>
             </div>
 
@@ -188,9 +205,7 @@ const ProductCatalog = () => {
                                 <div key={product.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group">
                                     {/* Image */}
                                     <div className="relative h-52 bg-slate-50 flex items-center justify-center p-6">
-                                        <img src={product.image} alt={product.name}
-                                            className="max-h-full max-w-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
-                                            onError={e => { e.target.src = 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=300&q=80'; }} />
+                                        <img src={product.image} alt={product.name} className="max-h-full max-w-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" onError={e => { e.target.src = 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=300&q=80'; }} />
                                         {/* Badges */}
                                         <div className="absolute top-3 left-3 flex flex-col gap-1">
                                             <span className="bg-indigo-600 text-white text-[9px] font-black px-2 py-1 rounded-lg">{product.category}</span>
@@ -244,6 +259,11 @@ const ProductCatalog = () => {
                                         <button onClick={() => toggleCompare(product)}
                                             className={`w-full py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${inComp ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600'}`}>
                                             {inComp ? '✓ Added to Compare' : '+ Add to Compare'}
+                                        </button>
+                                        {/* Add to Cart */}
+                                        <button onClick={() => addToCart({ id: String(product.id), name: product.name, price: product.price, image_url: product.image })}
+                                            className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1.5">
+                                            <FaShoppingCart size={11} /> Add to Cart
                                         </button>
                                     </div>
                                 </div>
@@ -505,6 +525,11 @@ const ProductCatalog = () => {
                 </div>
             )}
         </div>
+        <button onClick={() => setCartOpen(true)} className="fixed bottom-8 right-8 p-4 bg-slate-900 text-white rounded-full shadow-2xl hover:scale-110 transition-transform">
+            <FaShoppingCart size={24} />
+        </button>
+        <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
+        </>
     );
 };
 

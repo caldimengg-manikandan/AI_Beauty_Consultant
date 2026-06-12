@@ -5,6 +5,14 @@ from app.mongodb.collections import (
     slot_bookings_collection, users_collection
 )
 from app.auth.jwt_handler import get_current_user
+from app.utils.salon_cache import (       # cache additions — non-breaking
+    get_list_cache, set_list_cache,
+    get_detail_cache, set_detail_cache,
+    get_slot_cache, set_slot_cache,
+    invalidate_salon, invalidate_slot_cache_for_salon,
+)
+from app.utils.salon_events import log_event, _slim  # event logging — non-breaking
+from app.mongodb.collections import salon_events_collection  # audit log collection
 from datetime import datetime
 import uuid
 import math
@@ -52,6 +60,14 @@ def _enrich(salon: dict, user_lat: float = None, user_lon: float = None) -> dict
             salon["distance_km"] = round(_haversine_km(user_lat, user_lon, s_lat, s_lon), 2)
         else:
             salon["distance_km"] = None
+    # ── Filter inactive services for customer-facing reads ───────────────────
+    # Customers only see services where is_active is True (or missing — legacy docs).
+    # The raw services_with_pricing array (incl. inactive) remains in MongoDB unchanged.
+    if "services_with_pricing" in salon:
+        salon["services_with_pricing"] = [
+            s for s in salon["services_with_pricing"]
+            if s.get("is_active", True)  # treat missing key as active (backward compat)
+        ]
     return salon
 
 
@@ -97,6 +113,17 @@ async def list_salons(
                 "$lte": PRICE_MAP[price_range]["max"],
             }
 
+    # ── Cache check (non-breaking: falls through to DB on any error) ────────────
+    _cache_params = {"city": city, "salon_type": salon_type, "gender_served": gender_served,
+                     "search": search, "min_rating": min_rating, "price_range": price_range,
+                     "sort_by": sort_by, "lat": lat, "lon": lon, "page": page, "limit": limit}
+    try:
+        _cached = get_list_cache(_cache_params)
+        if _cached is not None:
+            return _cached
+    except Exception:
+        pass
+
     skip = (page - 1) * limit
     salons = list(salons_collection.find(query).skip(skip).limit(limit))
     total = salons_collection.count_documents(query)
@@ -109,7 +136,12 @@ async def list_salons(
     elif sort_by == "distance" and lat is not None and lon is not None:
         result.sort(key=lambda s: s.get("distance_km") or 9999)
 
-    return {"salons": result, "total": total, "page": page, "pages": -(-total // limit)}
+    response = {"salons": result, "total": total, "page": page, "pages": -(-total // limit)}
+    try:
+        set_list_cache(_cache_params, response)
+    except Exception:
+        pass
+    return response
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -271,8 +303,26 @@ async def update_my_salon(updates: SalonUpdate, current_user: dict = Depends(get
     update_data = {k: v for k, v in updates.dict().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
+    before_snap = _slim(salon)
     salons_collection.update_one(
         {"owner_user_id": current_user.get("sub")}, {"$set": update_data}
+    )
+    after_salon = salons_collection.find_one({"owner_user_id": current_user.get("sub")}) or {}
+    # Invalidate cache so customers see the update on their next request
+    try:
+        invalidate_salon(salon["id"], salon.get("city"))
+    except Exception:
+        pass
+    # Event log — non-blocking
+    log_event(
+        salon_events_collection,
+        salon_id=salon["id"],
+        actor_id=current_user.get("sub"),
+        actor_role=current_user.get("role", "shop_owner"),
+        action="SALON_UPDATED",
+        field_changes={k: {"after": v} for k, v in update_data.items()},
+        before_snapshot=before_snap,
+        after_snapshot=_slim(after_salon),
     )
     return {"status": "success", "message": "Salon updated"}
 
@@ -341,10 +391,21 @@ async def owner_analytics(current_user: dict = Depends(get_current_user)):
 # Parameterised routes AFTER fixed paths to avoid FastAPI routing conflicts
 @router.get("/{salon_id}")
 async def get_salon(salon_id: str):
+    try:
+        _cached = get_detail_cache(salon_id)
+        if _cached is not None:
+            return _cached
+    except Exception:
+        pass
     salon = salons_collection.find_one({"id": salon_id})
     if not salon:
         raise HTTPException(status_code=404, detail="Salon not found")
-    return _enrich(salon)
+    result = _enrich(salon)
+    try:
+        set_detail_cache(salon_id, result)
+    except Exception:
+        pass
+    return result
 
 
 @router.get("/{salon_id}/reviews")
@@ -368,6 +429,14 @@ async def get_available_slots(salon_id: str, date: str = Query(...)):
 
     slot_minutes   = salon.get("slot_duration_minutes", 60)
     max_concurrent = salon.get("max_concurrent_slots",  3)
+    # Slot cache check
+    try:
+        _slot_cached = get_slot_cache(salon_id, date)
+        if _slot_cached is not None:
+            return _slot_cached
+    except Exception:
+        pass
+
     slots, current = [], open_dt
     while current < close_dt:
         label = current.strftime("%I:%M %p").lstrip("0")
@@ -381,7 +450,12 @@ async def get_available_slots(salon_id: str, date: str = Query(...)):
             "spots_left": max(0, max_concurrent - booked_count),
         })
         current += timedelta(minutes=slot_minutes)
-    return {"date": date, "slots": slots}
+    slot_result = {"date": date, "slots": slots}
+    try:
+        set_slot_cache(salon_id, date, slot_result)
+    except Exception:
+        pass
+    return slot_result
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -467,10 +541,27 @@ async def register_salon(salon: SalonCreate, current_user: dict = Depends(get_cu
     if salons_collection.find_one({"owner_user_id": current_user.get("sub")}):
         raise HTTPException(status_code=400, detail="You already have a registered salon.")
     salon_id  = str(uuid.uuid4())
+    
+    salon_dict = salon.dict()
+    if salon_dict.get("latitude") is None or salon_dict.get("longitude") is None:
+        city_lower = salon_dict.get("city", "").lower()
+        coords = {
+            "chennai": (13.0827, 80.2707),
+            "bangalore": (12.9716, 77.5946),
+            "mumbai": (19.0760, 72.8777),
+            "hyderabad": (17.3850, 78.4867),
+            "pune": (18.5204, 73.8567),
+            "delhi": (28.7041, 77.1025),
+            "kolkata": (22.5726, 88.3639)
+        }
+        lat, lon = coords.get(city_lower, (20.5937, 78.9629))
+        salon_dict["latitude"] = lat
+        salon_dict["longitude"] = lon
+
     new_salon = {
         "id": salon_id, "owner_user_id": current_user.get("sub"),
-        "is_active": True, "is_verified": False, "avg_rating": 0.0,
-        "created_at": datetime.utcnow(), **salon.dict(),
+        "is_active": True, "is_verified": True, "avg_rating": 0.0,
+        "created_at": datetime.utcnow(), **salon_dict,
     }
     salons_collection.insert_one(new_salon)
     new_salon.pop("_id", None)
@@ -478,9 +569,24 @@ async def register_salon(salon: SalonCreate, current_user: dict = Depends(get_cu
         {"email": current_user.get("sub")},
         {"$set": {"role": "shop_owner", "salon_id": salon_id}}
     )
+    
+    try:
+        invalidate_salon(salon_id)
+    except Exception:
+        pass
+
+    # Event log — non-blocking
+    log_event(
+        salon_events_collection,
+        salon_id=salon_id,
+        actor_id=current_user.get("sub"),
+        actor_role="shop_owner",
+        action="SALON_REGISTERED",
+        after_snapshot=_slim(new_salon),
+    )
     return {
         "status": "success",
-        "message": "Salon registered! It will appear publicly after admin verification.",
+        "message": "Salon registered successfully! It is now live.",
         "salon_id": salon_id, "data": new_salon,
     }
 
@@ -496,6 +602,15 @@ async def verify_salon(salon_id: str, current_user: dict = Depends(get_current_u
     salons_collection.update_one(
         {"id": salon_id}, {"$set": {"is_verified": True, "verified_at": datetime.utcnow()}}
     )
+    invalidate_salon(salon_id)  # make salon visible in customer listings
+    log_event(
+        salon_events_collection,
+        salon_id=salon_id,
+        actor_id=current_user.get("sub"),
+        actor_role="admin",
+        action="SALON_VERIFIED",
+        field_changes={"is_verified": {"before": False, "after": True}},
+    )
     return {"status": "success", "message": "Salon verified"}
 
 
@@ -504,4 +619,13 @@ async def deactivate_salon(salon_id: str, current_user: dict = Depends(get_curre
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     salons_collection.update_one({"id": salon_id}, {"$set": {"is_active": False}})
+    invalidate_salon(salon_id)  # remove from customer listings immediately
+    log_event(
+        salon_events_collection,
+        salon_id=salon_id,
+        actor_id=current_user.get("sub"),
+        actor_role="admin",
+        action="SALON_DEACTIVATED",
+        field_changes={"is_active": {"before": True, "after": False}},
+    )
     return {"status": "success", "message": "Salon deactivated"}

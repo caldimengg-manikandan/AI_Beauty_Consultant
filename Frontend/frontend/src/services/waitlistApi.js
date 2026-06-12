@@ -1,7 +1,7 @@
 import api from './api';
 
 export const getWaitlist = async () => {
-  const res = await api.get('/api/waitlist');
+  const res = await api.get('/api/waitlist/');
   return res.data;
 };
 

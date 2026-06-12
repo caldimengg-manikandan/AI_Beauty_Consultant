@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from app.mongodb.collections import (
-    campaigns_collection, salons_collection, users_collection, slot_bookings_collection, automations_collection
+    campaigns_collection, salons_collection, users_collection, slot_bookings_collection, automations_collection, coupons_collection
 )
 from app.auth.jwt_handler import get_current_user
 from app.auth.rbac import require_shop_owner
@@ -340,3 +340,113 @@ async def toggle_automation(auto_id: str, current_user: dict = Depends(get_curre
         {"$set": {"is_active": new_status, "updated_at": datetime.utcnow()}}
     )
     return {"status": "success", "is_active": new_status}
+
+
+@router.post("/automations/{auto_id}/run")
+async def run_automation(auto_id: str, current_user: dict = Depends(get_current_user)):
+    """Manually run an automation job, specifically the churn prediction win-back."""
+    from datetime import timedelta
+    import random
+    import string
+    
+    salon = _get_owner_salon(current_user)
+    salon_id = salon["id"]
+    
+    auto = automations_collection.find_one({"id": auto_id, "salon_id": salon_id})
+    if not auto:
+        raise HTTPException(status_code=404, detail="Automation not found")
+        
+    if auto.get("trigger_type") != "churn_prediction_ml":
+        raise HTTPException(status_code=400, detail="Only churn_prediction_ml is currently supported for manual run")
+
+    # 1. Identify At-Risk Customers
+    all_bookings = list(slot_bookings_collection.find({
+        "salon_id": salon_id,
+        "status": "completed"
+    }))
+
+    user_stats = {}
+    for b in all_bookings:
+        uid = b.get("user_id")
+        if not uid: continue
+        
+        created_at = b.get("created_at")
+        if isinstance(created_at, str):
+            try: dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            except ValueError: dt = datetime.utcnow()
+        elif isinstance(created_at, datetime): dt = created_at
+        else: continue
+
+        if uid not in user_stats:
+            user_stats[uid] = {"visits": 0, "last_visit": dt}
+        
+        user_stats[uid]["visits"] += 1
+        if dt > user_stats[uid]["last_visit"]:
+            user_stats[uid]["last_visit"] = dt
+
+    now = datetime.utcnow()
+    thirty_days_ago = now - timedelta(days=30)
+    
+    target_users = []
+    for uid, stats in user_stats.items():
+        if stats["visits"] >= 2 and stats["last_visit"] < thirty_days_ago:
+            target_users.append(uid)
+            
+    if not target_users:
+        return {"status": "success", "message": "No at-risk customers found right now. Check back later!", "reach": 0}
+
+    # 2. Generate a Unique Win-Back Coupon
+    coupon_code = "MISSYOU" + "".join(random.choices(string.digits, k=3))
+    coupon = {
+        "id": str(uuid.uuid4()),
+        "salon_id": salon_id,
+        "code": coupon_code,
+        "discount_type": "percentage",
+        "discount_value": 20,
+        "min_booking_amount": 0,
+        "valid_from": now.isoformat()[:10],
+        "valid_until": (now + timedelta(days=14)).isoformat()[:10],
+        "max_uses": len(target_users),
+        "used_count": 0,
+        "is_active": True,
+        "description": "Auto-generated Win-Back campaign coupon",
+        "created_at": now
+    }
+    coupons_collection.insert_one(coupon)
+
+    # 3. Create the Campaign
+    message = auto.get("message_template", "We miss you! Come back for a fresh look.")
+    message += f" Use code {coupon_code} for 20% off your next visit!"
+    
+    campaign = {
+        "id": str(uuid.uuid4()),
+        "salon_id": salon_id,
+        "salon_name": salon.get("name"),
+        "title": "We Miss You - Win Back Campaign",
+        "message": message,
+        "campaign_type": "re_engagement",
+        "target_audience": "inactive",
+        "status": "sent",
+        "estimated_reach": len(target_users),
+        "sent_count": len(target_users),
+        "opened_count": 0,
+        "converted_count": 0,
+        "target_user_ids": target_users,
+        "offer_code": coupon_code,
+        "created_by": current_user.get("sub"),
+        "created_at": now,
+        "sent_at": now
+    }
+    campaigns_collection.insert_one(campaign)
+    
+    # 4. Update Automation Metrics
+    automations_collection.update_one(
+        {"id": auto_id},
+        {"$inc": {"metrics.triggered": 1}, "$set": {"last_run": now}}
+    )
+
+    return {
+        "status": "success", 
+        "message": f"Win-back campaign generated and sent to {len(target_users)} customers!",
+        "reach": len(target_users)
+    }

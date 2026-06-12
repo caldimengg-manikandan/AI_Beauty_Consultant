@@ -31,10 +31,10 @@ const TrendsPage = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <div className="min-h-screen flex items-center justify-center bg-[#fafaf9]">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-                    <p className="text-xs font-black text-indigo-600 uppercase tracking-widest animate-pulse">Computing Longitudinal Trends...</p>
+                    <div className="w-12 h-12 border-4 border-violet-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <p className="text-xs font-black text-violet-600 uppercase tracking-widest animate-pulse">Computing Longitudinal Trends...</p>
                 </div>
             </div>
         );
@@ -42,13 +42,13 @@ const TrendsPage = () => {
 
     if (data.length < 2) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#fafaf9] p-6 text-center">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white p-12 rounded-[3.5rem] shadow-2xl max-w-lg border border-slate-100"
+                    className="bg-white p-12 rounded-2xl shadow-2xl max-w-lg border border-slate-100"
                 >
-                    <div className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-8">
+                    <div className="w-24 h-24 bg-violet-50 text-violet-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-8">
                         <Activity size={40} />
                     </div>
                     <h2 className="text-3xl font-black text-slate-900 mb-4 uppercase tracking-tighter">Insufficient Data Flow</h2>
@@ -58,7 +58,7 @@ const TrendsPage = () => {
                     </p>
                     <button
                         onClick={() => window.location.href = '/dashboard/live-analyze'}
-                        className="px-10 py-4 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] shadow-xl hover:bg-slate-900 transition-all"
+                        className="px-10 py-4 bg-violet-600 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] shadow-xl hover:bg-slate-900 transition-all"
                     >
                         Initialize Capture
                     </button>
@@ -88,7 +88,7 @@ const TrendsPage = () => {
             text: "Minor escalation in acne activity. Consider shifting to a soothing, non-comedogenic regimen this week."
         };
         return {
-            icon: <FaLightbulb className="text-indigo-500" />,
+            icon: <FaLightbulb className="text-violet-500" />,
             title: "Barrier Stability",
             text: "Neural metrics indicate high stability. Maintain current moisture levels to preserve skin homeostasis."
         };
@@ -97,20 +97,20 @@ const TrendsPage = () => {
     const insight = getInsight();
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 md:p-12 font-sans overflow-hidden">
-            <div className="max-w-7xl mx-auto">
+        <div className="min-h-screen bg-[#fafaf9] p-6 md:p-12 font-sans overflow-hidden">
+            <div className="max-w-6xl mx-auto">
 
                 {/* HEADER SECTION */}
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-16">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-8">
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <span className="px-3 py-1 bg-slate-900 text-white text-[9px] font-black rounded uppercase tracking-widest">Neural Metrics</span>
-                            <span className="text-indigo-500 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
+                            <span className="px-3 py-1 bg-violet-600 text-white text-[9px] font-black rounded uppercase tracking-widest">Neural Metrics</span>
+                            <span className="text-violet-500 font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
                                 <Activity size={12} /> Biometric Intelligence
                             </span>
                         </div>
                         <h1 className="text-6xl font-black text-slate-900 tracking-tighter uppercase leading-none italic">
-                            Skin Health <span className="text-indigo-600">Trends</span>
+                            Skin Health <span className="text-teal-600">Trends</span>
                         </h1>
                         <p className="text-slate-400 font-medium text-sm max-w-xl">
                             Visualizing your skin's transformation through our longitudinal biometric engine. Validating routine efficacy with clinical precision.
@@ -125,7 +125,7 @@ const TrendsPage = () => {
                 </div>
 
                 {/* KPI DASHBOARD */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <KPICard
                         label="Acne Trajectory"
                         value={Math.round(latest.skin_scores.acne * 100)}
@@ -151,7 +151,7 @@ const TrendsPage = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                     {/* CHART SECTION */}
-                    <div className="lg:col-span-8 bg-white p-12 rounded-[4rem] shadow-2xl border border-slate-100 relative group">
+                    <div className="lg:col-span-8 bg-white p-12 rounded-2xl shadow-2xl border border-slate-100 relative group">
                         <div className="flex justify-between items-center mb-12">
                             <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Progress Matrix</h3>
                             <div className="flex gap-6">
@@ -162,7 +162,7 @@ const TrendsPage = () => {
                                     <div className="w-2.5 h-2.5 bg-amber-400 rounded-full"></div> Oil
                                 </div>
                                 <div className="flex items-center gap-3 text-[10px] font-black uppercase text-slate-400">
-                                    <div className="w-2.5 h-2.5 bg-indigo-400 rounded-full"></div> Texture
+                                    <div className="w-2.5 h-2.5 bg-violet-400 rounded-full"></div> Texture
                                 </div>
                             </div>
                         </div>
@@ -177,7 +177,7 @@ const TrendsPage = () => {
                                 <div key={idx} className="flex-1 flex flex-col justify-end group/bar relative items-center h-full">
 
                                     {/* Tooltip */}
-                                    <div className="absolute bottom-[calc(100%-20px)] mb-4 bg-slate-900 text-white text-[9px] p-3 rounded-2xl opacity-0 group-hover/bar:opacity-100 transition-all z-20 w-32 shadow-2xl pointer-events-none scale-90 group-hover/bar:scale-100">
+                                    <div className="absolute bottom-[calc(100%-20px)] mb-4 bg-violet-600 text-white text-[9px] p-3 rounded-2xl opacity-0 group-hover/bar:opacity-100 transition-all z-20 w-32 shadow-2xl pointer-events-none scale-90 group-hover/bar:scale-100">
                                         <div className="font-black border-b border-white/10 pb-2 mb-2 uppercase tracking-widest">{item.date}</div>
                                         <div className="space-y-1">
                                             <div className="flex justify-between"><span>Acne:</span> <span>{Math.round(item.skin_scores.acne * 100)}%</span></div>
@@ -215,8 +215,8 @@ const TrendsPage = () => {
 
                     {/* INSIGHTS SIDEBAR */}
                     <div className="lg:col-span-4 space-y-8">
-                        <div className="bg-slate-900 p-10 rounded-[4rem] text-white shadow-3xl space-y-8">
-                            <div className="flex items-center gap-3 text-indigo-400 text-xs font-black uppercase tracking-[0.2em]">
+                        <div className="bg-slate-900 p-10 rounded-2xl text-white shadow-3xl space-y-8">
+                            <div className="flex items-center gap-3 text-violet-400 text-xs font-black uppercase tracking-[0.2em]">
                                 <FaLightbulb /> Intelligence Insight
                             </div>
                             <h4 className="text-3xl font-black tracking-tighter leading-tight italic">{insight.title}</h4>
@@ -230,17 +230,17 @@ const TrendsPage = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white p-10 rounded-[4rem] border border-slate-100 shadow-xl space-y-8">
+                        <div className="bg-white p-10 rounded-2xl border border-slate-100 shadow-xl space-y-8">
                             <h5 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                 <FaShieldAlt /> Preservation Mode
                             </h5>
                             <div className="space-y-6">
-                                <div className="p-4 bg-slate-50 rounded-3xl border border-slate-100 flex items-center gap-4 hover:shadow-md transition-all">
+                                <div className="p-4 bg-[#fafaf9] rounded-3xl border border-slate-100 flex items-center gap-4 hover:shadow-md transition-all">
                                     <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center text-sm"><FaCheckCircle /></div>
                                     <div className="text-[11px] font-black text-slate-900 uppercase">UV Resistance: High</div>
                                 </div>
-                                <div className="p-4 bg-slate-50 rounded-3xl border border-slate-100 flex items-center gap-4 hover:shadow-md transition-all">
-                                    <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center text-sm"><TrendingUp /></div>
+                                <div className="p-4 bg-[#fafaf9] rounded-3xl border border-slate-100 flex items-center gap-4 hover:shadow-md transition-all">
+                                    <div className="w-10 h-10 bg-violet-50 text-violet-500 rounded-2xl flex items-center justify-center text-sm"><TrendingUp /></div>
                                     <div className="text-[11px] font-black text-slate-900 uppercase">Renewal Cycle: Active</div>
                                 </div>
                             </div>
@@ -256,13 +256,13 @@ const TrendsPage = () => {
 const KPICard = ({ label, value, change, inverse, theme }) => {
     const isGood = inverse ? change <= 0 : change >= 0;
     const colorClass = isGood ? "text-emerald-500" : "text-rose-500";
-    const bgClass = theme === 'rose' ? 'bg-rose-50 border-rose-100 text-rose-600' : theme === 'amber' ? 'bg-amber-50 border-amber-100 text-amber-600' : 'bg-indigo-50 border-indigo-100 text-indigo-600';
+    const bgClass = theme === 'rose' ? 'bg-rose-50 border-rose-100 text-rose-600' : theme === 'amber' ? 'bg-amber-50 border-amber-100 text-amber-600' : 'bg-violet-50 border-violet-100 text-violet-600';
     const Icon = change >= 0 ? FaArrowUp : FaArrowDown;
 
     return (
         <motion.div
             whileHover={{ y: -10 }}
-            className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 transition-all flex flex-col justify-between"
+            className="bg-white p-10 rounded-2xl shadow-xl border border-slate-100 transition-all flex flex-col justify-between"
         >
             <div className="flex justify-between items-start mb-6">
                 <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${bgClass}`}>
@@ -276,11 +276,11 @@ const KPICard = ({ label, value, change, inverse, theme }) => {
 
             <div className="space-y-2">
                 <div className="text-6xl font-black text-slate-900 tracking-tighter italic">{value}<span className="text-2xl not-italic ml-1">%</span></div>
-                <div className="w-full h-1.5 bg-slate-50 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-[#fafaf9] rounded-full overflow-hidden">
                     <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${value}%` }}
-                        className={`h-full ${theme === 'rose' ? 'bg-rose-400' : theme === 'amber' ? 'bg-amber-400' : 'bg-indigo-400'}`}
+                        className={`h-full ${theme === 'rose' ? 'bg-rose-400' : theme === 'amber' ? 'bg-amber-400' : 'bg-violet-400'}`}
                     />
                 </div>
             </div>

@@ -9,6 +9,9 @@ salons_collection        = db["salons"]
 reviews_collection       = db["salon_reviews"]
 slot_bookings_collection = db["slot_bookings"]
 
+# ── Sync Architecture additions (new collections — additive) ──────────────────
+salon_events_collection  = db["salon_events"]   # append-only audit log
+
 # ── New enterprise collections ────────────────────────────────────────────────
 staff_collection            = db["salon_staff"]
 coupons_collection          = db["coupons"]
@@ -32,6 +35,7 @@ commissions_collection      = db["commissions"]
 # ── E-Commerce Collections ───────────────────────────────────────────────────
 ecommerce_orders_collection = db["ecommerce_orders"]
 ecommerce_carts_collection  = db["ecommerce_carts"]
+orders_collection           = db["orders"]          # Customer product orders
 
 # ── Form Builder Collections ─────────────────────────────────────────────────
 custom_forms_collection      = db["custom_forms"]

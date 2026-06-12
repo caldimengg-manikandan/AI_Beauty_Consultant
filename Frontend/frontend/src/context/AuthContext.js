@@ -4,81 +4,82 @@ import api from "../services/api";
 
 export const AuthContext = createContext(null);
 
-// Roles
 export const ROLES = {
-  ADMIN: "admin",
-  EXPERT: "expert",
+  ADMIN:      "admin",
+  EXPERT:     "expert",
   SHOP_OWNER: "shop_owner",
-  PREMIUM: "premium",
-  USER: "user",
+  PREMIUM:    "premium",
+  USER:       "user",
 };
 
-// Role display metadata (label, color classes, emoji)
 export const ROLE_LABELS = {
-  admin:      { label: "Admin",      color: "bg-red-100 text-red-700",      emoji: "🛡️" },
-  expert:     { label: "Expert",     color: "bg-blue-100 text-blue-700",    emoji: "🔬" },
-  shop_owner: { label: "Shop Owner", color: "bg-amber-100 text-amber-700",  emoji: "🏪" },
-  premium:    { label: "Premium",    color: "bg-violet-100 text-violet-700", emoji: "⭐" },
-  user:       { label: "Free",       color: "bg-slate-100 text-slate-600",  emoji: "👤" },
+  admin:      { label: "Admin",      color: "bg-red-100 text-red-700",       emoji: "shield"     },
+  expert:     { label: "Expert",     color: "bg-blue-100 text-blue-700",     emoji: "microscope" },
+  shop_owner: { label: "Shop Owner", color: "bg-amber-100 text-amber-700",   emoji: "store"      },
+  premium:    { label: "Premium",    color: "bg-violet-100 text-violet-700", emoji: "star"       },
+  user:       { label: "Free",       color: "bg-slate-100 text-slate-600",   emoji: "user"       },
 };
 
-// RBAC helpers
 export const ROLE_PERMISSIONS = {
   admin: [
     "admin_console", "expert_panel",
+    // Consumer Beauty AI
     "face_analysis", "live_camera", "ingredient_scan",
-    "skin_health", "skin_journey", "goals_tracker",
-    "hair_styling", "nail_styling", "virtual_studio", "routine_builder",
-    "spa_services", "find_salons", "beauty_reels", "beauty_store",
+    "skin_journey", "goals_tracker",
+    "hair_styling", "nail_styling", "virtual_studio",
+    "spa_services", "find_salons", "beauty_reels", "beauty_store", "routine_shop",
     "memberships", "my_bookings", "loyalty_rewards",
-    "evolution", "skin_trends", "history",
-    "my_shop", "franchise_hq", "staff_management", "hr_payroll",
-    "inventory", "campaigns", "coupons", "pos_invoices",
+    "evolution", "skin_trends", "history", "products",
+    "beauty_passport", "ingredient_conflict",
+    // Business Hub
+    "my_shop", "staff_management", "hr_payroll",
+    "inventory", "shop_products", "shop_services", "shop_appointments",
+    "campaigns", "coupons", "pos_invoices",
     "ai_insights", "supply_chain", "webhooks_api", "custom_forms",
+    "client_intelligence", "noshow_predictor",
     "settings",
   ],
   expert: [
     "expert_panel",
     "face_analysis", "live_camera", "ingredient_scan",
-    "skin_health", "skin_journey", "goals_tracker",
-    "hair_styling", "nail_styling", "virtual_studio", "routine_builder",
-    "spa_services", "find_salons", "beauty_reels", "beauty_store",
+    "skin_journey", "goals_tracker",
+    "hair_styling", "nail_styling", "virtual_studio",
+    "spa_services", "find_salons", "beauty_reels", "beauty_store", "routine_shop",
     "memberships", "my_bookings", "loyalty_rewards",
-    "evolution", "skin_trends", "history",
+    "evolution", "skin_trends", "history", "products",
+    "beauty_passport", "ingredient_conflict",
     "settings",
   ],
   shop_owner: [
-    "face_analysis", "live_camera", "ingredient_scan",
-    "skin_health", "skin_journey", "goals_tracker",
-    "hair_styling", "nail_styling", "virtual_studio", "routine_builder",
-    "spa_services", "find_salons", "beauty_reels", "beauty_store",
-    "memberships", "my_bookings", "loyalty_rewards",
-    "evolution", "skin_trends", "history",
-    "my_shop", "franchise_hq", "staff_management", "hr_payroll",
-    "inventory", "campaigns", "coupons", "pos_invoices",
+    // Business only — NO consumer beauty modules
+    "my_shop",
+    "staff_management", "hr_payroll",
+    "inventory", "shop_products", "shop_services", "shop_appointments",
+    "campaigns", "coupons", "pos_invoices",
     "ai_insights", "supply_chain", "webhooks_api", "custom_forms",
+    "client_intelligence", "noshow_predictor",
     "settings",
   ],
   premium: [
     "face_analysis", "live_camera", "ingredient_scan",
-    "skin_health", "skin_journey", "goals_tracker",
-    "hair_styling", "nail_styling", "virtual_studio", "routine_builder",
-    "spa_services", "find_salons", "beauty_reels", "beauty_store",
+    "skin_journey", "goals_tracker",
+    "hair_styling", "nail_styling", "virtual_studio",
+    "spa_services", "find_salons", "beauty_reels", "beauty_store", "routine_shop",
     "memberships", "my_bookings", "loyalty_rewards",
-    "evolution", "skin_trends", "history",
+    "evolution", "skin_trends", "history", "products",
+    "beauty_passport", "ingredient_conflict",
     "settings",
   ],
   user: [
     "face_analysis", "live_camera", "ingredient_scan",
     "hair_styling", "nail_styling", "virtual_studio",
-    "spa_services", "find_salons", "beauty_reels", "beauty_store",
+    "find_salons", "spa_services", "beauty_reels", "beauty_store",
     "memberships", "my_bookings",
-    "history",
+    "history", "products",
+    "beauty_passport", "ingredient_conflict",
     "settings",
   ],
 };
-
-
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
@@ -89,7 +90,6 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        // Check expiry
         if (decoded.exp && decoded.exp * 1000 < Date.now()) {
           logout();
           return;
@@ -121,33 +121,21 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  // RBAC helper
   const can = (permission) => {
     const role = user?.role || "user";
     return (ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS["user"]).includes(permission);
   };
 
-  const hasRole = (...roles) => {
-    return roles.includes(user?.role);
-  };
-
+  const hasRole = (...roles) => roles.includes(user?.role);
   const isShopOwner = () => hasRole("shop_owner", "admin");
-  const isExpert = () => hasRole("expert", "admin");
-  const isAdmin = () => hasRole("admin");
-  const isPremium = () => hasRole("premium", "admin", "shop_owner", "expert");
+  const isExpert    = () => hasRole("expert", "admin");
+  const isAdmin     = () => hasRole("admin");
+  const isPremium   = () => hasRole("premium", "admin", "expert");
 
   return (
     <AuthContext.Provider value={{
-      token,
-      user,
-      login,
-      logout,
-      can,
-      hasRole,
-      isShopOwner,
-      isExpert,
-      isAdmin,
-      isPremium,
+      token, user, login, logout, can, hasRole,
+      isShopOwner, isExpert, isAdmin, isPremium,
       role: user?.role || "user",
       profile,
     }}>

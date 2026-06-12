@@ -57,7 +57,7 @@ async def get_products():
 # ── Cart Management ───────────────────────────────────────────────────────────
 @router.get("/cart")
 async def get_cart(user: dict = Depends(get_current_user)):
-    user_id = str(user["_id"])
+    user_id = user.get("sub")
     cart = ecommerce_carts_collection.find_one({"user_id": user_id})
     if not cart:
         return {"items": [], "total": 0}
@@ -77,7 +77,7 @@ async def get_cart(user: dict = Depends(get_current_user)):
 
 @router.post("/cart")
 async def add_to_cart(item: CartItem, user: dict = Depends(get_current_user)):
-    user_id = str(user["_id"])
+    user_id = user.get("sub")
     try:
         prod = inventory_collection.find_one({"_id": ObjectId(item.product_id)})
     except Exception:
@@ -109,7 +109,7 @@ async def add_to_cart(item: CartItem, user: dict = Depends(get_current_user)):
 
 @router.delete("/cart/{product_id}")
 async def remove_from_cart(product_id: str, user: dict = Depends(get_current_user)):
-    user_id = str(user["_id"])
+    user_id = user.get("sub")
     cart = ecommerce_carts_collection.find_one({"user_id": user_id})
     if cart:
         items = [i for i in cart.get("items", []) if i["product_id"] != product_id]
@@ -119,7 +119,7 @@ async def remove_from_cart(product_id: str, user: dict = Depends(get_current_use
 # ── Checkout & Orders ─────────────────────────────────────────────────────────
 @router.post("/checkout")
 async def process_checkout(req: CheckoutRequest, user: dict = Depends(get_current_user)):
-    user_id = str(user["_id"])
+    user_id = user.get("sub")
     cart = ecommerce_carts_collection.find_one({"user_id": user_id})
     if not cart or not cart.get("items"):
         raise HTTPException(status_code=400, detail="Cart is empty")
@@ -174,6 +174,6 @@ async def process_checkout(req: CheckoutRequest, user: dict = Depends(get_curren
 
 @router.get("/orders")
 async def get_my_orders(user: dict = Depends(get_current_user)):
-    user_id = str(user["_id"])
+    user_id = user.get("sub")
     orders = ecommerce_orders_collection.find({"user_id": user_id}).sort("created_at", -1)
     return [serialize_doc(o) for o in orders]

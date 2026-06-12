@@ -71,10 +71,13 @@ from app.api.report_routes import router as report_router
 from app.api.onboarding_routes import router as onboarding_router
 from app.api.affiliate_routes import router as affiliate_router
 from app.api.notification_routes import router as notification_router
+from app.api.in_app_notifications import router as in_app_notif_router  # NEW — additive
 from app.api.gamification_routes import router as gamification_router
 from app.api.ingredient_routes import router as ingredient_router
 from app.api.translation_routes import router as translation_router
 from app.api.salon_routes import router as salon_router
+from app.api.salon_service_routes import router as salon_service_router  # NEW — additive
+from app.utils.rate_limiter import RateLimiterMiddleware  # NEW — additive
 from app.api.payment_routes import router as payment_router
 
 # ── New Enterprise Routers ────────────────────────────────────────────────────
@@ -96,6 +99,11 @@ from app.api.supply_chain_routes import router as supply_chain_router
 from app.api.chat_routes import router as chat_router
 from app.api.form_routes import router as form_router
 from app.api.hr_routes import router as hr_router
+from app.api.orders_routes import router as orders_router
+
+# ── Phase 1 New Feature Routers ───────────────────────────────────────────────
+from app.api.passport_routes import router as passport_router
+from app.api.noshow_routes import router as noshow_router
 
 # 4️⃣ REGISTER ROUTERS
 app.include_router(auth_router)
@@ -114,10 +122,108 @@ app.include_router(report_router)
 app.include_router(onboarding_router)
 app.include_router(affiliate_router)
 app.include_router(notification_router)
+app.include_router(in_app_notif_router)  # NEW — additive
 app.include_router(gamification_router)
 app.include_router(ingredient_router)
 app.include_router(translation_router)
 app.include_router(salon_router)
+app.include_router(salon_service_router)   # NEW — additive
+
+# ── Startup event: create MongoDB indexes for sync architecture ───────────────
+@app.on_event("startup")
+async def _create_sync_indexes():
+    try:
+        from app.utils.indexes import create_sync_indexes
+        from app.mongodb.collections import salons_collection, salon_events_collection
+        create_sync_indexes(salons_collection, salon_events_collection)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Startup index creation skipped: {e}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CORRELATION ID MIDDLEWARE
+# Injects X-Request-ID into every request/response for log tracing.
+# Additive — does not alter any existing request or response body.
+# ─────────────────────────────────────────────────────────────────────────────
+import uuid as _uuid
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as _Request
+
+class _CorrelationIDMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: _Request, call_next):
+        req_id = request.headers.get("X-Request-ID") or str(_uuid.uuid4())[:8]
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = req_id
+        return response
+
+app.add_middleware(_CorrelationIDMiddleware)
+app.add_middleware(RateLimiterMiddleware)  # NEW — additive
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GLOBAL EXCEPTION HANDLERS
+# Additive — FastAPI's default error handling is preserved for non-matched cases.
+# ─────────────────────────────────────────────────────────────────────────────
+import logging as _logging
+from fastapi import Request as _FRequest
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+
+_log = _logging.getLogger("beauty_api")
+
+
+@app.exception_handler(RequestValidationError)
+async def _validation_error_handler(_req: _FRequest, exc: RequestValidationError):
+    """Return structured 422 with field-level details instead of FastAPI default."""
+    details = []
+    for err in exc.errors():
+        field = " -> ".join(str(loc) for loc in err.get("loc", []))
+        details.append({"field": field, "message": err.get("msg", "")})
+    return JSONResponse(
+        status_code=422,
+        content={
+            "status":  "error",
+            "code":    "VALIDATION_ERROR",
+            "message": "One or more fields failed validation",
+            "details": details,
+            "request_id": _req.headers.get("X-Request-ID", ""),
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def _global_error_handler(_req: _FRequest, exc: Exception):
+    """Catch-all: log full traceback, return generic 500 to client."""
+    import traceback
+    req_id = _req.headers.get("X-Request-ID", "unknown")
+    _log.error(
+        "Unhandled exception",
+        extra={"request_id": req_id, "path": str(_req.url), "error": str(exc)},
+        exc_info=True,
+    )
+    # Check for MongoDB errors
+    err_str = str(type(exc).__name__)
+    if "Mongo" in err_str or "pymongo" in err_str.lower():
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status":      "error",
+                "code":        "SERVICE_UNAVAILABLE",
+                "message":     "Database temporarily unavailable. Please retry in a moment.",
+                "retry_after": 30,
+                "request_id":  req_id,
+            },
+        )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status":     "error",
+            "code":       "INTERNAL_ERROR",
+            "message":    "An unexpected error occurred. Our team has been notified.",
+            "request_id": req_id,
+        },
+    )
 app.include_router(payment_router)
 
 # ── New Enterprise Routers ────────────────────────────────────────────────────
@@ -139,6 +245,11 @@ app.include_router(supply_chain_router)
 app.include_router(chat_router)
 app.include_router(form_router)
 app.include_router(hr_router)
+app.include_router(orders_router)
+
+# ── Phase 1 New Feature Routers ───────────────────────────────────────────────
+app.include_router(passport_router)
+app.include_router(noshow_router)
 
 # 5️⃣ AI Recommendations endpoint
 from fastapi import Body

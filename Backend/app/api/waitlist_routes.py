@@ -46,7 +46,7 @@ class WaitlistStatusUpdate(BaseModel):
     status: str # waiting | seated | completed | cancelled
 
 def _get_owner_salon(current_user: dict):
-    salon = salons_collection.find_one({"owner_user_id": current_user.get("sub") or str(current_user["_id"])})
+    salon = salons_collection.find_one({"owner_user_id": current_user.get("sub")})
     if not salon:
         raise HTTPException(status_code=404, detail="No salon found for this account")
     return salon
@@ -72,7 +72,7 @@ async def waitlist_websocket(websocket: WebSocket, salon_id: str):
 async def get_waitlist(current_user: dict = Depends(get_current_user)):
     """Get the current live waitlist for the owner's salon."""
     salon = _get_owner_salon(current_user)
-    salon_id = str(salon["_id"])
+    salon_id = salon["id"]
     
     # Get active waitlist entries today
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
@@ -91,7 +91,7 @@ async def get_waitlist(current_user: dict = Depends(get_current_user)):
 async def add_to_waitlist(entry: WaitlistEntryCreate, current_user: dict = Depends(get_current_user)):
     """Add a walk-in to the waitlist."""
     salon = _get_owner_salon(current_user)
-    salon_id = str(salon["_id"])
+    salon_id = salon["id"]
     
     new_entry = {
         "id": str(uuid.uuid4()),
@@ -116,7 +116,7 @@ async def add_to_waitlist(entry: WaitlistEntryCreate, current_user: dict = Depen
 async def update_waitlist_status(entry_id: str, update: WaitlistStatusUpdate, current_user: dict = Depends(get_current_user)):
     """Update status (e.g. seated, completed) and broadcast to WebSocket."""
     salon = _get_owner_salon(current_user)
-    salon_id = str(salon["_id"])
+    salon_id = salon["id"]
     
     existing = waitlist_collection.find_one({"id": entry_id, "salon_id": salon_id})
     if not existing:

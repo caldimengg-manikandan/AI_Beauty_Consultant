@@ -170,3 +170,78 @@ async def scan_ingredients(req: IngredientRequest, current_user: dict = Depends(
         "active_count": len([i for i in found if i.get("type") == "Active"]),
         "matches": found
     }
+
+
+# ─────────────────────────────────────────────────────────────
+#  INGREDIENT CONFLICT CHECKER
+# ─────────────────────────────────────────────────────────────
+
+# Known conflict pairs: (ingredient_a_keyword, ingredient_b_keyword, risk, reason, tip)
+CONFLICT_RULES = [
+    ("retinol",     "vitamin c",   "High",   "Retinol + Vitamin C (L-Ascorbic Acid) can deactivate each other and cause irritation at low pH.", "Use Vitamin C in the morning and Retinol at night."),
+    ("retinol",     "ascorbic",    "High",   "Ascorbic acid destabilises Retinol and can cause skin irritation.", "Separate into AM (Vitamin C) and PM (Retinol) routines."),
+    ("retinol",     "aha",         "High",   "AHAs lower skin pH which can irritate skin already sensitised by Retinol.", "Alternate nights: Retinol one night, AHA the next."),
+    ("retinol",     "bha",         "High",   "BHA combined with Retinol may cause excessive dryness and peeling.", "Use on alternate evenings."),
+    ("niacinamide", "vitamin c",   "Medium", "High-strength Niacinamide with pure Vitamin C can form Niacin (temporary flushing). At lower percentages (below 5%), this is generally not an issue.", "Use separately or choose stable Vitamin C derivatives like Ascorbyl Glucoside."),
+    ("aha",         "bha",         "Medium", "Using multiple exfoliants together can over-exfoliate and cause sensitivity.", "Use one at a time or on alternate days."),
+    ("benzoyl",     "retinol",     "High",   "Benzoyl Peroxide oxidises and deactivates Retinol, making both less effective.", "Use Benzoyl Peroxide in the morning and Retinol at night."),
+    ("benzoyl",     "vitamin c",   "High",   "Benzoyl Peroxide oxidises Vitamin C, drastically reducing its efficacy.", "Keep these in separate routines."),
+    ("vitamin c",   "copper",      "Medium", "Copper peptides can oxidise Vitamin C, reducing its antioxidant effectiveness.", "Use Vitamin C in the morning and Copper Peptides in the evening."),
+    ("spf",         "retinol",     "Low",    "SPF should always be applied last; layering Retinol under SPF during daytime can increase photosensitivity.", "Reserve Retinol for night-time use only."),
+]
+
+SAFE_COMBOS = [
+    ("hyaluronic acid", "niacinamide"),
+    ("ceramide",        "niacinamide"),
+    ("hyaluronic acid", "vitamin c"),
+    ("spf",             "vitamin c"),
+    ("niacinamide",     "spf"),
+    ("peptide",         "hyaluronic acid"),
+]
+
+class ConflictRequest(BaseModel):
+    product_a: str
+    product_b: str
+
+@router.post("/conflict")
+async def check_ingredient_conflict(
+    req: ConflictRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Check compatibility between two product ingredient lists."""
+    a = req.product_a.lower()
+    b = req.product_b.lower()
+    combined = a + " ||| " + b
+
+    conflicts = []
+    for (kw1, kw2, risk, reason, tip) in CONFLICT_RULES:
+        in_a = kw1 in a or kw2 in a
+        in_b = kw1 in b or kw2 in b
+        cross = (kw1 in a and kw2 in b) or (kw2 in a and kw1 in b)
+        if cross:
+            conflicts.append({
+                "pair": f"{kw1.title()} + {kw2.title()}",
+                "risk": risk,
+                "reason": reason,
+                "tip": tip,
+            })
+
+    # Safe combos
+    safe = []
+    for (kw1, kw2) in SAFE_COMBOS:
+        if (kw1 in a or kw1 in b) and (kw2 in a or kw2 in b):
+            safe.append(f"{kw1.title()} + {kw2.title()}")
+
+    general_tip = None
+    if len(conflicts) == 0:
+        general_tip = "No known conflicts detected. Always patch-test new combinations and introduce products gradually."
+    elif any(c["risk"] == "High" for c in conflicts):
+        general_tip = "High-risk conflicts found. We recommend separating these products into different routines (AM vs PM) or alternate days."
+
+    return {
+        "success": True,
+        "conflicts": conflicts,
+        "safe_combos": safe,
+        "general_tip": general_tip,
+        "total_conflicts": len(conflicts),
+    }

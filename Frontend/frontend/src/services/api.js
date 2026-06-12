@@ -18,6 +18,24 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// ✅ Response Interceptor: auto-logout on 401 (expired/invalid token)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("email");
+      localStorage.removeItem("role");
+      localStorage.removeItem("account_type");
+      // Redirect to login only if not already there
+      if (!window.location.pathname.startsWith("/login")) {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // SIGNUP
 export const signup = async (data) => {
   const res = await api.post("/api/auth/signup", data);
