@@ -2,7 +2,7 @@ import logging
 _log = logging.getLogger("beauty_api.analysis")
 
 from app.utils.upload_validator import validate_image_upload
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordBearer
 from app.utils.image_utils import read_image
 from app.pipeline.face_detection import detect_faces
