@@ -193,7 +193,7 @@ export default function EcommerceStore() {
           <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
               <h2 className="text-xl font-black text-slate-900 flex items-center gap-2"><FiShoppingCart /> Your Cart</h2>
-              <button onClick={() => setShowCart(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"><FiX /></button>
+              <button onClick={() => setShowCart(false)} aria-label="Close cart" className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"><FiX /></button>
             </div>
             
             <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
@@ -210,7 +210,7 @@ export default function EcommerceStore() {
                       <div className="text-[10px] font-bold text-purple-500 uppercase tracking-widest mt-1">{item.vendor_name}</div>
                       <div className="text-sm font-black text-slate-900 mt-2">₹{item.unit_price} <span className="text-xs text-slate-400 font-medium ml-1">x {item.cart_quantity}</span></div>
                     </div>
-                    <button onClick={() => handleRemove(item.id)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors p-1"><FiX size={16}/></button>
+                    <button onClick={() => handleRemove(item.id)} aria-label="Remove item" className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors p-1"><FiX size={16}/></button>
                   </div>
                 ))
               )}

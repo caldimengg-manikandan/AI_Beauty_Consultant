@@ -1,3 +1,7 @@
+import logging
+_log = logging.getLogger("beauty_api.reels")
+
+from app.utils.upload_validator import validate_video_upload
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, Query
 from app.auth.jwt_handler import get_current_user
 from app.mongodb.collections import reels_collection, salons_collection
@@ -73,20 +77,26 @@ def seed_reels_if_empty():
 async def get_reels_feed(
     category: str = Query(None),
     current_user: dict = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, le=50),
 ):
-    """Public discovery feed — for all roles."""
+    """Public discovery feed — for all roles. Supports pagination."""
     seed_reels_if_empty()
     user_id = current_user.get("sub")
     query   = {}
     if category:
         query["category"] = category
 
-    reels = list(reels_collection.find(query).sort("created_at", -1))
+    total = reels_collection.count_documents(query)
+    skip  = (page - 1) * limit
+    reels = list(reels_collection.find(query).sort("created_at", -1).skip(skip).limit(limit))
+    result = []
     for r in reels:
         r.pop("_id", None)
         r["is_liked"] = user_id in r.get("liked_by", [])
         r["is_saved"] = user_id in r.get("saved_by", [])
-    return reels
+        result.append(r)
+    return {"reels": result, "total": total, "page": page, "pages": -(-total // limit)}
 
 
 # ─── GET /api/reels/owner/my-reels ───────────────────────────────────────────
@@ -204,12 +214,13 @@ async def upload_reel(
     file_path = os.path.join("static/uploads", filename)
     os.makedirs("static/uploads", exist_ok=True)
 
+    video_bytes = await validate_video_upload(video)
     try:
-        video_bytes = await video.read()
         with open(file_path, "wb") as f:
             f.write(video_bytes)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save video: {str(e)}")
+    except Exception:
+        _log.exception("Failed to save reel video to disk")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred saving the video.")
 
     BASE_URL  = os.getenv("BASE_URL", "http://localhost:8000")
     video_url = f"{BASE_URL}/static/uploads/{filename}"

@@ -7,6 +7,7 @@ import { CartProvider } from "./context/CartContext";
 // ─── Always-needed (not lazy) ──────────────────────────────────────────────
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layout/DashboardLayout";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // ─── Fallback spinner shown while a route chunk is loading ─────────────────
 const PageLoader = () => (
@@ -99,6 +100,7 @@ function App() {
     <AuthProvider>
       <CartProvider>
         <BrowserRouter>
+          <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
 
@@ -280,6 +282,7 @@ function App() {
               <ChatWidget />
             </Suspense>
           </Suspense>
+          </ErrorBoundary>
         </BrowserRouter>
       </CartProvider>
     </AuthProvider>

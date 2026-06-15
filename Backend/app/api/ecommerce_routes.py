@@ -1,3 +1,6 @@
+import logging
+_log = logging.getLogger("beauty_api.ecommerce")
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Optional

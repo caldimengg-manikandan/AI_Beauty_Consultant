@@ -34,7 +34,17 @@ import os
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-SECRET_KEY = os.getenv("JWT_SECRET", "super_secret_key")
+import secrets as _secrets
+import logging as _logging
+
+_log = _logging.getLogger("beauty_api.auth.deps")
+
+_raw_secret = os.getenv("JWT_SECRET", "")
+if not _raw_secret:
+    _log.critical("JWT_SECRET not set in deps.py — generating ephemeral key (tokens won't survive restart).")
+    _raw_secret = _secrets.token_hex(32)
+
+SECRET_KEY = _raw_secret
 ALGORITHM = "HS256"
 
 def get_current_user(token: str = Depends(oauth2_scheme)):

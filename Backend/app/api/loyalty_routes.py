@@ -1,3 +1,6 @@
+import logging
+_log = logging.getLogger("beauty_api.loyalty")
+
 """
 Loyalty & Wallet Routes — Customer B2C
 Handles: points wallet, tier upgrades, rewards, referrals

@@ -71,7 +71,7 @@ const VirtualStudio = () => {
         recognition.onstart = () => setIsListening(true);
         recognition.onresult = (event) => {
             const command = event.results[0][0].transcript.toLowerCase();
-            console.log("🎙️ Voice Command:", command);
+            if (process.env.NODE_ENV === "development") console.log("Voice Command:", command);
 
             if (command.includes('lips') || command.includes('lipstick')) setCurrentTab('lipstick');
             if (command.includes('blush')) setCurrentTab('blush');

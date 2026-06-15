@@ -1,3 +1,6 @@
+import logging
+_log = logging.getLogger("beauty_api.appointment")
+
 from fastapi import APIRouter, HTTPException, Depends, Query
 from app.schemas.appointment import AppointmentCreate
 from app.mongodb.collections import appointments_collection, slot_bookings_collection

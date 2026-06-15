@@ -198,7 +198,7 @@ const RegisterForm = ({ onSuccess }) => {
             {previewUrls.map((url, i) => (
               <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden shadow-sm group">
                 <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover" />
-                <button type="button" onClick={() => removeFile(i)} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm"><FaTimes /></button>
+                <button type="button" onClick={() => removeFile(i)} aria-label={`Remove image ${i + 1}`} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm"><FaTimes /></button>
                 {i === 0 && <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5">COVER</span>}
               </div>
             ))}

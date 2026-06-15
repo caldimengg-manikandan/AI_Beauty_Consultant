@@ -1,3 +1,6 @@
+import logging
+_log = logging.getLogger("beauty_api.translation")
+
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List
@@ -51,7 +54,7 @@ async def translate_batch(request: TranslationRequest):
         return TranslationResponse(translations=translations)
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Translation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
 @router.get("/languages")
 async def get_supported_languages():

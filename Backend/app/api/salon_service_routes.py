@@ -1,3 +1,6 @@
+import logging
+_log = logging.getLogger("beauty_api.salon_service")
+
 """
 salon_service_routes.py
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

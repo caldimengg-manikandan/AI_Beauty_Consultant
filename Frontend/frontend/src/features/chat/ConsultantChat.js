@@ -26,7 +26,7 @@ const ConsultantChat = () => {
 
         try {
             const res = await sendChat(userMsg);
-            console.log("Chat response:", res);
+            if (process.env.NODE_ENV === "development") console.log("Chat response:", res);
             setMessages(prev => [...prev, { text: res.reply, sender: "bot" }]);
         } catch (err) {
             console.error("Chat error:", err);

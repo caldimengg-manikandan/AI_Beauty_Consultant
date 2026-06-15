@@ -155,7 +155,7 @@ function AdjustStockModal({ product, onClose, onAdjusted, token }) {
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-slate-800">Adjust Stock</h3>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><FaTimes size={12} /></button>
+          <button onClick={onClose} aria-label="Close" className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><FaTimes size={12} /></button>
         </div>
         <p className="text-sm text-slate-500 mb-4">Current stock: <span className="font-bold text-slate-800">{product.quantity} {product.unit}</span></p>
         <div className="space-y-3">

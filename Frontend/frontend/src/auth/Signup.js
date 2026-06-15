@@ -155,7 +155,7 @@ const Signup = () => {
               <div className="relative">
                 <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input type={showPassword ? "text" : "password"} value={customerForm.password} onChange={e => setCustomerForm(f => ({ ...f, password: e.target.value }))} placeholder="Min 6 characters" required className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 text-sm font-medium" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
@@ -196,7 +196,7 @@ const Signup = () => {
               <div className="relative">
                 <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input type={showPassword ? "text" : "password"} value={ownerForm.password} onChange={e => setOwnerForm(f => ({ ...f, password: e.target.value }))} placeholder="Min 6 characters" required className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 text-sm font-medium" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <button type="button" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>

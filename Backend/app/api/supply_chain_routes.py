@@ -1,3 +1,6 @@
+import logging
+_log = logging.getLogger("beauty_api.supply_chain")
+
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from datetime import datetime

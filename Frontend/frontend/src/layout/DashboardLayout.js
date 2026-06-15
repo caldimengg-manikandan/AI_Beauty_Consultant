@@ -20,6 +20,13 @@ const DashboardLayout = () => {
       dir={document.documentElement.dir}
       style={{ background: "var(--surface-base)" }}
     >
+      {/* ── Skip to main content (keyboard / screen reader) ─── */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[999] focus:px-4 focus:py-2 focus:bg-purple-700 focus:text-white focus:rounded-lg focus:font-bold focus:text-sm"
+      >
+        Skip to main content
+      </a>
       {/* ── Subtle ambient glow — purely decorative ─────── */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden="true">
         <div
@@ -53,6 +60,8 @@ const DashboardLayout = () => {
       <div className="flex flex-col flex-1 relative z-10 min-w-0 overflow-hidden">
         <Navbar onMenuClick={() => setSidebarOpen((p) => !p)} />
         <main
+          id="main-content"
+          role="main"
           className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 custom-scrollbar"
           style={{ background: "var(--surface-base)" }}
         >

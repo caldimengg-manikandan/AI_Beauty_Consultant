@@ -1,3 +1,6 @@
+import logging
+_log = logging.getLogger("beauty_api.coupon")
+
 """
 Coupon Management Routes — Salon Partner B2B + Customer B2C
 Handles: create coupons, validate, redeem, analytics

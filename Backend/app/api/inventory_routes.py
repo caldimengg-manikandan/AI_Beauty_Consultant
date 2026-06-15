@@ -1,3 +1,6 @@
+import logging
+_log = logging.getLogger("beauty_api.inventory")
+
 """
 Inventory Management Routes — Salon Partner B2B
 Handles: product stock, low-stock alerts, usage tracking, vendor management

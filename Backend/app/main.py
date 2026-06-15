@@ -1,21 +1,39 @@
+import logging
+import logging.config
 
-# from fastapi import FastAPI
-# from app.api.routes import router as analysis_router
-# from app.api.auth_routes import router as auth_router
-# from fastapi.middleware.cors import CORSMiddleware
+# ── Structured logging configuration ─────────────────────────────────────────
+_LOG_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json_like": {
+            "format": '{"time":"%(asctime)s","level":"%(levelname)s","logger":"%(name)s","msg":"%(message)s"}',
+            "datefmt": "%Y-%m-%dT%H:%M:%S",
+        },
+        "simple": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            "datefmt": "%H:%M:%S",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+            "stream": "ext://sys.stdout",
+        },
+    },
+    "root": {
+        "level": "WARNING",
+        "handlers": ["console"],
+    },
+    "loggers": {
+        "beauty_api": {"level": "INFO",    "propagate": True},
+        "uvicorn":    {"level": "WARNING", "propagate": True},
+        "fastapi":    {"level": "WARNING", "propagate": True},
+    },
+}
+logging.config.dictConfig(_LOG_CONFIG)
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["http://localhost:3000"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-
-# app = FastAPI(title="AI Beauty Consultant Backend")
-
-# app.include_router(auth_router)
-# app.include_router(analysis_router)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

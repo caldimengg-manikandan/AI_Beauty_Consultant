@@ -76,14 +76,14 @@ const AnalyzePage = () => {
       setResult(null);
 
       // --- CLIENT-SIDE COMPRESSION ---
-      console.log("⚡ Compressing image for faster upload...");
+
       const compressedBlob = await compressImage(image);
 
       const formData = new FormData();
       formData.append("image", compressedBlob, "upload.jpg");
 
       const res = await analyzeImage(formData);
-      console.log("Analysis Result:", res);
+      if (process.env.NODE_ENV === "development") console.log("Analysis Result:", res);
 
       // Handle new API response structure: {success: true, data: {...}}
       let analysisData = res;

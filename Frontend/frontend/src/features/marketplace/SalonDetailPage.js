@@ -255,10 +255,10 @@ const SalonDetailPage = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              <button className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition-colors">
+              <button aria-label="Add to favourites" className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition-colors">
                 <FaHeart className="text-sm" />
               </button>
-              <button className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition-colors">
+              <button aria-label="Share salon" className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition-colors">
                 <FaShare className="text-sm" />
               </button>
             </div>

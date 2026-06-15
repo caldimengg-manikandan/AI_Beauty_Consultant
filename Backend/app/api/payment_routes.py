@@ -1,3 +1,6 @@
+import logging
+_log = logging.getLogger("beauty_api.payments")
+
 """
 Razorpay Payment Routes — Full Integration
 Handles: order creation, payment verification, refunds, payment history.
@@ -145,7 +148,8 @@ async def create_payment_order(
             detail="Razorpay not installed. Run: pip install razorpay"
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Order creation failed: {str(e)}")
+        _log.exception("Payment order creation error")
+        raise HTTPException(status_code=500, detail="Payment service encountered an error. Please try again.")
 
 
 @router.post("/verify")
@@ -268,7 +272,8 @@ async def request_refund(
             "booking_id": req.booking_id
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Refund failed: {str(e)}")
+        _log.exception("Refund processing error")
+        raise HTTPException(status_code=500, detail="Refund service encountered an error. Please try again.")
 
 
 @router.get("/my-history")
