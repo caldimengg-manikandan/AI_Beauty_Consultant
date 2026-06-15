@@ -141,7 +141,7 @@ function AdjustStockModal({ product, onClose, onAdjusted, token }) {
       onAdjusted();
       onClose();
     } catch (e) {
-      alert(e.message);
+      toast.error(e.message);
     } finally {
       setSaving(false);
     }

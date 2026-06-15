@@ -25,7 +25,7 @@ const IngredientScanner = () => {
         } catch (err) {
             console.error("Scan failed", err);
             const detail = err.response?.data?.detail || err.message;
-            alert(`Scan failed: ${detail}. Please try a clearer image or manual entry.`);
+            toast.error(`Scan failed: ${detail}. Please try a clearer image or manual entry.`);
         } finally {
             setLoading(false);
         }
@@ -44,7 +44,7 @@ const IngredientScanner = () => {
         } catch (err) {
             console.error("Manual scan failed", err);
             const detail = err.response?.data?.detail || err.message;
-            alert(`Analysis failed: ${detail}. Please check if the backend is running on port 8000.`);
+            toast.error(`Analysis failed: ${detail}. Please check if the backend is running on port 8000.`);
         } finally {
             setLoading(false);
         }

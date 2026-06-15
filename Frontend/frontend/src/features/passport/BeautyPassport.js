@@ -55,7 +55,7 @@ export default function BeautyPassport() {
       try {
         const [profileRes, historyRes] = await Promise.allSettled([
           api.get("/api/onboarding/profile"),
-          api.get("/api/analyze/history?limit=5"),
+          api.get("/history?limit=5"),
         ]);
         const p = profileRes.status === "fulfilled"
           ? (profileRes.value.data?.profile || profileRes.value.data)

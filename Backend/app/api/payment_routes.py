@@ -64,7 +64,7 @@ async def create_payment_order(
 ):
     """Create a Razorpay order. Falls back to demo mode if keys not set."""
     # Validate booking exists
-    booking = slot_bookings_collection.find_one({"id": req.booking_id})
+    booking = slot_bookings_collection.find_one({"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}]})
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
 
@@ -158,8 +158,9 @@ async def verify_payment(
     # ── Demo Mode ─────────────────────────────────────────────────────────────
     if req.razorpay_order_id.startswith("order_demo_"):
         slot_bookings_collection.update_one(
-            {"id": req.booking_id},
+            {"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}]},
             {"$set": {
+                "status": "confirmed",
                 "payment_status": "paid",
                 "payment_id": req.razorpay_payment_id or "demo_pay_" + uuid.uuid4().hex[:8],
                 "razorpay_order_id": req.razorpay_order_id,
@@ -190,10 +191,11 @@ async def verify_payment(
     if expected_signature != req.razorpay_signature:
         raise HTTPException(status_code=400, detail="Payment verification failed — invalid signature")
 
-    # Mark booking as paid
+    # Mark booking as paid and confirmed
     slot_bookings_collection.update_one(
-        {"id": req.booking_id},
+        {"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}]},
         {"$set": {
+            "status": "confirmed",
             "payment_status": "paid",
             "payment_id": req.razorpay_payment_id,
             "razorpay_order_id": req.razorpay_order_id,
@@ -225,7 +227,7 @@ async def request_refund(
 ):
     """Initiate a refund for a paid booking."""
     booking = slot_bookings_collection.find_one({
-        "id": req.booking_id,
+        "$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}],
         "user_id": current_user.get("sub"),
         "payment_status": "paid"
     })
@@ -236,7 +238,7 @@ async def request_refund(
     if payment_id.startswith("demo_") or payment_id == "mock_payment":
         # Demo refund
         slot_bookings_collection.update_one(
-            {"id": req.booking_id},
+            {"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}]},
             {"$set": {"payment_status": "refunded", "status": "cancelled"}}
         )
         return {"status": "success", "message": "Refund processed (Demo mode)", "booking_id": req.booking_id}
@@ -251,7 +253,7 @@ async def request_refund(
             "notes": {"reason": req.reason, "booking_id": req.booking_id}
         })
         slot_bookings_collection.update_one(
-            {"id": req.booking_id},
+            {"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}]},
             {"$set": {
                 "payment_status": "refunded",
                 "status": "cancelled",

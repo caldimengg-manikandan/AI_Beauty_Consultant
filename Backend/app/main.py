@@ -104,6 +104,7 @@ from app.api.orders_routes import router as orders_router
 # ── Phase 1 New Feature Routers ───────────────────────────────────────────────
 from app.api.passport_routes import router as passport_router
 from app.api.noshow_routes import router as noshow_router
+from app.api.user_dashboard_routes import router as user_dashboard_router
 
 # 4️⃣ REGISTER ROUTERS
 app.include_router(auth_router)
@@ -129,13 +130,15 @@ app.include_router(translation_router)
 app.include_router(salon_router)
 app.include_router(salon_service_router)   # NEW — additive
 
-# ── Startup event: create MongoDB indexes for sync architecture ───────────────
+# ── Startup event: create MongoDB indexes ─────────────────────────────────────
 @app.on_event("startup")
 async def _create_sync_indexes():
     try:
-        from app.utils.indexes import create_sync_indexes
+        from app.utils.indexes import create_sync_indexes, create_app_indexes
         from app.mongodb.collections import salons_collection, salon_events_collection
+        from app.mongodb.client import db
         create_sync_indexes(salons_collection, salon_events_collection)
+        create_app_indexes(db)
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f"Startup index creation skipped: {e}")
@@ -250,6 +253,7 @@ app.include_router(orders_router)
 # ── Phase 1 New Feature Routers ───────────────────────────────────────────────
 app.include_router(passport_router)
 app.include_router(noshow_router)
+app.include_router(user_dashboard_router)
 
 # 5️⃣ AI Recommendations endpoint
 from fastapi import Body

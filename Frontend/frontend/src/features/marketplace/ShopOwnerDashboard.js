@@ -43,8 +43,42 @@ const RegisterForm = ({ onSuccess }) => {
     city: '', pincode: '', salon_type: 'parlour', gender_served: 'Female',
     description: '', services_offered: [], opening_time: '9:00 AM',
     closing_time: '8:00 PM', slot_duration_minutes: 60, max_concurrent_slots: 3,
+    latitude: null, longitude: null,
   });
   const [saving, setSaving] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
+
+  // Auto-detect location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setForm(f => ({ ...f, latitude: pos.coords.latitude, longitude: pos.coords.longitude })),
+        () => console.warn('Location detection failed or denied.')
+      );
+    }
+  }, []);
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + selectedFiles.length > 10) {
+      toast.error('Maximum 10 images allowed.');
+      return;
+    }
+    const validFiles = files.filter(f => ['image/jpeg', 'image/png', 'image/webp'].includes(f.type) && f.size <= 5 * 1024 * 1024);
+    if (validFiles.length < files.length) {
+      toast.warn('Some files were ignored (must be JPG/PNG/WEBP and under 5MB).');
+    }
+    
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+    const newPreviews = validFiles.map(file => URL.createObjectURL(file));
+    setPreviewUrls(prev => [...prev, ...newPreviews]);
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+  };
 
   const toggleService = (s) => setForm(f => ({
     ...f,
@@ -58,7 +92,23 @@ const RegisterForm = ({ onSuccess }) => {
     if (form.services_offered.length === 0) { toast.error('Select at least one service'); return; }
     setSaving(true);
     try {
-      await registerSalon(form);
+      let finalForm = { ...form };
+      // Handle Image Upload
+      if (selectedFiles.length > 0) {
+        const formData = new FormData();
+        selectedFiles.forEach(file => formData.append('images', file));
+        
+        // Import uploadGalleryImages dynamically or ensure it's imported at the top
+        const { uploadGalleryImages } = require('../../services/salonApi');
+        const res = await uploadGalleryImages(formData);
+        
+        if (res?.gallery_urls?.length > 0) {
+          finalForm.gallery_urls = res.gallery_urls;
+          finalForm.cover_image_url = res.gallery_urls[0];
+        }
+      }
+
+      await registerSalon(finalForm);
       toast.success('Salon registered successfully!');
       onSuccess();
     } catch (err) {
@@ -68,10 +118,8 @@ const RegisterForm = ({ onSuccess }) => {
     }
   };
 
-
-
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-teal-500 rounded-xl flex items-center justify-center text-white">
           <FaStore />
@@ -82,7 +130,7 @@ const RegisterForm = ({ onSuccess }) => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Salon / Parlour Name *" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Bliss Beauty Parlour" />
           <Field label="Owner Name *" required value={form.owner_name} onChange={e => setForm(f => ({ ...f, owner_name: e.target.value }))} placeholder="Your full name" />
@@ -93,12 +141,15 @@ const RegisterForm = ({ onSuccess }) => {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-600 mb-1">Full Address *</label>
+          <label className="block text-xs font-bold text-gray-600 mb-1 flex justify-between">
+            Full Address * 
+            {form.latitude && <span className="text-emerald-500 font-normal">📍 Location Detected</span>}
+          </label>
           <textarea required rows={2} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Street, Area, Landmark" className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none" />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+          <div className="col-span-2">
             <label className="block text-xs font-bold text-gray-600 mb-1">Type</label>
             <select value={form.salon_type} onChange={e => setForm(f => ({ ...f, salon_type: e.target.value }))} className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white">
               <option value="parlour">Parlour</option>
@@ -106,35 +157,59 @@ const RegisterForm = ({ onSuccess }) => {
               <option value="spa">Spa</option>
             </select>
           </div>
-          <div>
+          <div className="col-span-2">
             <label className="block text-xs font-bold text-gray-600 mb-1">Serves</label>
             <select value={form.gender_served} onChange={e => setForm(f => ({ ...f, gender_served: e.target.value }))} className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white">
               <option>Female</option><option>Male</option><option>Unisex</option>
             </select>
           </div>
-          <div>
+          <div className="col-span-1">
             <label className="block text-xs font-bold text-gray-600 mb-1">Opens At</label>
             <select value={form.opening_time} onChange={e => setForm(f => ({ ...f, opening_time: e.target.value }))} className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white">
               {['7:00 AM','8:00 AM','9:00 AM','10:00 AM','11:00 AM'].map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
-          <div>
+          <div className="col-span-1">
             <label className="block text-xs font-bold text-gray-600 mb-1">Closes At</label>
             <select value={form.closing_time} onChange={e => setForm(f => ({ ...f, closing_time: e.target.value }))} className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white">
               {['6:00 PM','7:00 PM','8:00 PM','9:00 PM','10:00 PM'].map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
-          <div>
+          <div className="col-span-3">
             <label className="block text-xs font-bold text-gray-600 mb-1">Slot Duration (mins)</label>
             <select value={form.slot_duration_minutes} onChange={e => setForm(f => ({ ...f, slot_duration_minutes: Number(e.target.value) }))} className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white">
               {[30,45,60,90].map(n => <option key={n}>{n}</option>)}
             </select>
           </div>
-          <div>
+          <div className="col-span-3">
             <label className="block text-xs font-bold text-gray-600 mb-1">Max Bookings/Slot</label>
             <select value={form.max_concurrent_slots} onChange={e => setForm(f => ({ ...f, max_concurrent_slots: Number(e.target.value) }))} className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white">
               {[1,2,3,4,5].map(n => <option key={n}>{n}</option>)}
             </select>
+          </div>
+        </div>
+
+        {/* Image Gallery Upload */}
+        <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+          <label className="block text-sm font-bold text-gray-900 mb-1">Shop Gallery (Optional)</label>
+          <p className="text-xs text-gray-500 mb-3">Upload up to 10 photos of your interior, exterior, or services. The first photo will be your Cover Image.</p>
+          
+          <div className="flex flex-wrap gap-3">
+            {previewUrls.map((url, i) => (
+              <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden shadow-sm group">
+                <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                <button type="button" onClick={() => removeFile(i)} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm"><FaTimes /></button>
+                {i === 0 && <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5">COVER</span>}
+              </div>
+            ))}
+            
+            {previewUrls.length < 10 && (
+              <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-purple-400 hover:text-purple-500 cursor-pointer transition-colors bg-white">
+                <FaPlus className="text-xl mb-1" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">Add</span>
+                <input type="file" multiple accept="image/jpeg, image/png, image/webp" className="hidden" onChange={handleFileChange} />
+              </label>
+            )}
           </div>
         </div>
 

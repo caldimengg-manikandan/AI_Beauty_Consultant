@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import {
     Users,
     BarChart3,
@@ -54,7 +55,7 @@ const AdminDashboard = () => {
             const updatedUsers = await getAllUsers();
             setUsers(updatedUsers);
         } catch (error) {
-            alert("Failed to update role");
+            toast.error("Failed to update role");
         }
     };
 
@@ -65,7 +66,7 @@ const AdminDashboard = () => {
             const updatedUsers = await getAllUsers();
             setUsers(updatedUsers);
         } catch (error) {
-            alert("Failed to update status.");
+            toast.error("Failed to update status.");
         }
     };
 
@@ -75,9 +76,9 @@ const AdminDashboard = () => {
             setBroadcasting(true);
             await broadcastAnnouncement(announcement);
             setAnnouncement("");
-            alert("Announcement sent!");
+            toast.success("Announcement sent!");
         } catch (error) {
-            alert("Failed to send announcement");
+            toast.error("Failed to send announcement");
         } finally {
             setBroadcasting(false);
         }
@@ -93,7 +94,7 @@ const AdminDashboard = () => {
             await updateTicketStatus(id, 'resolved');
             setTickets(tickets.map(t => t.id === id ? { ...t, status: 'resolved' } : t));
         } catch (error) {
-            alert("Failed to resolve ticket");
+            toast.error("Failed to resolve ticket");
         }
     };
 

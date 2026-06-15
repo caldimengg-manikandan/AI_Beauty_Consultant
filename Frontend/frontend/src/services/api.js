@@ -149,12 +149,12 @@ export const broadcastAnnouncement = async (message) => {
 // --- SUPPORT (ADMIN) ENDPOINTS ---
 export const getSupportTickets = async (status=null) => {
   const params = status ? { status } : {};
-  const res = await api.get("/api/support/admin/tickets", { params });
+  const res = await api.get("/api/support/admin/all", { params });
   return res.data;
 };
 
 export const updateTicketStatus = async (ticketId, status) => {
-  const res = await api.put(`/api/support/admin/tickets/${ticketId}/status`, null, { params: { status } });
+  const res = await api.patch(`/api/support/admin/${ticketId}/status`, null, { params: { status } });
   return res.data;
 };
 
@@ -231,6 +231,12 @@ export const updateNotificationSettings = async (settings) => {
 
 export const sendTestEmail = async () => {
   const res = await api.post("/api/notifications/test-email");
+  return res.data;
+};
+
+// USER DASHBOARD SUMMARY
+export const getUserDashboardSummary = async () => {
+  const res = await api.get("/api/user-dashboard/summary");
   return res.data;
 };
 

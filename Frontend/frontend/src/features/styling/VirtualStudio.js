@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import axios from 'axios';
 import {
     FaCamera, FaUpload, FaMagic, FaSyncAlt, FaDownload,
@@ -62,7 +63,7 @@ const VirtualStudio = () => {
     const handleVoiceCommand = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            alert("Voice recognition is not supported in this browser.");
+            toast.error("Voice recognition is not supported in this browser.");
             return;
         }
 
@@ -159,7 +160,7 @@ const VirtualStudio = () => {
 
     const startCamera = async () => {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            alert("🔒 Secure Context Required: Your browser has blocked camera access either because the connection is not secure (HTTPS) or the browser is out of date.");
+            toast.error("🔒 Secure Context Required: Your browser has blocked camera access either because the connection is not secure (HTTPS) or the browser is out of date.");
             return;
         }
 
@@ -177,13 +178,13 @@ const VirtualStudio = () => {
         } catch (err) {
             console.error("Camera Error:", err);
             if (err.name === 'NotAllowedError') {
-                alert("🚫 Camera Access Denied: Please check your browser's site settings and click 'Allow' for the camera.");
+                toast.error("🚫 Camera Access Denied: Please check your browser's site settings and click 'Allow' for the camera.");
             } else if (err.name === 'NotFoundError') {
-                alert("📷 No Camera Found: We couldn't detect a camera device connected to your system.");
+                toast.error("📷 No Camera Found: We couldn't detect a camera device connected to your system.");
             } else if (err.name === 'NotReadableError') {
-                alert("⚠️ Camera Busy: Another application (like Zoom or Teams) is currently using your camera. Please close it and try again.");
+                toast.error("⚠️ Camera Busy: Another application (like Zoom or Teams) is currently using your camera. Please close it and try again.");
             } else {
-                alert(`❌ Imaging Error: ${err.message}`);
+                toast.error(`❌ Imaging Error: ${err.message}`);
             }
         }
     };

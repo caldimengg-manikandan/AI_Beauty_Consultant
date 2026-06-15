@@ -667,3 +667,95 @@ async def get_salon_services(
         "services":   active,
         "total":      len(active),
     }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PUBLIC — list ALL active services across ALL registered salons
+# Used by the Spa Services page to display real catalogue data
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/public/all")
+async def get_all_public_services(
+    category: str = Query(None, description="Filter by service category"),
+    gender: str   = Query(None, description="Filter by salon gender_served: Female | Male | Unisex"),
+    search: str   = Query(None, description="Search by service or parlour name"),
+    skip: int     = Query(0, ge=0),
+    limit: int    = Query(100, ge=1, le=500),
+):
+    """
+    Returns all active services across every registered, active salon.
+    Each service item includes parlour_name, parlour_id, and salon metadata.
+    No authentication required — public catalogue endpoint.
+    """
+    # Fetch all active salons
+    salon_query: dict = {"is_active": True}
+    if gender and gender.lower() != "all":
+        # Match Female, Male, or Unisex (Unisex shows in both)
+        salon_query["$or"] = [
+            {"gender_served": gender},
+            {"gender_served": "Unisex"},
+        ]
+
+    salons = list(salons_collection.find(salon_query))
+
+    # Flatten: one record per service, enriched with parlour info
+    flat: list = []
+    seen: set  = set()   # deduplicate by (salon_id, service_name)
+
+    for salon in salons:
+        salon_id   = salon.get("id", "")
+        salon_name = salon.get("name", "Unknown Parlour")
+        salon_gender = salon.get("gender_served", "Unisex")
+        salon_city   = salon.get("city", "")
+        salon_phone  = salon.get("phone", "")
+        salon_rating = salon.get("avg_rating", 0.0)
+
+        for svc in salon.get("services_with_pricing", []):
+            if not svc.get("is_active", True):
+                continue  # skip deactivated services
+
+            key = (salon_id, svc.get("name", "").lower())
+            if key in seen:
+                continue
+            seen.add(key)
+
+            # Optional filters
+            if category:
+                if svc.get("category", "").lower() != category.lower():
+                    continue
+            if search:
+                q = search.lower()
+                if (
+                    q not in svc.get("name", "").lower()
+                    and q not in salon_name.lower()
+                    and q not in (svc.get("description") or "").lower()
+                ):
+                    continue
+
+            flat.append({
+                "service_name":  svc.get("name", ""),
+                "description":   svc.get("description") or "",
+                "price":         svc.get("price", 0),
+                "duration_mins": svc.get("duration_mins", 0),
+                "category":      svc.get("category", "General"),
+                "image_url":     svc.get("image_url") or "",
+                "rating":        svc.get("rating", salon_rating),
+                "is_active":     svc.get("is_active", True),
+                # Parlour identity
+                "parlour_id":    salon_id,
+                "parlour_name":  salon_name,
+                "parlour_city":  salon_city,
+                "parlour_phone": salon_phone,
+                "parlour_gender": salon_gender,
+            })
+
+    total = len(flat)
+    paginated = flat[skip: skip + limit]
+
+    return {
+        "total":    total,
+        "skip":     skip,
+        "limit":    limit,
+        "services": paginated,
+    }
+

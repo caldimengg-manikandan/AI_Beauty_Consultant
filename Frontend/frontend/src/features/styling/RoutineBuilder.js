@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { toast } from 'react-toastify';
 import {
   FaSun, FaMoon, FaCheckCircle, FaMagic, FaCalendarCheck,
   FaFlask, FaRedo, FaShieldAlt, FaLeaf, FaChevronDown,
@@ -266,7 +267,7 @@ const RoutineBuilder = () => {
       }, { headers });
       await fetchData();
     } catch {
-      alert("Failed to save routine. Please try again.");
+      toast.error("Failed to save routine. Please try again.");
     } finally {
       setSaving(false);
     }

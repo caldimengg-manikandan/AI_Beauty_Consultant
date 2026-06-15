@@ -11,7 +11,7 @@ const AdminAnalytics = () => {
         const fetchStats = async () => {
             try {
                 // In a real app, this would be a dedicated admin stats endpoint
-                const res = await api.get('/api/admin/system/stats');
+                const res = await api.get('/api/admin/stats');
                 setStats(res.data);
             } catch (err) {
                 console.error(err);

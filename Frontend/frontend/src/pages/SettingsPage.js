@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { FaUser, FaBell, FaLock, FaPalette, FaSave, FaCamera, FaChartLine, FaShieldAlt, FaClock, FaGlobe, FaTimes, FaDownload, FaExclamationTriangle, FaBullseye, FaShoppingCart, FaRobot, FaUniversalAccess, FaCreditCard, FaCode, FaCheck, FaKey, FaCrown } from 'react-icons/fa';
 import { getSettings, updateSettings, changePassword, deleteAccount, enable2FA, verify2FA, disable2FA, get2FAStatus, sendTestEmail } from '../services/api';
 import { getUserRole, cancelSubscription } from '../services/premiumApi';
@@ -207,7 +208,7 @@ const SettingsPage = () => {
             setSaveMessage('Settings saved successfully to database!');
             setTimeout(() => setSaveMessage(''), 3000);
         } catch (err) {
-            alert('Failed to save settings: ' + (err.response?.data?.detail || 'Unknown error'));
+            toast.error('Failed to save settings: ' + (err.response?.data?.detail || 'Unknown error'));
         }
     };
 
@@ -284,13 +285,13 @@ const SettingsPage = () => {
             setSaveMessage('PDF Exported successfully!');
         } catch (err) {
             console.error("PDF Export failed:", err);
-            alert("Error generating PDF. Please ensure all settings are loaded and try again.");
+            toast.error("Error generating PDF. Please ensure all settings are loaded and try again.");
         }
     };
 
     const handlePasswordChange = async () => {
         if (newPassword !== confirmPassword) {
-            alert('Passwords do not match!');
+            toast.error('Passwords do not match!');
             return;
         }
         try {
@@ -306,7 +307,7 @@ const SettingsPage = () => {
             setSaveMessage('Password changed successfully!');
             setTimeout(() => setSaveMessage(''), 3000);
         } catch (err) {
-            alert('Password change failed: ' + (err.response?.data?.detail || 'Check password strength'));
+            toast.error('Password change failed: ' + (err.response?.data?.detail || 'Check password strength'));
         }
     };
 
@@ -318,7 +319,7 @@ const SettingsPage = () => {
             setBackupCodes(data.backup_codes);
             setTwoFAStep('setup');
         } catch (err) {
-            alert('Failed to initiate 2FA: ' + (err.response?.data?.detail || 'Unknown error'));
+            toast.error('Failed to initiate 2FA: ' + (err.response?.data?.detail || 'Unknown error'));
         }
     };
 
@@ -331,7 +332,7 @@ const SettingsPage = () => {
             setSaveMessage('Two-Factor Authentication activated successfully!');
             setTimeout(() => setSaveMessage(''), 3000);
         } catch (err) {
-            alert('Verification failed: ' + (err.response?.data?.detail || 'Invalid code'));
+            toast.error('Verification failed: ' + (err.response?.data?.detail || 'Invalid code'));
         }
     };
 
@@ -347,7 +348,7 @@ const SettingsPage = () => {
             setSaveMessage('Two-Factor Authentication disabled.');
             setTimeout(() => setSaveMessage(''), 3000);
         } catch (err) {
-            alert('Failed to disable 2FA: ' + (err.response?.data?.detail || 'Invalid code'));
+            toast.error('Failed to disable 2FA: ' + (err.response?.data?.detail || 'Invalid code'));
         }
     };
 
@@ -359,7 +360,7 @@ const SettingsPage = () => {
                 localStorage.clear();
                 window.location.href = '/login';
             } catch (err) {
-                alert('Deletion failed');
+                toast.error('Deletion failed');
             }
         }
     };
@@ -373,7 +374,7 @@ const SettingsPage = () => {
             setSaveMessage('Subscription cancelled. You are now on the Free plan.');
             setTimeout(() => setSaveMessage(''), 3000);
         } catch (err) {
-            alert('Failed to cancel subscription.');
+            toast.error('Failed to cancel subscription.');
         }
     };
 
@@ -526,7 +527,7 @@ const SettingsPage = () => {
                                             setSaveMessage('Test email sent! Check your inbox.');
                                             setTimeout(() => setSaveMessage(''), 3000);
                                         } catch (err) {
-                                            alert('Failed to send test email.');
+                                            toast.error('Failed to send test email.');
                                         }
                                     }}
                                     className="w-full py-3 bg-slate-100 text-slate-800 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all font-bold"

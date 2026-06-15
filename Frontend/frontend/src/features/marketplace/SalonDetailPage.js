@@ -159,8 +159,10 @@ const SalonDetailPage = () => {
           appointment_time: selectedTime,
           ...bookingForm,
         });
-        // After booking creation, go to payment step
-        setPendingBookingId(res.booking_id || res.id || res.booking_ref);
+        // After booking creation, go to payment step (prefer UUID id, fall back to booking_ref)
+        const bookingIdentifier = res.booking_id || res.data?.id || res.id || res.booking_ref;
+        if (!bookingIdentifier) throw new Error('Booking created but no booking ID returned.');
+        setPendingBookingId(bookingIdentifier);
       }
     } catch (err) {
       setBookingError(err.response?.data?.detail || 'Booking failed. Please try again.');
@@ -286,20 +288,42 @@ const SalonDetailPage = () => {
       {/* ── Overview tab */}
       {activeTab === 'overview' && (
         <div className="space-y-5">
+          {salon.gallery_urls?.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <h2 className="font-bold text-gray-900 mb-3">Shop Gallery</h2>
+              <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar snap-x">
+                {salon.gallery_urls.map((url, i) => (
+                  <div key={i} className="min-w-[200px] h-32 rounded-xl overflow-hidden shadow-sm snap-start shrink-0 relative group cursor-pointer">
+                    <img src={url} alt={`Gallery ${i}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    {i === 0 && <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">Cover</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h2 className="font-bold text-gray-900 mb-2">About</h2>
-            <p className="text-sm text-gray-600 leading-relaxed">{salon.description}</p>
+            <p className="text-sm text-gray-600 leading-relaxed">{salon.description || "No description provided."}</p>
           </div>
 
-          {salon.services_offered?.length > 0 && (
+          {(salon.services_with_pricing?.length > 0 || salon.services_offered?.length > 0) && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h2 className="font-bold text-gray-900 mb-3">Services Offered</h2>
               <div className="flex flex-wrap gap-2">
-                {salon.services_offered.map(s => (
-                  <span key={s} className="flex items-center gap-1.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100 px-3 py-1.5 rounded-full">
-                    <FaCheckCircle className="text-[10px]" /> {s}
-                  </span>
-                ))}
+                {salon.services_with_pricing?.length > 0 ? (
+                  salon.services_with_pricing.map(s => (
+                    <span key={s.name} className="flex items-center gap-1.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100 px-3 py-1.5 rounded-full">
+                      <FaCheckCircle className="text-[10px]" /> {s.name} <span className="opacity-60 ml-1">₹{s.price}</span>
+                    </span>
+                  ))
+                ) : (
+                  (salon.services_offered || []).map(s => (
+                    <span key={s} className="flex items-center gap-1.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100 px-3 py-1.5 rounded-full">
+                      <FaCheckCircle className="text-[10px]" /> {s}
+                    </span>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -342,16 +366,29 @@ const SalonDetailPage = () => {
                 1. Select Service <span className="text-red-500">*</span>
               </label>
               <div className="flex flex-wrap gap-2">
-                {(salon.services_offered || []).map(s => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setSelectedService(s)}
-                    className={`px-3 py-2 text-xs font-semibold rounded-xl border transition-all ${selectedService === s ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-200 text-gray-600 hover:border-purple-300 hover:text-purple-600'}`}
-                  >
-                    {s}
-                  </button>
-                ))}
+                {salon.services_with_pricing?.length > 0 ? (
+                  salon.services_with_pricing.map(s => (
+                    <button
+                      key={s.name}
+                      type="button"
+                      onClick={() => setSelectedService(s.name)}
+                      className={`px-3 py-2 text-xs font-semibold rounded-xl border transition-all ${selectedService === s.name ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-200 text-gray-600 hover:border-purple-300 hover:text-purple-600'}`}
+                    >
+                      {s.name} <span className="opacity-70 ml-1">₹{s.price}</span>
+                    </button>
+                  ))
+                ) : (
+                  (salon.services_offered || []).map(s => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setSelectedService(s)}
+                      className={`px-3 py-2 text-xs font-semibold rounded-xl border transition-all ${selectedService === s ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-200 text-gray-600 hover:border-purple-300 hover:text-purple-600'}`}
+                    >
+                      {s}
+                    </button>
+                  ))
+                )}
               </div>
             </div>
 
@@ -454,6 +491,27 @@ const SalonDetailPage = () => {
               </div>
             )}
 
+            {/* Requirements checklist — visible when form is incomplete */}
+            {(!selectedService || !selectedDate || !selectedTime || !bookingForm.customer_name.trim() || !bookingForm.customer_phone.trim()) && (
+              <div className="text-xs space-y-1 border-t border-gray-100 pt-3">
+                <p className="font-semibold text-gray-500 mb-1.5">Complete all steps to proceed:</p>
+                {[
+                  [!!selectedService, 'Choose a service'],
+                  [!!selectedDate, 'Pick a date'],
+                  [!!selectedTime, 'Select a time slot'],
+                  [!!bookingForm.customer_name.trim(), 'Enter your name'],
+                  [!!bookingForm.customer_phone.trim(), 'Enter your phone number'],
+                ].map(([done, label]) => (
+                  <div key={label} className={`flex items-center gap-1.5 ${done ? 'text-emerald-600' : 'text-red-400'}`}>
+                    {done
+                      ? <FaCheckCircle className="text-[10px] shrink-0" />
+                      : <FaExclamationCircle className="text-[10px] shrink-0" />}
+                    {label}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Payment Step — shown after booking details filled */}
             {pendingBookingId ? (
               <div className="space-y-4">
@@ -463,7 +521,7 @@ const SalonDetailPage = () => {
                 </div>
                 <PaymentButton
                   bookingId={pendingBookingId}
-                  amount={250}
+                  amount={salon.services_with_pricing?.find(s => s.name === selectedService)?.price || 250}
                   salonName={salon.name}
                   serviceName={selectedService}
                   customerName={bookingForm.customer_name}
@@ -485,7 +543,7 @@ const SalonDetailPage = () => {
             ) : (
               <button
                 type="submit"
-                disabled={booking || !selectedService || !selectedDate || !selectedTime}
+                disabled={booking || !selectedService || !selectedDate || !selectedTime || !bookingForm.customer_name.trim() || !bookingForm.customer_phone.trim()}
                 className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-teal-600 text-white font-bold rounded-2xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {booking ? (

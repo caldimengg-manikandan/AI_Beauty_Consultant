@@ -72,6 +72,18 @@ export const registerSalon = async (salonData) => {
   return res.data;
 };
 
+export const deleteMySalon = async () => {
+  const res = await api.delete('/api/salons/owner');
+  return res.data;
+};
+
+export const uploadGalleryImages = async (formData) => {
+  const res = await api.post('/api/salons/upload-gallery', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return res.data;
+};
+
 export const getMySalon = async () => {
   const res = await api.get('/api/salons/owner/my-salon');
   return res.data;

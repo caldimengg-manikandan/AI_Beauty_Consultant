@@ -51,13 +51,14 @@ export const ROLE_PERMISSIONS = {
     "settings",
   ],
   shop_owner: [
-    // Business only — NO consumer beauty modules
+    // Business only
     "my_shop",
     "staff_management", "hr_payroll",
     "inventory", "shop_products", "shop_services", "shop_appointments",
     "campaigns", "coupons", "pos_invoices",
     "ai_insights", "supply_chain", "webhooks_api", "custom_forms",
     "client_intelligence", "noshow_predictor",
+    "beauty_reels",   // Shop owners manage & upload their marketing reels
     "settings",
   ],
   premium: [

@@ -1,251 +1,347 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { FaBell, FaCog, FaSignOutAlt, FaCircle, FaInfoCircle, FaMagic,
-         FaUserAstronaut, FaSpa, FaCalendarCheck, FaSpinner } from 'react-icons/fa';
-import { useLocation, useNavigate } from 'react-router-dom';
-import LanguageSwitcher from '../components/LanguageSwitcher';
-import { useAuth, ROLE_LABELS } from '../context/AuthContext';
-import api from '../services/api';
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  FaBell, FaCog, FaSignOutAlt, FaCircle, FaInfoCircle, FaMagic,
+  FaUserAstronaut, FaSpa, FaCalendarCheck, FaSpinner,
+} from "react-icons/fa";
+import { useLocation, useNavigate } from "react-router-dom";
+import LanguageSwitcher from "../components/LanguageSwitcher";
+import { useAuth, ROLE_LABELS } from "../context/AuthContext";
+import api from "../services/api";
 
-// ── Icon map for notification types ──────────────────────────────────────────
+/* ── Notification type icon map ──────────────────────────────── */
 const TYPE_ICON = {
-    scan:        <FaUserAstronaut className="text-blue-500" />,
-    appointment: <FaCalendarCheck  className="text-emerald-500" />,
-    booking:     <FaSpa            className="text-pink-500" />,
-    default:     <FaInfoCircle     className="text-indigo-500" />,
+  scan:        <FaUserAstronaut className="text-blue-500"    />,
+  appointment: <FaCalendarCheck  className="text-emerald-500" />,
+  booking:     <FaSpa            className="text-pink-500"   />,
+  default:     <FaInfoCircle     className="text-indigo-400" />,
 };
 
+/* ── Page title map ──────────────────────────────────────────── */
+const getPageTitle = (path) => {
+  if (path.includes("/analyze"))         return "Face Analysis";
+  if (path.includes("/live"))            return "Live AI Scan";
+  if (path.includes("/hair"))            return "Hair Clinic";
+  if (path.includes("/nails"))           return "Nail Studio";
+  if (path.includes("/services"))        return "Studio Services";
+  if (path.includes("/history"))         return "Analysis History";
+  if (path.includes("/trends"))          return "Skin Trends";
+  if (path.includes("/settings"))        return "Settings";
+  if (path.includes("/marketplace"))     return "Find Salons";
+  if (path.includes("/conflict"))        return "Conflict Checker";
+  if (path.includes("/shop-owner"))      return "Shop Dashboard";
+  if (path.includes("/insights"))        return "Business Insights";
+  if (path.includes("/my-bookings"))     return "My Bookings";
+  if (path.includes("/store"))           return "Beauty Store";
+  if (path.includes("/admin"))           return "Admin Console";
+  return "Dashboard";
+};
+
+const getGreeting = (h) => {
+  if (h < 12) return "Good Morning";
+  if (h < 18) return "Good Afternoon";
+  return "Good Evening";
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   NAVBAR — Vercel / Stripe inspired
+   ═══════════════════════════════════════════════════════════════ */
 const Navbar = ({ onMenuClick }) => {
-    const [currentTime, setCurrentTime]           = useState(new Date());
-    const [showNotifications, setShowNotifications] = useState(false);
-    const [notifications, setNotifications]       = useState([]);
-    const [unreadCount, setUnreadCount]           = useState(0);
-    const [loadingNotifs, setLoadingNotifs]        = useState(false);
-    const notificationRef = useRef(null);
-    const location        = useLocation();
-    const navigate        = useNavigate();
-    const { user, logout, role } = useAuth();
-    const roleInfo = ROLE_LABELS[role] || ROLE_LABELS.user;
+  const [currentTime, setCurrentTime]             = useState(new Date());
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications]         = useState([]);
+  const [unreadCount, setUnreadCount]             = useState(0);
+  const [loadingNotifs, setLoadingNotifs]          = useState(false);
+  const notificationRef = useRef(null);
+  const location        = useLocation();
+  const navigate        = useNavigate();
+  const { user, logout, role } = useAuth();
+  const roleInfo = ROLE_LABELS[role] || ROLE_LABELS.user;
 
-    // ── Fetch real notifications from backend ─────────────────────────────────
-    const fetchNotifications = useCallback(async () => {
-        setLoadingNotifs(true);
-        try {
-            const res = await api.get('/api/notifications/in-app?limit=10');
-            setNotifications(res.data?.notifications || []);
-            setUnreadCount(res.data?.unread_count   || 0);
-        } catch {
-            // Silent fail — don't break the navbar if API is down
-            setNotifications([]);
-            setUnreadCount(0);
-        } finally {
-            setLoadingNotifs(false);
-        }
-    }, []);
+  /* ── Notifications ─────────────────────────────────────── */
+  const fetchNotifications = useCallback(async () => {
+    setLoadingNotifs(true);
+    try {
+      const res = await api.get("/api/notifications/in-app?limit=10");
+      setNotifications(res.data?.notifications || []);
+      setUnreadCount(res.data?.unread_count    || 0);
+    } catch {
+      setNotifications([]);
+      setUnreadCount(0);
+    } finally {
+      setLoadingNotifs(false);
+    }
+  }, []);
 
-    // Fetch on first render
-    useEffect(() => {
-        if (user) fetchNotifications();
-    }, [user, fetchNotifications]);
+  useEffect(() => { if (user) fetchNotifications(); }, [user, fetchNotifications]);
 
-    // Re-fetch when dropdown opens
-    const handleBellClick = () => {
-        const next = !showNotifications;
-        setShowNotifications(next);
-        if (next && user) fetchNotifications();
+  const handleBellClick = () => {
+    const next = !showNotifications;
+    setShowNotifications(next);
+    if (next && user) fetchNotifications();
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await api.delete("/api/notifications/in-app/clear");
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch { /* silent */ }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
     };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-    // ── Clear all ─────────────────────────────────────────────────────────────
-    const handleClearAll = async () => {
-        try {
-            await api.delete('/api/notifications/in-app/clear');
-            setNotifications([]);
-            setUnreadCount(0);
-        } catch {
-            // ignore
-        }
-    };
+  /* ── Clock ─────────────────────────────────────────────── */
+  useEffect(() => {
+    const t = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(t);
+  }, []);
 
-    // Close on outside click
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-                setShowNotifications(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+  const username = user?.name || user?.sub?.split("@")[0] || "User";
+  const pageTitle = getPageTitle(location.pathname);
+  const greeting  = getGreeting(currentTime.getHours());
+  const timeStr   = currentTime.toLocaleTimeString("en-US", {
+    hour: "2-digit", minute: "2-digit", hour12: true,
+  });
 
-    const username = user?.name || user?.sub?.split('@')[0] || 'User';
+  return (
+    <nav
+      className="navbar-shell sticky top-0 z-50 flex items-center gap-3 px-4 md:px-6 shrink-0"
+      style={{
+        height: "var(--navbar-h, 56px)",
+        background: "var(--navbar-bg)",
+        borderBottom: "1px solid var(--border-subtle)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+      }}
+    >
+      {/* ── Hamburger (mobile) ─────────────────────────── */}
+      <button
+        onClick={onMenuClick}
+        className="md:hidden p-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-white/[0.06] shrink-0"
+        style={{ color: "var(--text-mid)" }}
+        aria-label="Open menu"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
 
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-        return () => clearInterval(timer);
-    }, []);
+      {/* ── Page Title ─────────────────────────────────── */}
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <h1
+          className="text-[15px] font-semibold tracking-tight truncate"
+          style={{ color: "var(--text-hi)" }}
+        >
+          {pageTitle}
+        </h1>
+        {/* Live indicator */}
+        <span className="relative flex h-1.5 w-1.5 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-60" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-violet-500" />
+        </span>
+      </div>
 
-    const handleLogout = () => { logout(); navigate('/login'); };
-    const handleSettings = () => navigate('/dashboard/settings');
+      {/* ── Center: greeting + time (desktop) ─────────── */}
+      <div className="hidden lg:flex items-center gap-4 shrink-0">
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px]"
+          style={{
+            background: "var(--surface-overlay)",
+            color: "var(--text-mid)",
+            border: "1px solid var(--border-subtle)",
+          }}
+        >
+          {/* Online dot */}
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span className="font-semibold tabular-nums">{timeStr}</span>
+        </div>
 
-    const getPageTitle = () => {
-        const path = location.pathname;
-        if (path.includes('/analyze')) return 'Neural VisionCore';
-        if (path.includes('/live'))    return 'Live AI Scan';
-        if (path.includes('/hair'))    return 'Hair Clinic';
-        if (path.includes('/nails'))   return 'Nail Studio';
-        if (path.includes('/services')) return 'Studio Services';
-        if (path.includes('/history')) return 'Diagnostic History';
-        if (path.includes('/trends'))  return 'Skin Metrics';
-        if (path.includes('/settings')) return 'System Settings';
-        return 'Control Center';
-    };
+        <div className="flex flex-col items-end leading-tight">
+          <span className="text-[10px] font-medium uppercase tracking-widest" style={{ color: "var(--text-lo)" }}>
+            {greeting}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[13px] font-semibold" style={{ color: "var(--text-hi)" }}>
+              {username}
+            </span>
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide ${roleInfo.color}`}>
+              {roleInfo.emoji} {roleInfo.label}
+            </span>
+          </div>
+        </div>
+      </div>
 
-    const getGreeting = () => {
-        const h = currentTime.getHours();
-        if (h < 12) return 'Good Morning';
-        if (h < 18) return 'Good Afternoon';
-        return 'Good Evening';
-    };
+      {/* ── Right actions ──────────────────────────────── */}
+      <div className="flex items-center gap-1.5 shrink-0">
 
-    const formatTime = (date) =>
-        date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        {/* Language Switcher */}
+        <LanguageSwitcher />
 
-    return (
-        <nav className="bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 md:px-8 py-4 sticky top-0 z-50 shadow-sm flex items-center justify-between gap-4">
+        {/* Notification Bell */}
+        <div className="relative" ref={notificationRef}>
+          <button
+            onClick={handleBellClick}
+            className={`relative p-2.5 rounded-lg transition-all duration-150 ${
+              showNotifications
+                ? "bg-violet-600 text-white shadow-md"
+                : "hover:bg-zinc-100 dark:hover:bg-white/[0.06]"
+            }`}
+            style={!showNotifications ? { color: "var(--text-mid)" } : undefined}
+            aria-label="Notifications"
+          >
+            <FaBell size={15} />
+            {unreadCount > 0 && (
+              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full border border-white dark:border-zinc-900" />
+            )}
+          </button>
 
-            {/* Hamburger — mobile only */}
-            <button
-                onClick={onMenuClick}
-                className="md:hidden p-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all shrink-0"
-                aria-label="Open menu"
+          {/* Notification Panel */}
+          {showNotifications && (
+            <div
+              className="absolute right-0 mt-2 w-[340px] rounded-2xl overflow-hidden animate-fade-in-up"
+              style={{
+                background: "var(--surface-raised)",
+                border: "1px solid var(--border-default)",
+                boxShadow: "var(--shadow-xl)",
+              }}
             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-            </button>
+              {/* Header */}
+              <div
+                className="flex items-center justify-between px-5 py-3.5"
+                style={{ borderBottom: "1px solid var(--border-subtle)" }}
+              >
+                <h3 className="text-[13px] font-semibold" style={{ color: "var(--text-hi)" }}>
+                  Notifications
+                </h3>
+                {loadingNotifs ? (
+                  <FaSpinner className="animate-spin" size={12} style={{ color: "var(--text-lo)" }} />
+                ) : (
+                  <span
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                    style={{
+                      background: unreadCount > 0 ? "rgba(124,58,237,0.1)" : "var(--surface-overlay)",
+                      color: unreadCount > 0 ? "#7c3aed" : "var(--text-lo)",
+                    }}
+                  >
+                    {unreadCount > 0 ? `${unreadCount} new` : "All read"}
+                  </span>
+                )}
+              </div>
 
-            {/* Left - Page Title */}
-            <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-2">
-                    <h1 className="text-lg md:text-2xl font-black text-slate-900 tracking-tighter uppercase truncate">{getPageTitle()}</h1>
-                    <span className="animate-pulse w-2 h-2 bg-indigo-500 rounded-full shrink-0"></span>
-                </div>
-                <p className="text-[10px] text-slate-400 font-bold tracking-[0.2em] mt-0.5 uppercase hidden sm:block">
-                    AI Beauty Consultant / Integrated Vision System
-                </p>
-            </div>
+              {/* List */}
+              <div className="max-h-[360px] overflow-y-auto">
+                {loadingNotifs && notifications.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-10 gap-2">
+                    <FaSpinner className="animate-spin" size={18} style={{ color: "var(--text-lo)" }} />
+                    <p className="text-[11px] font-medium" style={{ color: "var(--text-lo)" }}>
+                      Loading…
+                    </p>
+                  </div>
+                )}
 
-            {/* Center - Time and User Status */}
-            <div className="hidden md:flex items-center gap-6">
-                <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                    <span className="text-sm font-black text-slate-700 tracking-tight">{formatTime(currentTime)}</span>
-                </div>
-                <div className="flex flex-col items-end gap-0.5">
-                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{getGreeting()}</span>
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-black text-indigo-600">{username}</span>
-                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase ${roleInfo.color}`}>
-                            {roleInfo.emoji} {roleInfo.label}
-                        </span>
-                    </div>
-                </div>
-            </div>
+                {!loadingNotifs && notifications.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-10 gap-2">
+                    <FaBell size={24} style={{ color: "var(--text-xlo)" }} />
+                    <p className="text-[11px] font-medium" style={{ color: "var(--text-lo)" }}>
+                      No new notifications
+                    </p>
+                  </div>
+                )}
 
-            {/* Right - Notification Center & Actions */}
-            <div className="flex items-center gap-4">
-
-                {/* AI LANGUAGE ENGINE */}
-                <LanguageSwitcher />
-
-                {/* NOTIFICATION HUB */}
-                <div className="relative" ref={notificationRef}>
-                    <button
-                        onClick={handleBellClick}
-                        className={`p-3 rounded-2xl transition-all duration-300 relative ${showNotifications ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                {notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className="group flex gap-3 px-5 py-3.5 cursor-pointer transition-colors"
+                    style={{ borderBottom: "1px solid var(--border-subtle)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-overlay)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                  >
+                    {/* Icon */}
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-base"
+                      style={{
+                        background: "var(--surface-overlay)",
+                        border: "1px solid var(--border-subtle)",
+                      }}
                     >
-                        <FaBell size={18} />
-                        {unreadCount > 0 && (
-                            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                        )}
-                    </button>
-
-                    {/* Notification Dropdown */}
-                    {showNotifications && (
-                        <div className="absolute right-0 mt-4 w-[calc(100vw-2rem)] sm:w-[380px] max-w-[420px] bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100 overflow-hidden animate-fade-in-up">
-                            <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Notification Center</h3>
-                                {loadingNotifs
-                                    ? <FaSpinner className="animate-spin text-indigo-400" size={14} />
-                                    : <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-full">
-                                        {unreadCount > 0 ? `${unreadCount} New` : 'All Read'}
-                                      </span>
-                                }
-                            </div>
-
-                            <div className="max-h-[400px] overflow-y-auto">
-                                {loadingNotifs && notifications.length === 0 && (
-                                    <div className="flex flex-col items-center justify-center py-12 gap-3">
-                                        <FaSpinner className="animate-spin text-indigo-300" size={24} />
-                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Loading…</p>
-                                    </div>
-                                )}
-
-                                {!loadingNotifs && notifications.length === 0 && (
-                                    <div className="flex flex-col items-center justify-center py-12 gap-3">
-                                        <FaBell className="text-slate-200" size={36} />
-                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">No new notifications</p>
-                                    </div>
-                                )}
-
-                                {notifications.map((n) => (
-                                    <div key={n.id} className="p-6 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 relative cursor-pointer group">
-                                        <div className="flex gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-xl shrink-0">
-                                                {TYPE_ICON[n.type] || TYPE_ICON.default}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <h4 className="font-black text-slate-900 text-sm mb-1 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{n.title}</h4>
-                                                <p className="text-xs text-slate-500 leading-relaxed font-medium">{n.message}</p>
-                                                <span className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">{n.time}</span>
-                                            </div>
-                                        </div>
-                                        {n.unread && (
-                                            <div className="absolute top-6 right-6">
-                                                <FaCircle className="text-indigo-500 text-[8px]" />
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {notifications.length > 0 && (
-                                <button
-                                    onClick={handleClearAll}
-                                    className="w-full py-5 bg-slate-50 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 hover:text-slate-600 transition-all"
-                                >
-                                    Clear All Notifications
-                                </button>
-                            )}
-                        </div>
+                      {TYPE_ICON[n.type] || TYPE_ICON.default}
+                    </div>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-semibold mb-0.5 truncate" style={{ color: "var(--text-hi)" }}>
+                        {n.title}
+                      </p>
+                      <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-mid)" }}>
+                        {n.message}
+                      </p>
+                      <span className="text-[10px] mt-1 block" style={{ color: "var(--text-lo)" }}>
+                        {n.time}
+                      </span>
+                    </div>
+                    {/* Unread indicator */}
+                    {n.unread && (
+                      <div className="shrink-0 mt-1.5">
+                        <span className="w-1.5 h-1.5 bg-violet-500 rounded-full block" />
+                      </div>
                     )}
-                </div>
+                  </div>
+                ))}
+              </div>
 
-                {/* Settings Toggle */}
-                <button onClick={handleSettings} className="p-3 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-2xl transition-all">
-                    <FaCog size={18} />
-                </button>
-
-                {/* Secure Logout */}
+              {/* Footer */}
+              {notifications.length > 0 && (
                 <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-3 px-6 py-3 bg-slate-900 text-white font-black text-xs rounded-2xl uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl"
+                  onClick={handleClearAll}
+                  className="w-full py-3 text-[11px] font-medium transition-colors"
+                  style={{
+                    borderTop: "1px solid var(--border-subtle)",
+                    color: "var(--text-lo)",
+                    background: "var(--surface-overlay)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "var(--text-mid)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "var(--text-lo)";
+                  }}
                 >
-                    <FaSignOutAlt size={14} />
-                    <span className="hidden sm:inline">Logout</span>
+                  Clear all notifications
                 </button>
+              )}
             </div>
-        </nav>
-    );
+          )}
+        </div>
+
+        {/* Settings */}
+        <button
+          onClick={() => navigate("/dashboard/settings")}
+          className="p-2.5 rounded-lg transition-all duration-150 hover:bg-zinc-100 dark:hover:bg-white/[0.06]"
+          style={{ color: "var(--text-mid)" }}
+          aria-label="Settings"
+        >
+          <FaCog size={15} />
+        </button>
+
+        {/* Logout */}
+        <button
+          onClick={() => { logout(); navigate("/login"); }}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-[12px] font-semibold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.97]"
+          style={{ background: "linear-gradient(135deg,#7c3aed,#5b21b6)", boxShadow: "var(--shadow-sm)" }}
+        >
+          <FaSignOutAlt size={12} />
+          <span className="hidden sm:inline">Logout</span>
+        </button>
+      </div>
+    </nav>
+  );
 };
 
 export default Navbar;

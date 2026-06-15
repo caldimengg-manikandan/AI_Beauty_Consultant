@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import {
     Stethoscope,
     Clock,
@@ -49,9 +50,9 @@ const ExpertDashboard = () => {
             setExpertTip("");
             setSelectedAnalysis(null);
             await fetchQueue();
-            alert("Professional review submitted! This improves our AI accuracy.");
+            toast.success("Professional review submitted! This improves our AI accuracy.");
         } catch (error) {
-            alert("Failed to submit review");
+            toast.error("Failed to submit review");
         } finally {
             setSubmitting(false);
         }

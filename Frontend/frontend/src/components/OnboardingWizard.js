@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaUserAlt, FaStar, FaSmile, FaCheckCircle, FaAllergies, FaUtensils, FaBriefcaseMedical, FaArrowRight, FaArrowLeft, FaTimes } from 'react-icons/fa';
 import { saveOnboarding } from '../services/api';
@@ -45,7 +46,7 @@ const OnboardingWizard = ({ isOpen, onClose, onComplete }) => {
             onComplete();
         } catch (err) {
             console.error("Failed to save onboarding", err);
-            alert("Something went wrong. Please try again.");
+            toast.error("Something went wrong. Please try again.");
         } finally {
             setLoading(false);
         }

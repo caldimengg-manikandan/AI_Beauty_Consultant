@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { toast } from 'react-toastify';
 
 /**
  * useRoutineNotifications
@@ -16,7 +17,7 @@ const useRoutineNotifications = () => {
     // Request notification permission
     const requestPermission = useCallback(async () => {
         if (!('Notification' in window)) {
-            alert('Your browser does not support desktop notifications.');
+            toast.error('Your browser does not support desktop notifications.');
             return;
         }
         const result = await Notification.requestPermission();

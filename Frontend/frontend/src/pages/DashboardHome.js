@@ -10,7 +10,7 @@ import {
   FaShoppingBag, FaGift, FaSpa, FaChevronRight, FaPlayCircle,
   FaBullseye
 } from "react-icons/fa";
-import api from "../services/api";
+import api, { getUserDashboardSummary } from "../services/api";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 /* ─────────────────────────────────────────────
@@ -623,24 +623,18 @@ const AdminHome = () => (
 /* ─────────────────────────────────────────────
    USER / PREMIUM HOME
 ───────────────────────────────────────────── */
-// Data Models
-const aiRecommendations = [
-  { title: "Suggested Routine", desc: "Hydration Focus for upcoming dry weather", confidence: 94, icon: <FaMicroscope className="text-teal-500" />, action: "View Routine" },
-  { title: "Recommended Style", desc: "Layered Bob to complement your face shape", confidence: 88, icon: <FaCut className="text-pink-500" />, action: "Try on AR" },
-  { title: "Expert Consult", desc: "Review your recent skin health drop", confidence: 91, icon: <FaStethoscope className="text-violet-500" />, action: "Book Now" },
-];
-
-const beautyGoals = [
-  { label: "Skin Brightening", progress: 65, color: "bg-amber-400" },
-  { label: "Acne Reduction", progress: 82, color: "bg-emerald-400" },
-  { label: "Hair Volume", progress: 40, color: "bg-violet-400" },
-];
-
-const beautyFeed = [
-  { type: "Tip", content: "Switch to a lighter moisturizer. Humidity is rising this week in your area.", date: "Today" },
-  { type: "Product", content: "Your favorite Vitamin C serum is on sale. Perfect for your 'Skin Brightening' goal.", date: "Yesterday" },
-  { type: "Insight", content: "You've been consistent with sunscreen for 14 days. Your barrier score is improving!", date: "2 days ago" },
-];
+const getRecommendationIcon = (iconName) => {
+  switch (iconName) {
+    case "Microscope":
+      return <FaMicroscope className="text-teal-500" />;
+    case "Cut":
+      return <FaCut className="text-pink-500" />;
+    case "Stethoscope":
+      return <FaStethoscope className="text-violet-500" />;
+    default:
+      return <FaMagic className="text-violet-500" />;
+  }
+};
 
 const CircularProgress = ({ value, label, color, subColor }) => (
   <div className="flex flex-col items-center justify-center">
@@ -657,13 +651,476 @@ const CircularProgress = ({ value, label, color, subColor }) => (
   </div>
 );
 
-const UserHome = ({ role, profile, can }) => {
-  const [analyses, setAnalyses] = useState([]);
+const HydrationTracker = () => {
+  const getTodayDateStr = () => new Date().toISOString().split('T')[0];
+  const [water, setWater] = useState(0);
+  const target = 2000; // 2L target
 
   useEffect(() => {
-    api.get("/api/analyze/history?limit=3")
+    const today = getTodayDateStr();
+    const stored = localStorage.getItem("glowai_water_state");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.date === today) {
+          setWater(parsed.amount || 0);
+        } else {
+          localStorage.setItem("glowai_water_state", JSON.stringify({ date: today, amount: 0 }));
+        }
+      } catch (e) {
+        localStorage.setItem("glowai_water_state", JSON.stringify({ date: today, amount: 0 }));
+      }
+    }
+  }, []);
+
+  const addWater = (amount) => {
+    const today = getTodayDateStr();
+    setWater(prev => {
+      const next = Math.min(target, prev + amount);
+      localStorage.setItem("glowai_water_state", JSON.stringify({ date: today, amount: next }));
+      return next;
+    });
+  };
+
+  const resetWater = () => {
+    const today = getTodayDateStr();
+    setWater(0);
+    localStorage.setItem("glowai_water_state", JSON.stringify({ date: today, amount: 0 }));
+  };
+
+  const pct = Math.min(100, Math.round((water / target) * 100));
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden group">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-colors" />
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
+          <span>💧</span> Hydration Tracker
+        </h3>
+        <button onClick={resetWater} className="text-[10px] font-black text-slate-400 hover:text-red-500 uppercase tracking-wider transition-colors">
+          Reset
+        </button>
+      </div>
+
+      <div className="flex items-center gap-6 mb-6">
+        <div className="relative w-16 h-16 shrink-0 flex items-center justify-center bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-100/50 dark:border-blue-900/30 text-2xl">
+          🥤
+          {water >= target && (
+            <span className="absolute -top-1 -right-1 text-xs bg-emerald-500 text-white rounded-full p-0.5 animate-bounce">
+              ✓
+            </span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-baseline mb-1">
+            <span className="text-lg font-black text-slate-800 dark:text-white">{water} <span className="text-xs text-slate-400 font-bold">ml</span></span>
+            <span className="text-xs font-bold text-slate-500 shrink-0">Goal: {target} ml</span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+            <div className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+          </div>
+          <span className="text-[9px] font-black text-blue-500 uppercase tracking-wider mt-1.5 block">{pct}% of daily target achieved</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <button onClick={() => addWater(250)} className="py-2.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors border border-blue-100/30 dark:border-blue-900/20">
+          +250 ml
+        </button>
+        <button onClick={() => addWater(500)} className="py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors shadow-sm shadow-blue-500/20">
+          +500 ml
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const RoutineChecklist = ({ goals }) => {
+  const getTodayDateStr = () => new Date().toISOString().split('T')[0];
+  const [tab, setTab] = useState("morning");
+  const [checkedItems, setCheckedItems] = useState({});
+
+  const morningBase = [
+    { id: "m_cleanse", label: "Hydrating Cleanser", desc: "Gentle wash to start the day" },
+    { id: "m_toner", label: "Hydrating Toner", desc: "Balance pH and prep skin barrier" },
+    { id: "m_moist", label: "Barrier Moisturizer", desc: "Lock in hydration" },
+    { id: "m_spf", label: "Broad-Spectrum SPF 50+", desc: "UV shields are non-negotiable" }
+  ];
+
+  const eveningBase = [
+    { id: "e_oil", label: "Oil Cleanser", desc: "Dissolve sebum, pollution, and makeup" },
+    { id: "e_foam", label: "Foaming Cleanser", desc: "Deep water-based pore wash" },
+    { id: "e_serum", label: "Repair Serum / Retinol", desc: "Cell renewal and fine lines reduction" },
+    { id: "e_moist", label: "Rich Night Cream", desc: "Deep nourishment during sleep cycle" }
+  ];
+
+  const hasBrightening = goals?.some(g => g.label?.toLowerCase().includes("brightening"));
+  const hasAcne = goals?.some(g => g.label?.toLowerCase().includes("acne"));
+
+  const morningItems = [...morningBase];
+  const eveningItems = [...eveningBase];
+
+  if (hasBrightening) {
+    morningItems.splice(2, 0, { id: "m_vitc", label: "Vitamin C Serum", desc: "Antioxidants for active brightening goal" });
+  }
+  if (hasAcne) {
+    eveningItems.splice(2, 0, { id: "e_sa", label: "Salicylic Acid Treatment", desc: "Clarify pores for acne reduction goal" });
+  }
+
+  const activeItems = tab === "morning" ? morningItems : eveningItems;
+
+  useEffect(() => {
+    const today = getTodayDateStr();
+    const stored = localStorage.getItem("glowai_routine_state");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.date === today) {
+          setCheckedItems(parsed.items || {});
+        } else {
+          localStorage.setItem("glowai_routine_state", JSON.stringify({ date: today, items: {} }));
+        }
+      } catch (e) {
+        localStorage.setItem("glowai_routine_state", JSON.stringify({ date: today, items: {} }));
+      }
+    }
+  }, [tab]);
+
+  const toggleItem = (itemId) => {
+    const today = getTodayDateStr();
+    setCheckedItems(prev => {
+      const next = { ...prev, [itemId]: !prev[itemId] };
+      localStorage.setItem("glowai_routine_state", JSON.stringify({ date: today, items: next }));
+      return next;
+    });
+  };
+
+  const total = activeItems.length;
+  const completed = activeItems.filter(item => checkedItems[item.id]).length;
+  const completionPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.04)] h-full flex flex-col justify-between">
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
+              <span>⚡</span> Today's Skincare Routine
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">Cross off checklist items to log routine completion</p>
+          </div>
+          <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 self-start sm:self-auto">
+            <button
+              onClick={() => setTab("morning")}
+              className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${
+                tab === "morning"
+                  ? "bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-400 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              }`}
+            >
+              🌅 Morning
+            </button>
+            <button
+              onClick={() => setTab("evening")}
+              className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${
+                tab === "evening"
+                  ? "bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-400 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              }`}
+            >
+              🌌 Evening
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-4 mb-6 border border-slate-100/50 dark:border-slate-800/80 flex items-center justify-between">
+          <div className="flex-1 mr-6">
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Routine Progress</span>
+              <span className="text-xs font-black text-violet-600 dark:text-violet-400">{completed}/{total} Completed</span>
+            </div>
+            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+              <div className="bg-gradient-to-r from-violet-500 to-indigo-500 h-2 rounded-full transition-all duration-500" style={{ width: `${completionPct}%` }} />
+            </div>
+          </div>
+          <div className="shrink-0 w-12 h-12 rounded-full border-4 border-violet-100 dark:border-violet-950 flex items-center justify-center text-xs font-black text-violet-600 dark:text-violet-400">
+            {completionPct}%
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {activeItems.map((item) => {
+            const isChecked = !!checkedItems[item.id];
+            return (
+              <div
+                key={item.id}
+                onClick={() => toggleItem(item.id)}
+                className={`flex items-start gap-4 p-4 rounded-2xl border transition-all duration-200 cursor-pointer ${
+                  isChecked
+                    ? "bg-violet-50/20 border-violet-100/70 dark:bg-violet-950/10 dark:border-violet-900/30 opacity-70"
+                    : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800/80 hover:border-violet-200 dark:hover:border-slate-700"
+                }`}
+              >
+                <div className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-colors ${
+                  isChecked
+                    ? "bg-violet-600 border-violet-600 text-white"
+                    : "border-slate-300 dark:border-slate-700"
+                }`}>
+                  {isChecked && <span className="text-[10px] font-black">✓</span>}
+                </div>
+                <div>
+                  <h4 className={`text-xs font-bold transition-all ${
+                    isChecked
+                      ? "text-slate-400 line-through dark:text-slate-500"
+                      : "text-slate-800 dark:text-white"
+                  }`}>
+                    {item.label}
+                  </h4>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-relaxed mt-0.5">{item.desc}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EnvironmentalShield = () => {
+  const [metrics, setMetrics] = useState({ uv: 1, humidity: 50, temp: 25, aqi: "Good", advice: "Shield active." });
+
+  useEffect(() => {
+    const hr = new Date().getHours();
+    
+    let uv = 1;
+    if (hr >= 10 && hr < 16) {
+      uv = Math.round(5 + (16 - Math.abs(hr - 13)) * 0.8);
+    } else if (hr >= 7 && hr < 10) {
+      uv = Math.round(1 + (hr - 7) * 1.3);
+    } else if (hr >= 16 && hr < 19) {
+      uv = Math.round(1 + (19 - hr) * 1.3);
+    }
+
+    let humidity = 65;
+    if (hr >= 10 && hr < 16) {
+      humidity = 40;
+    } else if (hr >= 16 && hr < 22) {
+      humidity = 55;
+    }
+
+    let temp = 22;
+    if (hr >= 11 && hr < 17) temp = 29;
+    else if (hr >= 17 && hr < 22) temp = 25;
+
+    const aqiList = ["Excellent", "Good", "Moderate"];
+    const aqi = aqiList[hr % 3];
+
+    let advice = "Environment stable. Wash face and moisturize.";
+    if (uv >= 6) {
+      advice = "⚠️ High UV today! Apply SPF 50+ broad-spectrum sunscreen and wear protective gear.";
+    } else if (humidity < 45) {
+      advice = "💧 Low humidity detected. Supplement your skin barrier with hyaluronic acid or hydration serums.";
+    } else if (aqi === "Moderate") {
+      advice = "🌫️ Moderate air quality. Utilize an antioxidant serum (Vitamin C/E) to combat oxidative stress.";
+    } else if (hr >= 18) {
+      advice = "🌙 Sleep cycle prep: switch to reparative night creams and active ingredients like Retinol.";
+    }
+
+    setMetrics({ uv, humidity, temp, aqi, advice });
+  }, []);
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.04)] h-full flex flex-col justify-between">
+      <div>
+        <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-6 flex items-center gap-2">
+          🛡️ Skincare Climate Shield
+        </h3>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100/50 dark:border-slate-800/80">
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">UV Index</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className={`text-xl font-black ${metrics.uv >= 5 ? "text-amber-500" : "text-emerald-500"}`}>{metrics.uv}</span>
+              <span className="text-[10px] font-bold text-slate-400">{metrics.uv >= 5 ? "High" : "Low"}</span>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100/50 dark:border-slate-800/80">
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Humidity</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl font-black text-blue-500">{metrics.humidity}%</span>
+              <span className="text-[10px] font-bold text-slate-400">{metrics.humidity < 45 ? "Dry" : "Optimal"}</span>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100/50 dark:border-slate-800/80">
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Temp</span>
+            <span className="text-xl font-black text-slate-800 dark:text-white block">{metrics.temp}°C</span>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100/50 dark:border-slate-800/80">
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Air Quality</span>
+            <span className="text-xl font-black text-emerald-500 block truncate">{metrics.aqi}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 bg-violet-50/30 dark:bg-violet-950/10 border border-violet-100/50 dark:border-violet-900/20 rounded-2xl text-[11px] text-violet-700 dark:text-violet-300 font-semibold leading-relaxed">
+        {metrics.advice}
+      </div>
+    </div>
+  );
+};
+
+const UpcomingBookings = ({ bookings }) => {
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden group">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
+          📅 Upcoming Bookings
+        </h3>
+        <Link to="/dashboard/find-salons" className="text-[10px] font-black text-violet-600 hover:text-violet-700 tracking-wide uppercase">
+          Book New →
+        </Link>
+      </div>
+
+      {bookings && bookings.length > 0 ? (
+        <div className="space-y-3">
+          {bookings.map((booking) => (
+            <div key={booking.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50 flex flex-col justify-between hover:border-violet-200 dark:hover:border-violet-800 transition-colors">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-white truncate">{booking.service_name}</h4>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-relaxed truncate">{booking.salon_name}</p>
+                </div>
+                <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${
+                  booking.status === "confirmed"
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
+                    : "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                }`}>
+                  {booking.status}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-800/50 text-[10px] font-bold text-slate-500">
+                <span className="flex items-center gap-1">🕒 {booking.appointment_time}</span>
+                <span className="flex items-center gap-1">📆 {formatDate(booking.appointment_date)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="py-8 text-center bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+          <p className="text-xl mb-1">💅</p>
+          <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">No Upcoming Bookings</h4>
+          <p className="text-[10px] text-slate-500 max-w-[200px] mx-auto mt-1 mb-4">Book a skin consult, haircut, or nail appointment to start tracking.</p>
+          <Link to="/dashboard/find-salons" className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-violet-600 dark:hover:bg-violet-500 hover:text-white transition-colors">
+            Explore Salons
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SkinEvolutionChart = ({ historyTrend }) => {
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.04)] h-full flex flex-col justify-between">
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
+              📈 Skin Health Evolution
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">Multi-dimensional diagnostics progress trend</p>
+          </div>
+          <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-wider text-slate-400">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-teal-500 inline-block rounded-full"/>Skin</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-pink-500 inline-block rounded-full"/>Hair</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-violet-600 inline-block rounded-full"/>Overall</span>
+          </div>
+        </div>
+
+        {historyTrend && historyTrend.length > 0 ? (
+          <div className="h-[200px] w-full mt-4 -ml-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={historyTrend} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="skinColor" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.12}/>
+                    <stop offset="95%" stopColor="#14b8a6" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="overallColor" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.12}/>
+                    <stop offset="95%" stopColor="#7c3aed" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
+                <YAxis domain={[40, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
+                <Tooltip contentStyle={{ fontSize: 10, borderRadius: 12, border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}/>
+                <Area type="monotone" dataKey="skin" stroke="#14b8a6" strokeWidth={2} fill="url(#skinColor)" dot={{ r: 3, strokeWidth: 0 }}/>
+                <Area type="monotone" dataKey="hair" stroke="#ec4899" strokeWidth={1.5} fill="none" dot={{ r: 2, strokeWidth: 0 }}/>
+                <Area type="monotone" dataKey="overall" stroke="#7c3aed" strokeWidth={2.5} fill="url(#overallColor)" dot={{ r: 4, strokeWidth: 0 }}/>
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-[200px] flex flex-col items-center justify-center text-center bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-6">
+            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-full flex items-center justify-center mb-3">
+              📊
+            </div>
+            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">Analytics History Offline</h4>
+            <p className="text-[10px] text-slate-500 max-w-sm mt-1 mb-4">You need at least 2 Face Analysis scans to unlock dynamic evolution tracking charts.</p>
+            <Link to="/dashboard/analyze" className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-violet-600 dark:hover:bg-violet-500 hover:text-white transition-colors">
+              Perform First Scan
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const UserHome = ({ role, profile, can }) => {
+  const [analyses, setAnalyses] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loadingDashboard, setLoadingDashboard] = useState(true);
+  const [greeting, setGreeting] = useState("Hello");
+
+  useEffect(() => {
+    // Determine greeting based on local time
+    const hr = new Date().getHours();
+    if (hr < 12) setGreeting("Good Morning");
+    else if (hr < 17) setGreeting("Good Afternoon");
+    else setGreeting("Good Evening");
+
+    // Fetch existing analyses history for compatibility
+    api.get("/history?limit=3")
       .then(r => setAnalyses(r.data?.analyses || []))
       .catch(() => {});
+
+    // Fetch live dashboard summary
+    setLoadingDashboard(true);
+    getUserDashboardSummary()
+      .then(data => {
+        setDashboardData(data);
+      })
+      .catch(err => {
+        console.error("Error fetching user dashboard summary:", err);
+      })
+      .finally(() => {
+        setLoadingDashboard(false);
+      });
   }, []);
 
   const isMale = profile?.gender?.toLowerCase() === "male" || analyses[0]?.gender?.toLowerCase() === "male";
@@ -676,6 +1133,8 @@ const UserHome = ({ role, profile, can }) => {
     { to: "/dashboard/live-analyze",  icon: <FaCamera size={24} />,      label: "Live Camera",     desc: "Instant skin check", color: "from-indigo-400 to-blue-600" },
     ...(!isMale ? [{ to: "/dashboard/nail-styling",  icon: <FaSpa size={24} />,         label: "Nail Studio",     desc: "Custom color palettes", color: "from-rose-400 to-red-500" }] : []),
   ];
+
+  const hasData = dashboardData?.has_data;
 
   return (
     <div className="space-y-8 animate-fade-in pb-12 font-sans selection:bg-violet-500/30">
@@ -696,39 +1155,103 @@ const UserHome = ({ role, profile, can }) => {
               </span>
             </div>
             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white">
-              Good Morning, {profile?.name || "Beautiful"} ✨
+              {greeting}, {profile?.name || dashboardData?.user_name || "Beautiful"} ✨
             </h1>
             <p className="text-slate-600 dark:text-slate-300 text-base md:text-lg max-w-2xl font-medium leading-relaxed">
-              Your Beauty Profile is <strong className="text-violet-600 dark:text-violet-400">92% optimized</strong>. Our neural engine has prepared 3 new personalized recommendations for you today.
+              {loadingDashboard ? (
+                <span className="inline-block h-5 w-48 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+              ) : hasData ? (
+                <>
+                  Your Beauty Profile is <strong className="text-violet-600 dark:text-violet-400">{dashboardData?.profile_completion}% optimized</strong>. Our neural engine has prepared {dashboardData?.ai_recommendations?.length} new personalized recommendations for you today.
+                </>
+              ) : (
+                <>
+                  Your Beauty Profile is <strong className="text-violet-600 dark:text-violet-400">{dashboardData?.profile_completion}% complete</strong>. Complete your first Face Analysis scan to generate personalized diagnostic scores.
+                </>
+              )}
             </p>
           </div>
           
           <div className="shrink-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md p-5 rounded-3xl border border-white dark:border-slate-700 shadow-xl flex items-center gap-6">
             <div className="text-center">
               <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Global Beauty Score</p>
-              <p className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-500">88</p>
+              {loadingDashboard ? (
+                <div className="h-10 w-16 bg-slate-200 dark:bg-slate-800 rounded animate-pulse mx-auto" />
+              ) : (
+                <p className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-500">
+                  {hasData ? dashboardData?.global_score : "—"}
+                </p>
+              )}
             </div>
             <div className="w-px h-12 bg-slate-200 dark:bg-slate-700" />
             <div className="text-center">
               <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Active Goals</p>
-              <p className="text-4xl font-black text-slate-800 dark:text-white">3</p>
+              {loadingDashboard ? (
+                <div className="h-10 w-12 bg-slate-200 dark:bg-slate-800 rounded animate-pulse mx-auto" />
+              ) : (
+                <p className="text-4xl font-black text-slate-800 dark:text-white">
+                  {dashboardData?.active_goals_count || 0}
+                </p>
+              )}
             </div>
           </div>
         </div>
       </div>
 
+      {/* SECTION 2: ENVIRONMENT & ROUTINE HUD */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-1">
+          {loadingDashboard ? (
+            <div className="h-[300px] bg-slate-100 dark:bg-slate-800 rounded-[2rem] animate-pulse" />
+          ) : (
+            <EnvironmentalShield />
+          )}
+        </div>
+        <div className="lg:col-span-2">
+          {loadingDashboard ? (
+            <div className="h-[300px] bg-slate-100 dark:bg-slate-800 rounded-[2rem] animate-pulse" />
+          ) : (
+            <RoutineChecklist goals={dashboardData?.active_goals} />
+          )}
+        </div>
+      </div>
+
+      {/* SECTION 3: HEALTH DIAGNOSTICS & ANALYTICS EVOLUTION */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* SECTION 2: AI INSIGHTS PANEL */}
+        
+        {/* Health Diagnostics Widget */}
         <div className="xl:col-span-1 space-y-8">
           <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
             <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-8 flex items-center gap-2">
               <FaChartLine className="text-violet-500" /> Health Diagnostics
             </h3>
-            <div className="flex justify-between items-end px-2">
-              <CircularProgress value={82} label="Skin" color="text-teal-500" subColor="text-teal-600" />
-              <CircularProgress value={76} label="Hair" color="text-pink-500" subColor="text-pink-600" />
-              <CircularProgress value={91} label="Nails" color="text-amber-500" subColor="text-amber-600" />
-            </div>
+            {loadingDashboard ? (
+              <div className="flex justify-between items-end px-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex flex-col items-center justify-center animate-pulse">
+                    <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full mb-2" />
+                    <div className="h-3 w-12 bg-slate-100 dark:bg-slate-800 rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : hasData ? (
+              <div className="flex justify-between items-end px-2">
+                <CircularProgress value={dashboardData?.scores?.skin || 0} label="Skin" color="text-teal-500" subColor="text-teal-600" />
+                <CircularProgress value={dashboardData?.scores?.hair || 0} label="Hair" color="text-pink-500" subColor="text-pink-600" />
+                <CircularProgress value={dashboardData?.scores?.nails || 0} label="Nails" color="text-amber-500" subColor="text-amber-600" />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <div className="w-12 h-12 bg-violet-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3 text-violet-500">
+                  <FaChartLine size={20} />
+                </div>
+                <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Diagnostics Locked</h4>
+                <p className="text-[11px] text-slate-500 max-w-[200px] mb-4">Complete a Face Analysis scan to generate your Skin, Hair, and Nails health metrics.</p>
+                <Link to="/dashboard/analyze" className="px-4 py-2 bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-violet-500 transition-colors">
+                  Scan Now
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* SECTION 4: BEAUTY JOURNEY PROGRESS */}
@@ -739,108 +1262,227 @@ const UserHome = ({ role, profile, can }) => {
               </h3>
               <span className="text-[10px] text-violet-600 font-bold hover:underline cursor-pointer">Manage</span>
             </div>
-            <div className="space-y-5">
-              {beautyGoals.map((goal, idx) => (
-                <div key={idx} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{goal.label}</span>
-                    <span className="text-[10px] font-black text-slate-500">{goal.progress}%</span>
+            {loadingDashboard ? (
+              <div className="space-y-5">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-2 animate-pulse">
+                    <div className="flex justify-between items-center">
+                      <div className="h-3 w-24 bg-slate-100 dark:bg-slate-800 rounded" />
+                      <div className="h-3 w-8 bg-slate-100 dark:bg-slate-800 rounded" />
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2" />
                   </div>
-                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                    <div className={`${goal.color} h-2 rounded-full transition-all duration-1000`} style={{ width: `${goal.progress}%` }} />
+                ))}
+              </div>
+            ) : dashboardData?.active_goals?.length > 0 ? (
+              <div className="space-y-5">
+                {dashboardData.active_goals.map((goal, idx) => (
+                  <div key={idx} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{goal.label}</span>
+                      <span className="text-[10px] font-black text-slate-500">{goal.progress}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                      <div className={`${goal.color} h-2 rounded-full transition-all duration-1000`} style={{ width: `${goal.progress}%` }} />
+                    </div>
                   </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <div className="w-12 h-12 bg-fuchsia-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3 text-fuchsia-500">
+                  <FaBullseye size={20} />
                 </div>
-              ))}
-            </div>
+                <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">No Active Goals</h4>
+                <p className="text-[11px] text-slate-500 max-w-[200px] mb-4">Set your beauty and wellness targets to start tracking your progress.</p>
+                <Link to="/dashboard/analyze" className="px-4 py-2 bg-fuchsia-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-fuchsia-500 transition-colors">
+                  Add Goal
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* SECTION 3: QUICK ACTIONS REDESIGN */}
+        {/* Analytics Evolution Chart */}
         <div className="xl:col-span-2">
-          <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest mb-6 flex items-center gap-2">
-            <FaMagic className="text-violet-500" /> Core Modules
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {userQuickActions.map((action, idx) => (
-              <Link
-                key={idx}
-                to={action.to}
-                className="group relative bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${action.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
-                <div className="flex flex-col h-full relative z-10">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${action.color} text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                      {action.icon}
+          {loadingDashboard ? (
+            <div className="h-full bg-slate-100 dark:bg-slate-800 rounded-[2rem] animate-pulse min-h-[350px]" />
+          ) : (
+            <SkinEvolutionChart historyTrend={dashboardData?.history_trend} />
+          )}
+        </div>
+
+      </div>
+
+      {/* SECTION 4: UTILITIES & ACTIONS HUD */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        
+        {/* Bookings & Hydration Tracker */}
+        <div className="xl:col-span-1 space-y-8">
+          {loadingDashboard ? (
+            <div className="h-[200px] bg-slate-100 dark:bg-slate-800 rounded-[2rem] animate-pulse" />
+          ) : (
+            <UpcomingBookings bookings={dashboardData?.upcoming_bookings} />
+          )}
+
+          {loadingDashboard ? (
+            <div className="h-[200px] bg-slate-100 dark:bg-slate-800 rounded-[2rem] animate-pulse" />
+          ) : (
+            <HydrationTracker />
+          )}
+        </div>
+
+        {/* Quick Actions & Recommendations */}
+        <div className="xl:col-span-2 space-y-8">
+          <div>
+            <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <FaMagic className="text-violet-500" /> Core Modules
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {userQuickActions.map((action, idx) => (
+                <Link
+                  key={idx}
+                  to={action.to}
+                  className="group relative bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${action.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+                  <div className="flex flex-col h-full relative z-10">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${action.color} text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                        {action.icon}
+                      </div>
+                      {action.badge && (
+                        <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-black rounded-lg uppercase tracking-widest">
+                          {action.badge}
+                        </span>
+                      )}
                     </div>
-                    {action.badge && (
-                      <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-black rounded-lg uppercase tracking-widest">
-                        {action.badge}
-                      </span>
-                    )}
+                    <h4 className="text-lg font-black text-slate-900 dark:text-white mb-1">{action.label}</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{action.desc}</p>
                   </div>
-                  <h4 className="text-lg font-black text-slate-900 dark:text-white mb-1">{action.label}</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{action.desc}</p>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
           </div>
 
-          {/* SECTION 5: SMART RECOMMENDATIONS */}
-          <div className="mt-8">
+          <div>
              <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest mb-6 flex items-center gap-2">
               <FaLayerGroup className="text-indigo-500" /> Smart Recommendations
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {aiRecommendations.map((rec, idx) => (
-                <div key={idx} className="bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-700 shadow-sm relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/5 rounded-full blur-2xl group-hover:bg-violet-500/10 transition-colors" />
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center">
-                      {rec.icon}
+              {loadingDashboard ? (
+                [1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm animate-pulse flex flex-col justify-between h-[200px]">
+                    <div>
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800" />
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="h-2 w-12 bg-slate-100 dark:bg-slate-800 rounded" />
+                          <div className="h-4 w-8 bg-slate-100 dark:bg-slate-800 rounded" />
+                        </div>
+                      </div>
+                      <div className="h-4 w-3/4 bg-slate-100 dark:bg-slate-800 rounded mb-2" />
+                      <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded" />
                     </div>
-                    <div className="flex flex-col items-end">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confidence</span>
-                      <span className="text-sm font-black text-emerald-500">{rec.confidence}%</span>
-                    </div>
+                    <div className="h-8 w-full bg-slate-100 dark:bg-slate-800 rounded-xl" />
                   </div>
-                  <h4 className="text-sm font-black text-slate-900 dark:text-white mb-2">{rec.title}</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-6 h-8">{rec.desc}</p>
-                  <button className="w-full py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-600 dark:hover:bg-violet-500 hover:text-white transition-colors">
-                    {rec.action}
-                  </button>
+                ))
+              ) : dashboardData?.ai_recommendations?.length > 0 ? (
+                dashboardData.ai_recommendations.map((rec, idx) => (
+                  <div key={idx} className="bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-700 shadow-sm relative overflow-hidden group flex flex-col justify-between h-full">
+                    <div>
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/5 rounded-full blur-2xl group-hover:bg-violet-500/10 transition-colors" />
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center">
+                          {getRecommendationIcon(rec.icon)}
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confidence</span>
+                          <span className="text-sm font-black text-emerald-500">{rec.confidence}%</span>
+                        </div>
+                      </div>
+                      <h4 className="text-sm font-black text-slate-900 dark:text-white mb-2">{rec.title}</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-6">{rec.desc}</p>
+                    </div>
+                    {rec.to ? (
+                      <Link to={rec.to} className="w-full text-center py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-600 dark:hover:bg-violet-500 hover:text-white transition-colors">
+                        {rec.action}
+                      </Link>
+                    ) : (
+                      <button className="w-full py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-600 dark:hover:bg-violet-500 hover:text-white transition-colors">
+                        {rec.action}
+                      </button>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-1 md:col-span-3 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center justify-center text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-slate-800 text-violet-500 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 mb-4">
+                    <FaMagic size={24} className="animate-pulse" />
+                  </div>
+                  <h4 className="text-base font-black text-slate-950 dark:text-white mb-2">Unlock Recommendations</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md leading-relaxed mb-6">
+                    Our advanced computer vision models will analyze your skin type, texture, and concerns to construct dynamic routine adjustments and style recommendations.
+                  </p>
+                  <Link to="/dashboard/analyze" className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-600 dark:hover:bg-violet-500 hover:text-white transition-colors">
+                    Start Analysis
+                  </Link>
                 </div>
-              ))}
+              )}
             </div>
           </div>
-
         </div>
+
       </div>
 
-      {/* SECTION 6: AI BEAUTY FEED */}
+      {/* SECTION 5: AI BEAUTY FEED */}
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
             <FaGift className="text-pink-500" /> AI Beauty Feed
           </h3>
         </div>
-        <div className="flex gap-5 overflow-x-auto pb-4">
-          {beautyFeed.map((feed, idx) => (
-            <div key={idx} className="min-w-[280px] w-[280px] bg-slate-50 dark:bg-slate-800/50 rounded-3xl p-6 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-between hover:border-violet-200 dark:hover:border-violet-800 transition-colors cursor-default">
-              <div>
-                <div className="flex justify-between items-center mb-3">
-                  <span className="px-2 py-1 bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-400 text-[9px] font-black rounded-lg uppercase tracking-widest shadow-sm">
-                    {feed.type}
-                  </span>
-                  <span className="text-[9px] text-slate-400 font-bold">{feed.date}</span>
+        {loadingDashboard ? (
+          <div className="flex gap-5 overflow-x-auto pb-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="min-w-[280px] w-[280px] bg-slate-50 dark:bg-slate-800/50 rounded-3xl p-6 border border-slate-100 dark:border-slate-700/50 animate-pulse flex flex-col justify-between h-[120px]">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="h-4 w-12 bg-slate-200 dark:bg-slate-700 rounded" />
+                    <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded" />
+                  </div>
+                  <div className="h-3 w-full bg-slate-200 dark:bg-slate-700 rounded" />
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-                  {feed.content}
-                </p>
               </div>
+            ))}
+          </div>
+        ) : dashboardData?.beauty_feed?.length > 0 ? (
+          <div className="flex gap-5 overflow-x-auto pb-4">
+            {dashboardData.beauty_feed.map((feed, idx) => (
+              <div key={idx} className="min-w-[280px] w-[280px] bg-slate-50 dark:bg-slate-800/50 rounded-3xl p-6 border border-slate-100 dark:border-slate-700/50 flex flex-col justify-between hover:border-violet-200 dark:hover:border-violet-800 transition-colors cursor-default">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="px-2 py-1 bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-400 text-[9px] font-black rounded-lg uppercase tracking-widest shadow-sm">
+                      {feed.type}
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-bold">{feed.date}</span>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+                    {feed.content}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 text-center w-full">
+            <div className="w-12 h-12 bg-pink-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3 text-pink-500">
+              <FaGift size={20} />
             </div>
-          ))}
-        </div>
+            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Your Feed is Quiet</h4>
+            <p className="text-[11px] text-slate-500 max-w-sm">After completing your first face analysis, real-time insights, skin tips, and seasonal routine alerts will populate here.</p>
+          </div>
+        )}
       </div>
       
     </div>

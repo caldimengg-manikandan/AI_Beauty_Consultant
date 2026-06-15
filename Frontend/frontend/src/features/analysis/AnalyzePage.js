@@ -1,4 +1,5 @@
 import { useState, useContext } from "react";
+import { toast } from 'react-toastify';
 import { analyzeImage } from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import ResultCard from "./ResultCard";
@@ -67,7 +68,7 @@ const AnalyzePage = () => {
   };
 
   const analyze = async () => {
-    if (!image) return alert("Please select an image first.");
+    if (!image) return toast.error("Please select an image first.");
 
     try {
       setLoading(true);

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, File, UploadFile
+from typing import List
 from app.schemas.salon import SalonCreate, SalonUpdate, ReviewCreate, SlotBookingCreate
 from app.mongodb.collections import (
     salons_collection, reviews_collection,
@@ -488,13 +489,14 @@ async def book_slot(booking: SlotBookingCreate, current_user: dict = Depends(get
         "salon_address": salon.get("address"),
         "salon_phone":   salon.get("phone"),
         "salon_city":    salon.get("city"),
-        "status": "confirmed",
+        "status": "pending",          # promoted to "confirmed" after payment
+        "payment_status": "pending",
         "created_at": datetime.utcnow(),
         **booking.dict(),
     }
     slot_bookings_collection.insert_one(new_booking)
     new_booking.pop("_id", None)
-    return {"status": "success", "message": "Slot booked successfully!", "booking_ref": booking_ref, "data": new_booking}
+    return {"status": "success", "message": "Slot booked successfully!", "booking_ref": booking_ref, "booking_id": new_booking["id"], "data": new_booking}
 
 
 @router.post("/reviews")
@@ -629,3 +631,115 @@ async def deactivate_salon(salon_id: str, current_user: dict = Depends(get_curre
         field_changes={"is_active": {"before": True, "after": False}},
     )
     return {"status": "success", "message": "Salon deactivated"}
+
+
+# ─── AI Service Recommendations (additive) ────────────────────────────────────
+
+@router.post("/recommend-services")
+async def recommend_services(
+    analysis: dict,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Given a skin analysis result, return salon services ranked by relevance.
+    Matches skin concerns from the analysis against services across verified salons.
+    """
+    concerns   = analysis.get("concerns", [])
+    skin_type  = analysis.get("skin_type", "")
+    scores     = analysis.get("skin_scores", {})
+
+    # Keyword map: concern → service keywords to look for
+    CONCERN_KEYWORDS = {
+        "acne":         ["facial", "acne", "peel", "cleanse", "extraction"],
+        "pigmentation": ["brightening", "pigment", "vitamin c", "peel", "whitening"],
+        "dryness":      ["hydration", "moisture", "hyaluronic", "nourish"],
+        "oiliness":     ["oil control", "mattify", "pore", "clay"],
+        "aging":        ["anti-aging", "collagen", "retinol", "firming", "lift"],
+        "sensitivity":  ["soothing", "gentle", "calming", "sensitive"],
+        "hair":         ["hair", "keratin", "colour", "color", "scalp"],
+    }
+
+    all_keywords: list = []
+    for concern in concerns:
+        for key, kws in CONCERN_KEYWORDS.items():
+            if key in concern.lower():
+                all_keywords.extend(kws)
+    if not all_keywords:
+        all_keywords = ["facial", "skin care", "beauty"]
+
+    # Fetch verified, active salons with services
+    salons = list(
+        salons_collection.find(
+            {"is_active": True},
+            {"id": 1, "name": 1, "city": 1, "services_with_pricing": 1, "avg_rating": 1}
+        ).limit(50)
+    )
+
+    recommendations = []
+    seen = set()
+    for salon in salons:
+        for svc in salon.get("services_with_pricing", []):
+            if not svc.get("is_active", True):
+                continue
+            svc_name_lower = svc.get("name", "").lower()
+            svc_cat_lower  = svc.get("category", "").lower()
+            score = sum(1 for kw in all_keywords if kw in svc_name_lower or kw in svc_cat_lower)
+            if score > 0:
+                key = f"{salon['id']}_{svc['name']}"
+                if key not in seen:
+                    seen.add(key)
+                    recommendations.append({
+                        "salon_id":    salon.get("id"),
+                        "salon_name":  salon.get("name"),
+                        "city":        salon.get("city"),
+                        "avg_rating":  salon.get("avg_rating"),
+                        "service":     svc.get("name"),
+                        "price":       svc.get("price"),
+                        "category":    svc.get("category"),
+                        "match_score": score,
+                    })
+
+    recommendations.sort(key=lambda x: x["match_score"], reverse=True)
+    return {
+        "recommendations": recommendations[:20],
+        "based_on": {"concerns": concerns, "skin_type": skin_type},
+    }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GALLERY UPLOAD
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/upload-gallery")
+async def upload_salon_gallery(
+    images: List[UploadFile] = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Uploads multiple images for a salon gallery and returns their URLs."""
+    if current_user["role"] != "shop_owner":
+        raise HTTPException(status_code=403, detail="Only shop owners can upload gallery images")
+    
+    upload_dir = "static/uploads/salons"
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    saved_urls = []
+    for image in images:
+        if not image.filename:
+            continue
+        # Only allow jpg, png, webp
+        ext = image.filename.split('.')[-1].lower()
+        if ext not in ['jpg', 'jpeg', 'png', 'webp']:
+            continue
+            
+        filename = f"{uuid.uuid4().hex}_{image.filename.replace(' ', '_')}"
+        file_path = os.path.join(upload_dir, filename)
+        
+        with open(file_path, "wb") as buffer:
+            content = await image.read()
+            buffer.write(content)
+            
+        saved_urls.append(f"/{file_path.replace(chr(92), '/')}")
+        
+    if not saved_urls:
+        raise HTTPException(status_code=400, detail="No valid images were uploaded")
+        
+    return {"gallery_urls": saved_urls}

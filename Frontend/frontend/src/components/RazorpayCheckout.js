@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiX, FiShield, FiCreditCard, FiCheck, FiAlertCircle } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import api from '../../services/api';
+import api from '../services/api';
 
 /**
  * RazorpayCheckout — Universal payment modal

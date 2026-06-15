@@ -41,6 +41,7 @@ class SalonCreate(BaseModel):
     instagram_url: Optional[str] = None
     website_url: Optional[str] = None
     cover_image_url: Optional[str] = None
+    gallery_urls: Optional[List[str]] = []
     gst_number: Optional[str] = None
     verification_status: Optional[str] = "pending" # pending | verified | rejected
 
@@ -65,6 +66,7 @@ class SalonUpdate(BaseModel):
     instagram_url: Optional[str] = None
     website_url: Optional[str] = None
     cover_image_url: Optional[str] = None
+    gallery_urls: Optional[List[str]] = None
     gst_number: Optional[str] = None
     verification_status: Optional[str] = None
 
