@@ -98,7 +98,7 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <BrowserRouter>
+        <BrowserRouter basename="/AI_Beauty">
           <Suspense fallback={<PageLoader />}>
             <Routes>
 
