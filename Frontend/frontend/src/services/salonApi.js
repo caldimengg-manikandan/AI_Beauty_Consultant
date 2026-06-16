@@ -41,7 +41,7 @@ export const bookSalonSlot = async (bookingData) => {
 
 export const getMySlotBookings = async () => {
   const res = await api.get('/api/salons/my-slot-bookings');
-  return res.data;
+  return Array.isArray(res.data) ? res.data : (res.data.bookings ?? []);
 };
 
 export const cancelMyBooking = async (bookingId) => {
