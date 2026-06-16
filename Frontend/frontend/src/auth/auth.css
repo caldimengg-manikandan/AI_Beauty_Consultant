@@ -1,53 +1,88 @@
+/* auth.css — Legacy fallback styles
+ * Primary styling is handled by Tailwind + index.css
+ * This file is kept for backward compatibility only
+ */
+
 .auth-container {
   height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #7f7fd5, #86a8e7, #91eae4);
+  background: #F8FAFC;
 }
 
 .auth-card {
-  background: white;
+  background: #ffffff;
   padding: 2.5rem;
-  border-radius: 12px;
-  width: 360px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  border-radius: 16px;
+  width: 400px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 .auth-card h2 {
   text-align: center;
   margin-bottom: 1.5rem;
+  color: #111827;
+  font-weight: 800;
 }
 
 .auth-card input {
   width: 100%;
-  padding: 10px;
+  padding: 12px 16px;
   margin-bottom: 1rem;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  background: #F8FAFC;
+  font-size: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.auth-card input:focus {
+  outline: none;
+  border-color: #5B4FF7;
+  box-shadow: 0 0 0 3px rgba(91, 79, 247, 0.12);
 }
 
 .auth-card button {
   width: 100%;
-  padding: 10px;
-  background: #6c63ff;
+  padding: 12px;
+  background: #5B4FF7;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: background 0.15s, opacity 0.15s;
 }
 
 .auth-card button:hover {
-  background: #554ee0;
+  background: #4a41d4;
 }
 
 .error {
-  color: red;
-  text-align: center;
-  margin-bottom: 10px;
+  color: #DC2626;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 13px;
 }
 
 .link {
   text-align: center;
   margin-top: 1rem;
+  font-size: 13px;
+}
+
+.link a {
+  color: #5B4FF7;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link a:hover {
+  text-decoration: underline;
 }

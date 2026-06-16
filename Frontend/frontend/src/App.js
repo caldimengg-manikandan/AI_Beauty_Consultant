@@ -79,6 +79,7 @@ const AdminDashboard   = lazy(() => import("./pages/admin/AdminDashboard"));
 const ExpertDashboard  = lazy(() => import("./pages/expert/ExpertDashboard"));
 
 // ─── Shop Owner B2B ───────────────────────────────────────────────────────
+const BusinessInsights   = lazy(() => import("./features/partner/BusinessInsights"));
 const ClientIntelligence = lazy(() => import("./features/partner/ClientIntelligence"));
 const NoShowPredictor    = lazy(() => import("./features/partner/NoShowPredictor"));
 const ShopServices       = lazy(() => import("./features/partner/ShopServices"));
@@ -227,7 +228,7 @@ function App() {
                 } />
                 <Route path="insights" element={
                   <ProtectedRoute allowedRoles={["shop_owner", "admin"]}>
-                    <ShopOwnerDashboard section="insights" />
+                    <BusinessInsights />
                   </ProtectedRoute>
                 } />
                 <Route path="supply-chain" element={

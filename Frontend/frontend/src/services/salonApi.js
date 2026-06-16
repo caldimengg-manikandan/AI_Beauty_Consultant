@@ -96,7 +96,9 @@ export const updateMySalon = async (updates) => {
 
 export const getOwnerBookings = async (params = {}) => {
   const res = await api.get('/api/salons/owner/bookings', { params });
-  return res.data;
+  // Backend returns paginated envelope { bookings, total, page, pages }
+  // Extract the array so callers don't have to unwrap it
+  return Array.isArray(res.data) ? res.data : (res.data.bookings ?? []);
 };
 
 export const updateBookingStatus = async (bookingId, status) => {

@@ -4,6 +4,9 @@ import random
 
 from app.auth.jwt_handler import get_current_user
 from app.mongodb.collections import analysis_collection, users_collection, appointments_collection
+from app.mongodb.client import db
+
+onboarding_collection = db["onboarding_profiles"]
 
 router = APIRouter(
     prefix="/api/user-dashboard",
@@ -129,6 +132,36 @@ async def get_user_dashboard_summary(current_user: dict = Depends(get_current_us
                 "status": appt.get("status", "pending")
             })
 
+    # --- 6. Calculate Profile Completion Dynamically ---
+    completion_percentage = 0
+    onboarding_profile = onboarding_collection.find_one({"user_email": email}) or {}
+    
+    # Define fields to check for completeness (15 fields total)
+    fields_to_check = [
+        "display_name", "age", "gender", "current_skin_type", "skin_concerns", 
+        "skin_history", "beauty_goals", "budget_range", "routine_style", 
+        "allergies", "current_products", "sun_exposure", "diet", "water_intake", "stress_level"
+    ]
+    
+    filled_fields = 0
+    for field in fields_to_check:
+        val = onboarding_profile.get(field)
+        if val:
+            if isinstance(val, list) and len(val) > 0:
+                filled_fields += 1
+            elif isinstance(val, (str, int)) and str(val).strip() != "":
+                filled_fields += 1
+                
+    # 80% comes from onboarding fields, 20% comes from doing at least one scan
+    if filled_fields > 0:
+        completion_percentage += int((filled_fields / len(fields_to_check)) * 80)
+        
+    if has_data:
+        completion_percentage += 20
+        
+    # Ensure it's at least 5% so the UI never looks broken for completely new users
+    completion_percentage = max(5, completion_percentage)
+
     return {
         "user_name": user_doc.get("name", "Beautiful"),
         "has_data": has_data,
@@ -144,5 +177,5 @@ async def get_user_dashboard_summary(current_user: dict = Depends(get_current_us
         "beauty_feed": feed,
         "history_trend": history_trend,
         "upcoming_bookings": upcoming_bookings,
-        "profile_completion": 92 if has_data else 35
+        "profile_completion": completion_percentage
     }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import {
@@ -34,8 +34,14 @@ const PIE_DATA = [
 const EMPTY_COUPON = { code: '', type: 'percentage', value: '', max_uses: 100, expiry: '', min_amount: 0, description: '' };
 const EMPTY_CAMPAIGN = { title: '', message: '', audience: 'All Clients', type: 'email' };
 
-export default function MarketingTools() {
-  const [tab, setTab]               = useState('campaigns');
+export default function MarketingTools({ initialTab }) {
+  const [tab, setTab]               = useState(initialTab || 'campaigns');
+
+  // Sync when the parent navigates between /campaigns and /coupons
+  // (component isn't remounted because it stays in the same ShopOwnerDashboard tree)
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
   const [coupons, setCoupons]       = useState(MOCK_COUPONS);
   const [campaigns, setCampaigns]   = useState(MOCK_CAMPAIGNS);
   const [showCoupon, setShowCoupon] = useState(false);

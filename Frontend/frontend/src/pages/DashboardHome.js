@@ -24,17 +24,16 @@ const QuickActionsGrid = ({ actions }) => (
         <Link
           key={to}
           to={to}
-          className={`group relative flex flex-col items-center justify-center gap-3 p-5 rounded-2xl glass-card border border-white/40 dark:border-slate-700/50 hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 text-center animate-fade-in-up ${delayClass} overflow-hidden`}
+          className={`group relative flex flex-col items-center justify-center gap-3 p-5 rounded-2xl glass-card border border-white/40 dark:border-slate-700/50 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 text-center animate-fade-in-up ${delayClass} overflow-hidden`}
         >
-          {/* Subtle background glow effect on hover */}
-          <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 ${color}`} />
+          <div className={`absolute inset-0 opacity-0 group-hover:opacity-8 transition-opacity duration-200 ${color}`} />
           
-          <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 group-hover:animate-pulse-glow transition-transform duration-300 ${color} z-10`}>
+          <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl shadow-sm group-hover:shadow-md transition-all duration-200 ${color} z-10`}>
             {icon}
           </div>
-          <span className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight z-10">{label}</span>
+          <span className="text-[12px] font-semibold text-slate-700 dark:text-slate-200 leading-tight z-10">{label}</span>
           {badge && (
-            <span className="absolute top-2 right-2 text-[9px] font-black px-2 py-0.5 rounded-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-violet-600 dark:text-violet-400 shadow-sm border border-white/50 z-10">
+            <span className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/90 dark:bg-slate-800/90 text-[#5B4FF7] dark:text-violet-400 border border-white/50 z-10">
               {badge}
             </span>
           )}
@@ -360,8 +359,8 @@ const ShopOwnerHome = () => {
               <AreaChart data={trendChartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="revActualGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#7c3aed" stopOpacity={0.12}/>
-                    <stop offset="95%" stopColor="#7c3aed" stopOpacity={0}/>
+                    <stop offset="5%"  stopColor="#5B4FF7" stopOpacity={0.12}/>
+                    <stop offset="95%" stopColor="#5B4FF7" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
@@ -371,8 +370,8 @@ const ShopOwnerHome = () => {
                   formatter={v => [`₹${Number(v).toLocaleString()}`, '']}/>
                 <Area type="monotone" dataKey="target" stroke="#e2e8f0" strokeWidth={1.5}
                   fill="none" strokeDasharray="4 3" dot={false}/>
-                <Area type="monotone" dataKey="actual" stroke="#7c3aed" strokeWidth={2}
-                  fill="url(#revActualGrad)" dot={{ r: 3, fill: '#7c3aed', strokeWidth: 0 }}/>
+                <Area type="monotone" dataKey="actual" stroke="#5B4FF7" strokeWidth={2}
+                  fill="url(#revActualGrad)" dot={{ r: 3, fill: '#5B4FF7', strokeWidth: 0 }}/>
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -419,8 +418,12 @@ const ShopOwnerHome = () => {
             <div className="space-y-2">{[1,2,3,4].map(i => <div key={i} className="h-10 bg-slate-50 rounded-xl animate-pulse"/>)}</div>
           ) : bookings.length === 0 ? (
             <div className="py-10 text-center">
-              <p className="text-2xl mb-2">📅</p>
-              <p className="text-xs text-slate-400 font-medium">No appointments today</p>
+              <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-slate-100 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <p className="text-[11px] text-slate-400 font-medium">No appointments today</p>
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -454,8 +457,12 @@ const ShopOwnerHome = () => {
             <div className="space-y-3">{[1,2,3,4].map(i => <div key={i} className="h-10 bg-slate-50 rounded-xl animate-pulse"/>)}</div>
           ) : staffList.length === 0 ? (
             <div className="py-10 text-center">
-              <p className="text-2xl mb-2">👥</p>
-              <p className="text-xs text-slate-400 font-medium">No staff data yet</p>
+              <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-slate-100 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <p className="text-[11px] text-slate-400 font-medium">No staff data yet</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -489,8 +496,12 @@ const ShopOwnerHome = () => {
             <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-slate-50 rounded-xl animate-pulse"/>)}</div>
           ) : lowStock.length === 0 ? (
             <div className="py-10 text-center">
-              <p className="text-2xl mb-2">✅</p>
-              <p className="text-xs text-slate-400 font-medium">All stock levels healthy</p>
+              <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <p className="text-[11px] text-slate-400 font-medium">All stock levels healthy</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -514,7 +525,7 @@ const ShopOwnerHome = () => {
               })}
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
                 <p className="text-[10px] text-slate-500 leading-relaxed">
-                  💡 {lowStock.length} item{lowStock.length > 1 ? 's' : ''} need restocking. Order early to avoid weekend gaps.
+                  {lowStock.length} item{lowStock.length > 1 ? 's' : ''} need restocking. Order early to avoid weekend gaps.
                 </p>
               </div>
             </div>
@@ -547,8 +558,7 @@ const ShopOwnerHome = () => {
           <div key={ins.type}
             className={`bg-white rounded-2xl border border-slate-100 border-l-4 ${ins.borderColor} shadow-sm p-5 hover:shadow-md transition-shadow duration-200`}>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-base">{ins.icon}</span>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{ins.type}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{ins.type}</p>
             </div>
             {loading
               ? <><div className="h-4 bg-slate-100 rounded animate-pulse mb-1"/><div className="h-3 bg-slate-100 rounded animate-pulse w-4/5"/></>
@@ -580,18 +590,15 @@ const adminQuickActions = [
 
 const AdminHome = () => (
   <div className="space-y-8 animate-fade-in">
-    {/* Animated Banner */}
-    <div className="relative rounded-[2rem] overflow-hidden shadow-2xl p-8">
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-rose-900 to-red-900 bg-[length:200%_200%] animate-scan" />
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-md" />
-      
-      <div className="relative z-10 text-white">
-        <div className="flex items-center gap-3 mb-2">
-          <FaShieldAlt className="text-3xl float-animation drop-shadow-lg text-rose-300" />
-          <h1 className="text-3xl font-black tracking-tight drop-shadow-md">System Command Center</h1>
+    {/* Page Header — clean enterprise style */}
+    <div className="bg-slate-900 rounded-2xl p-7 border border-slate-800">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+          <FaShieldAlt className="text-slate-300 text-sm" />
         </div>
-        <p className="text-rose-100 text-sm md:text-base opacity-90 max-w-xl font-medium">Full platform oversight—monitor operations, manage businesses, and control the AI ecosystem.</p>
+        <h1 className="text-2xl font-black text-white tracking-tight">System Command Center</h1>
       </div>
+      <p className="text-slate-400 text-[14px] font-medium ml-11">Full platform oversight — monitor operations, manage businesses, and control the AI ecosystem.</p>
     </div>
 
     {/* Stats */}
@@ -694,8 +701,13 @@ const HydrationTracker = () => {
     <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden group">
       <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-colors" />
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
-          <span>💧</span> Hydration Tracker
+        <h3 className="text-[12px] font-bold text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
+          <div className="w-5 h-5 rounded-md bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3" aria-hidden="true">
+              <path d="M12 22a5 5 0 0 1-5-5c0-5.25 5-13 5-13s5 7.75 5 13a5 5 0 0 1-5 5z"/>
+            </svg>
+          </div>
+          Hydration Tracker
         </h3>
         <button onClick={resetWater} className="text-[10px] font-black text-slate-400 hover:text-red-500 uppercase tracking-wider transition-colors">
           Reset
@@ -703,11 +715,15 @@ const HydrationTracker = () => {
       </div>
 
       <div className="flex items-center gap-6 mb-6">
-        <div className="relative w-16 h-16 shrink-0 flex items-center justify-center bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-100/50 dark:border-blue-900/30 text-2xl">
-          🥤
+        <div className="relative w-16 h-16 shrink-0 flex items-center justify-center bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-100/50 dark:border-blue-900/30">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7" aria-hidden="true">
+            <path d="M12 22a5 5 0 0 1-5-5c0-5.25 5-13 5-13s5 7.75 5 13a5 5 0 0 1-5 5z"/>
+          </svg>
           {water >= target && (
-            <span className="absolute -top-1 -right-1 text-xs bg-emerald-500 text-white rounded-full p-0.5 animate-bounce">
-              ✓
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white rounded-full flex items-center justify-center">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-2.5 h-2.5" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
             </span>
           )}
         </div>
@@ -1095,32 +1111,62 @@ const UserHome = ({ role, profile, can }) => {
   const [analyses, setAnalyses] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
+  const [errorDashboard, setErrorDashboard] = useState(false);
   const [greeting, setGreeting] = useState("Hello");
 
-  useEffect(() => {
-    // Determine greeting based on local time
-    const hr = new Date().getHours();
-    if (hr < 12) setGreeting("Good Morning");
-    else if (hr < 17) setGreeting("Good Afternoon");
-    else setGreeting("Good Evening");
+  const updateGreeting = () => {
+    const hour = new Date().getHours();
+    const newGreeting =
+      hour < 5 ? "Good Night" :
+      hour < 12 ? "Good Morning" :
+      hour < 17 ? "Good Afternoon" :
+      hour < 21 ? "Good Evening" :
+      "Good Night";
+    setGreeting(newGreeting);
+  };
 
-    // Fetch existing analyses history for compatibility
-    api.get("/history?limit=3")
-      .then(r => setAnalyses(r.data?.analyses || []))
-      .catch(() => {});
-
-    // Fetch live dashboard summary
+  const fetchDashboardData = () => {
     setLoadingDashboard(true);
+    setErrorDashboard(false);
     getUserDashboardSummary()
       .then(data => {
         setDashboardData(data);
       })
       .catch(err => {
         console.error("Error fetching user dashboard summary:", err);
+        setErrorDashboard(true);
       })
       .finally(() => {
         setLoadingDashboard(false);
       });
+  };
+
+  useEffect(() => {
+    updateGreeting();
+
+    // Fetch existing analyses history for compatibility
+    api.get("/history?limit=3")
+      .then(r => setAnalyses(r.data?.analyses || []))
+      .catch(() => {});
+
+    fetchDashboardData();
+
+    const handleFocus = () => {
+      updateGreeting();
+      fetchDashboardData();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    
+    const intervalId = setInterval(() => {
+      updateGreeting();
+      fetchDashboardData();
+    }, 5 * 60 * 1000);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(intervalId);
+    };
   }, []);
 
   const isMale = profile?.gender?.toLowerCase() === "male" || analyses[0]?.gender?.toLowerCase() === "male";
@@ -1146,55 +1192,71 @@ const UserHome = ({ role, profile, can }) => {
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-400/20 rounded-full blur-[80px] translate-y-1/4 -translate-x-1/4" />
         
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-          <div className="space-y-4 flex-1">
-            <div className="flex items-center gap-3">
-              <span className="px-3 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-[10px] font-black rounded-lg uppercase tracking-widest shadow-sm border border-violet-200 dark:border-violet-700/50">Beauty OS Active</span>
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
+          {errorDashboard ? (
+            <div className="w-full text-center py-8">
+              <p className="text-red-500 font-bold mb-2">Unable to load your dashboard data.</p>
+              <p className="text-slate-500 text-sm">Please try again.</p>
             </div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white">
-              {greeting}, {profile?.name || dashboardData?.user_name || "Beautiful"} ✨
-            </h1>
-            <p className="text-slate-600 dark:text-slate-300 text-base md:text-lg max-w-2xl font-medium leading-relaxed">
-              {loadingDashboard ? (
-                <span className="inline-block h-5 w-48 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
-              ) : hasData ? (
-                <>
-                  Your Beauty Profile is <strong className="text-violet-600 dark:text-violet-400">{dashboardData?.profile_completion}% optimized</strong>. Our neural engine has prepared {dashboardData?.ai_recommendations?.length} new personalized recommendations for you today.
-                </>
-              ) : (
-                <>
-                  Your Beauty Profile is <strong className="text-violet-600 dark:text-violet-400">{dashboardData?.profile_completion}% complete</strong>. Complete your first Face Analysis scan to generate personalized diagnostic scores.
-                </>
-              )}
-            </p>
-          </div>
-          
-          <div className="shrink-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md p-5 rounded-3xl border border-white dark:border-slate-700 shadow-xl flex items-center gap-6">
-            <div className="text-center">
-              <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Global Beauty Score</p>
-              {loadingDashboard ? (
-                <div className="h-10 w-16 bg-slate-200 dark:bg-slate-800 rounded animate-pulse mx-auto" />
-              ) : (
-                <p className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-500">
-                  {hasData ? dashboardData?.global_score : "—"}
+          ) : (
+            <>
+              <div className="space-y-4 flex-1">
+                <div className="flex items-center gap-3">
+                  <span className="px-3 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-[10px] font-black rounded-lg uppercase tracking-widest shadow-sm border border-violet-200 dark:border-violet-700/50">Beauty OS Active</span>
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                </div>
+                <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white">
+                  {loadingDashboard ? (
+                    <span className="inline-block h-10 w-64 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+                  ) : (
+                    <>{greeting}, {dashboardData?.firstName ?? dashboardData?.user_name ?? profile?.name} ✨</>
+                  )}
+                </h1>
+                <p className="text-slate-600 dark:text-slate-300 text-base md:text-lg max-w-2xl font-medium leading-relaxed">
+                  {loadingDashboard ? (
+                    <span className="inline-flex flex-col gap-2 w-full max-w-md">
+                      <span className="h-5 w-full bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+                      <span className="h-5 w-3/4 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+                    </span>
+                  ) : hasData ? (
+                    <>
+                      Your Beauty Profile is <strong className="text-violet-600 dark:text-violet-400">{dashboardData?.profileOptimization ?? dashboardData?.profile_completion}% optimized</strong>. Our neural engine has prepared {dashboardData?.recommendationCount ?? dashboardData?.ai_recommendations?.length} new personalized recommendations for you today.
+                    </>
+                  ) : (
+                    <>
+                      Your Beauty Profile is <strong className="text-violet-600 dark:text-violet-400">{dashboardData?.profileOptimization ?? dashboardData?.profile_completion}% complete</strong>. Complete your first Face Analysis scan to generate personalized diagnostic scores.
+                    </>
+                  )}
                 </p>
-              )}
-            </div>
-            <div className="w-px h-12 bg-slate-200 dark:bg-slate-700" />
-            <div className="text-center">
-              <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Active Goals</p>
-              {loadingDashboard ? (
-                <div className="h-10 w-12 bg-slate-200 dark:bg-slate-800 rounded animate-pulse mx-auto" />
-              ) : (
-                <p className="text-4xl font-black text-slate-800 dark:text-white">
-                  {dashboardData?.active_goals_count || 0}
-                </p>
-              )}
-            </div>
-          </div>
+              </div>
+              
+              <div className="shrink-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md p-5 rounded-3xl border border-white dark:border-slate-700 shadow-xl flex items-center gap-6">
+                <div className="text-center">
+                  <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Global Beauty Score</p>
+                  {loadingDashboard ? (
+                    <div className="h-10 w-16 bg-slate-200 dark:bg-slate-800 rounded animate-pulse mx-auto" />
+                  ) : (
+                    <p className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-500">
+                      {dashboardData?.beautyScore ?? dashboardData?.global_score}
+                    </p>
+                  )}
+                </div>
+                <div className="w-px h-12 bg-slate-200 dark:bg-slate-700" />
+                <div className="text-center">
+                  <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Active Goals</p>
+                  {loadingDashboard ? (
+                    <div className="h-10 w-12 bg-slate-200 dark:bg-slate-800 rounded animate-pulse mx-auto" />
+                  ) : (
+                    <p className="text-4xl font-black text-slate-800 dark:text-white">
+                      {dashboardData?.activeGoals ?? dashboardData?.active_goals_count}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

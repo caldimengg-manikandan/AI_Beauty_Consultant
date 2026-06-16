@@ -9,43 +9,55 @@
    Inspired by: Linear, Stripe, Notion, Vercel
    ═══════════════════════════════════════════════════════════════ */
 :root {
-  /* Brand */
-  --brand-primary:   #7c3aed;
-  --brand-secondary: #0d9488;
-  --brand-accent:    #f59e0b;
+  /* ── Enterprise Brand Palette ─────────────────────────── */
+  --brand-primary:   #5B4FF7;  /* Indigo-violet — Stripe-inspired */
+  --brand-secondary: #7C6CF9;  /* Lighter violet */
+  --brand-accent:    #F59E0B;  /* Amber for salon/business mode */
+  --brand-success:   #10B981;  /* Emerald */
+  --brand-danger:    #EF4444;
 
-  /* Light Surface System */
-  --surface-base:    #fafafa;
-  --surface-raised:  #ffffff;
-  --surface-overlay: #f4f4f5;
-  --surface-sunken:  #f0f0f1;
+  /* ── 8px Spacing Scale ─────────────────────────────────── */
+  --space-1:  8px;
+  --space-2:  16px;
+  --space-3:  24px;
+  --space-4:  32px;
+  --space-6:  48px;
+  --space-8:  64px;
+  --space-10: 80px;
+  --space-12: 96px;
 
-  /* Text Scale */
-  --text-hi:   #09090b;
-  --text-mid:  #52525b;
-  --text-lo:   #a1a1aa;
-  --text-xlo:  #d4d4d8;
+  /* ── Light Surface System ──────────────────────────────── */
+  --surface-base:    #F8FAFC;  /* Subtle off-white */
+  --surface-raised:  #FFFFFF;
+  --surface-overlay: #F1F5F9;
+  --surface-sunken:  #E2E8F0;
 
-  /* Semantic */
-  --border-subtle:  rgba(0,0,0,0.06);
-  --border-default: rgba(0,0,0,0.10);
-  --border-strong:  rgba(0,0,0,0.16);
+  /* ── Text Scale ────────────────────────────────────────── */
+  --text-hi:   #111827;  /* Gray-900 */
+  --text-mid:  #6B7280;  /* Gray-500 */
+  --text-lo:   #9CA3AF;  /* Gray-400 */
+  --text-xlo:  #D1D5DB;  /* Gray-300 */
 
-  /* Shadows — layered depth system */
+  /* ── Semantic Borders ──────────────────────────────────── */
+  --border-subtle:  rgba(0,0,0,0.05);
+  --border-default: rgba(0,0,0,0.09);
+  --border-strong:  rgba(0,0,0,0.15);
+
+  /* ── Shadows — layered depth system ───────────────────── */
   --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06);
-  --shadow-xl: 0 24px 48px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.08);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.09), 0 4px 8px rgba(0,0,0,0.05);
+  --shadow-xl: 0 24px 48px rgba(0,0,0,0.11), 0 8px 16px rgba(0,0,0,0.07);
 
-  /* Sidebar */
-  --sidebar-w: 240px;
-  --sidebar-bg: #ffffff;
+  /* ── Sidebar ────────────────────────────────────────────── */
+  --sidebar-w:      240px;
+  --sidebar-bg:     #FFFFFF;
   --sidebar-border: rgba(0,0,0,0.06);
 
-  /* Navbar */
-  --navbar-h: 56px;
-  --navbar-bg: rgba(255,255,255,0.88);
+  /* ── Navbar ─────────────────────────────────────────────── */
+  --navbar-h:  56px;
+  --navbar-bg: rgba(255,255,255,0.90);
 }
 
 /* ── DARK THEME ────────────────────────────────────────────── */
@@ -89,7 +101,7 @@
    ═══════════════════════════════════════════════════════════════ */
 @layer base {
   html {
-    font-size: 14px;
+    font-size: 15px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -190,12 +202,12 @@
 .dark textarea::placeholder { color: var(--text-lo) !important; }
 
 /* Nav items */
-.dark aside a:hover         { background: rgba(124,58,237,0.10) !important; }
-.dark aside .bg-gradient-to-r.from-violet-50 { background: rgba(124,58,237,0.14) !important; }
+.dark aside a:hover         { background: rgba(91,79,247,0.10) !important; }
+.dark aside .bg-gradient-to-r.from-violet-50 { background: rgba(91,79,247,0.14) !important; }
 
 /* Scrollbar dark */
 .dark .custom-scrollbar::-webkit-scrollbar-track  { background: rgba(255,255,255,0.02); }
-.dark .custom-scrollbar::-webkit-scrollbar-thumb  { background: rgba(124,58,237,0.4); }
+.dark .custom-scrollbar::-webkit-scrollbar-thumb  { background: rgba(91,79,247,0.4); }
 
 /* Glass card dark */
 .dark .glass-card {
@@ -217,20 +229,21 @@
 
   /* ── Buttons ───────────────────────────────────────────── */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl
            text-sm font-semibold text-white
-           bg-gradient-to-r from-violet-600 to-teal-600
-           hover:from-violet-700 hover:to-teal-700
-           shadow-md hover:shadow-lg
-           transition-all duration-150 active:scale-[0.98];
+           bg-[#5B4FF7] hover:bg-[#4a41d4]
+           shadow-sm hover:shadow-md
+           transition-all duration-150 active:scale-[0.98]
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5B4FF7]/40;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl
            text-sm font-medium
-           bg-white border border-zinc-200 text-zinc-700
-           hover:bg-zinc-50 hover:border-zinc-300
-           shadow-sm transition-all duration-150 active:scale-[0.98];
+           bg-white border border-slate-200 text-slate-700
+           hover:bg-slate-50 hover:border-slate-300
+           shadow-sm transition-all duration-150 active:scale-[0.98]
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/30;
   }
 
   /* Legacy alias */
@@ -243,7 +256,7 @@
 
   /* ── Cards ─────────────────────────────────────────────── */
   .card {
-    @apply bg-white rounded-2xl border border-zinc-100;
+    @apply bg-white rounded-2xl border border-slate-100;
     box-shadow: var(--shadow-sm);
   }
 
@@ -253,7 +266,12 @@
   .card-hover:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
-    border-color: rgba(124,58,237,0.15);
+    border-color: rgba(91,79,247,0.15);
+  }
+
+  /* ── Enterprise focus ring ──────────────────────────────── */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5B4FF7]/40 focus-visible:ring-offset-1;
   }
 
   /* ── Inputs ────────────────────────────────────────────── */
@@ -364,8 +382,8 @@
 
   /* Pulse glow */
   @keyframes pulse-glow {
-    0%,100% { box-shadow: 0 0 12px rgba(124,58,237,0.3); }
-    50%      { box-shadow: 0 0 28px rgba(124,58,237,0.65); }
+    0%,100% { box-shadow: 0 0 12px rgba(91,79,247,0.3); }
+    50%      { box-shadow: 0 0 28px rgba(91,79,247,0.65); }
   }
   .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
 
@@ -407,18 +425,18 @@
   .animation-delay-4000 { animation-delay: 4.0s; }
 
   /* Gradients */
-  .bg-gradient-premium { background: linear-gradient(135deg, #7c3aed 0%, #0d9488 100%); }
-  .bg-gradient-sunset  { background: linear-gradient(135deg, #a78bfa 0%, #14b8a6 100%); }
+  .bg-gradient-premium { background: linear-gradient(135deg, #5B4FF7 0%, #10B981 100%); }
+  .bg-gradient-sunset  { background: linear-gradient(135deg, #7C6CF9 0%, #14b8a6 100%); }
   .bg-gradient-ocean   { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
 
   /* Scrollbar */
   .custom-scrollbar::-webkit-scrollbar       { width: 4px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 99px; }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(124,58,237,0.25);
+    background: rgba(91,79,247,0.25);
     border-radius: 99px;
   }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(124,58,237,0.45); }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(91,79,247,0.45); }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -427,8 +445,8 @@
 
 /* Loading spinner */
 .spinner {
-  border: 2px solid rgba(124,58,237,0.12);
-  border-top-color: #7c3aed;
+  border: 2px solid rgba(91,79,247,0.12);
+  border-top-color: #5B4FF7;
   border-radius: 50%;
   width: 32px; height: 32px;
   animation: spin 0.7s linear infinite;

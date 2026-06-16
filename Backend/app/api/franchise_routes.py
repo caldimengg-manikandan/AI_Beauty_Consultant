@@ -31,6 +31,7 @@ def mock_secondary_branch(owner_id: str, primary_salon: dict):
     if existing: return
     
     new_branch = {
+        "id": str(uuid.uuid4()),
         "owner_user_id": owner_id,
         "name": branch_name,
         "address": "123 Business District",

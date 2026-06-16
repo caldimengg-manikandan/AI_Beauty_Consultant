@@ -99,8 +99,8 @@ const AdminDashboard = () => {
     };
 
     if (loading) return (
-        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="flex items-center justify-center h-[calc(100vh-200px)]" role="status" aria-label="Loading">
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-100" style={{ borderTopColor: '#5B4FF7' }} />
         </div>
     );
 
@@ -116,7 +116,7 @@ const AdminDashboard = () => {
                         <Activity size={18} />
                         <span>Audit Logs</span>
                     </button>
-                    <button className="flex items-center space-x-2 bg-purple-600 px-4 py-2 rounded-xl text-white font-bold shadow-lg shadow-purple-500/20 hover:bg-purple-700 transition-all">
+                    <button className="flex items-center space-x-2 px-4 py-2 rounded-xl text-white font-bold shadow-sm transition-all hover:opacity-90" style={{ background: '#5B4FF7' }}>
                         <BarChart3 size={18} />
                         <span>Full Report</span>
                     </button>
@@ -156,18 +156,18 @@ const AdminDashboard = () => {
             </div>
 
             {/* View Toggle Tabs */}
-            <div className="flex gap-2 border-b border-slate-200 pb-2">
+            <div className="flex gap-1 border-b border-slate-200 pb-px">
                 <button 
                   onClick={() => setActiveTab('users')} 
-                  className={`px-6 py-2.5 rounded-t-xl font-bold transition-colors ${activeTab === 'users' ? 'bg-white text-indigo-600 border-t border-x border-slate-200' : 'text-slate-500 hover:text-slate-800'}`}>
+                  className={`px-5 py-2.5 text-[13px] font-semibold transition-colors border-b-2 -mb-px focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5B4FF7]/40 rounded-t ${activeTab === 'users' ? 'text-[#5B4FF7] border-[#5B4FF7] bg-white' : 'text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300'}`}>
                   Member Directory
                 </button>
                 <button 
                   onClick={() => setActiveTab('support')} 
-                  className={`px-6 py-2.5 rounded-t-xl font-bold transition-colors ${activeTab === 'support' ? 'bg-white text-indigo-600 border-t border-x border-slate-200' : 'text-slate-500 hover:text-slate-800 flex items-center gap-2'}`}>
+                  className={`flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold transition-colors border-b-2 -mb-px focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5B4FF7]/40 rounded-t ${activeTab === 'support' ? 'text-[#5B4FF7] border-[#5B4FF7] bg-white' : 'text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300'}`}>
                   Support Tickets
                   {tickets.filter(t => t.status === 'open').length > 0 && (
-                    <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">{tickets.filter(t => t.status === 'open').length}</span>
+                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">{tickets.filter(t => t.status === 'open').length}</span>
                   )}
                 </button>
             </div>
@@ -183,7 +183,10 @@ const AdminDashboard = () => {
                             <input
                                 type="text"
                                 placeholder="Search by email..."
-                                className="pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                                className="pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[13px] focus:outline-none focus:ring-2 transition-all"
+                                style={{ '--tw-ring-color': 'rgba(91,79,247,0.25)' }}
+                                onFocus={e => { e.target.style.borderColor = 'rgba(91,79,247,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(91,79,247,0.12)'; }}
+                                onBlur={e => { e.target.style.borderColor = ''; e.target.style.boxShadow = ''; }}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
@@ -207,10 +210,10 @@ const AdminDashboard = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <select
-                                                className={`text-xs font-black uppercase px-2 py-1 rounded-full border-0 focus:ring-2 focus:ring-purple-500 cursor-pointer
-                                                ${user.role === 'admin' ? 'bg-red-100 text-red-700' :
-                                                        user.role === 'expert' ? 'bg-blue-100 text-blue-700' :
-                                                            user.role === 'premium' ? 'bg-amber-100 text-amber-700' :
+                                                className={`text-[11px] font-bold px-2.5 py-1 rounded-full border-0 focus:ring-2 focus:ring-[#5B4FF7]/40 cursor-pointer capitalize
+                                                ${user.role === 'admin' ? 'bg-red-50 text-red-700' :
+                                                        user.role === 'expert' ? 'bg-blue-50 text-blue-700' :
+                                                            user.role === 'premium' ? 'bg-amber-50 text-amber-700' :
                                                                 'bg-slate-100 text-slate-600'}`}
                                                 value={user.role}
                                                 onChange={(e) => handleRoleChange(user.email, e.target.value)}
@@ -295,16 +298,18 @@ const AdminDashboard = () => {
 
                 {/* Console / Broadcast Area */}
                 <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 text-white shadow-xl">
-                        <div className="flex items-center space-x-3 mb-6">
-                            <div className="bg-white/20 p-2 rounded-xl">
-                                <Megaphone size={20} />
+                    <div className="bg-slate-900 rounded-2xl p-6 text-white border border-slate-700/50">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
+                                <Megaphone size={16} />
                             </div>
-                            <h3 className="text-lg font-bold">Global Broadcast</h3>
+                            <div>
+                                <h3 className="text-[14px] font-bold">Global Broadcast</h3>
+                                <p className="text-[11px] text-slate-400 mt-0.5">Send announcements to all members</p>
+                            </div>
                         </div>
-                        <p className="text-indigo-100 text-sm mb-4">Send a maintenance alert or announcement to all active platform members.</p>
                         <textarea
-                            className="w-full bg-indigo-500/30 border border-white/20 rounded-2xl p-4 text-sm placeholder:text-indigo-200 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all mb-4 h-32"
+                            className="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 text-[13px] text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all mb-4 h-28 resize-none"
                             placeholder="Type your message here..."
                             value={announcement}
                             onChange={(e) => setAnnouncement(e.target.value)}
@@ -312,29 +317,29 @@ const AdminDashboard = () => {
                         <button
                             onClick={handleBroadcast}
                             disabled={broadcasting || !announcement}
-                            className="w-full bg-white text-indigo-600 py-3 rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50"
+                            className="w-full bg-white text-slate-900 py-2.5 rounded-xl font-bold text-[13px] hover:bg-slate-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             {broadcasting ? "Broadcasting..." : "Confirm Broadcast"}
                         </button>
                     </div>
 
-                    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Face Shape Trends</h3>
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                        <h3 className="text-[14px] font-bold text-slate-800 mb-4">Face Shape Trends</h3>
                         <div className="space-y-4">
                             {stats?.face_shape_trends?.map((trend, idx) => (
-                                <div key={typeof trend._id === 'string' ? trend._id : `trend-${idx}`} className="space-y-1">
-                                    <div className="flex justify-between text-sm font-bold">
+                                <div key={typeof trend._id === 'string' ? trend._id : `trend-${idx}`} className="space-y-1.5">
+                                    <div className="flex justify-between text-[12px] font-semibold">
                                         <span className="text-slate-600">
                                             {typeof trend._id === 'string' ? trend._id :
                                                 (trend._id?.value || (Array.isArray(trend._id) ? trend._id[0] : "Unknown"))}
                                         </span>
                                         <span className="text-slate-900">{trend.count}</span>
                                     </div>
-                                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                                         <div
-                                            className="h-full bg-purple-500 rounded-full transition-all duration-1000"
-                                            style={{ width: `${(trend.count / (stats?.total_analyses || 1)) * 100}%` }}
-                                        ></div>
+                                            className="h-full rounded-full transition-all duration-700"
+                                            style={{ width: `${(trend.count / (stats?.total_analyses || 1)) * 100}%`, background: '#5B4FF7' }}
+                                        />
                                     </div>
                                 </div>
                             ))}
@@ -347,16 +352,16 @@ const AdminDashboard = () => {
 };
 
 const StatsCard = ({ title, value, icon, trend, color }) => (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200">
         <div className="flex justify-between items-start mb-4">
-            <div className={`p-3 rounded-2xl ${color}`}>
+            <div className={`p-2.5 rounded-xl ${color}`}>
                 {icon}
             </div>
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">{trend}</span>
+            <span className="text-[11px] font-semibold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">{trend}</span>
         </div>
-        <div className="space-y-1">
-            <h3 className="text-slate-500 font-bold text-sm tracking-wide uppercase">{title}</h3>
-            <div className="text-3xl font-black text-slate-900">{value}</div>
+        <div className="space-y-0.5">
+            <h3 className="text-slate-400 font-semibold text-[11px] tracking-wider uppercase">{title}</h3>
+            <div className="text-2xl font-black text-slate-900">{value}</div>
         </div>
     </div>
 );

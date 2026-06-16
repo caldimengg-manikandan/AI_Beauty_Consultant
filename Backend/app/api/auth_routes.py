@@ -198,8 +198,22 @@ def login(user: LoginRequest):
         if not db_user or not verify_password(user.password.strip(), db_user.get("password", "")):
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
-        if not db_user.get("email_verified", True):
-            raise HTTPException(status_code=403, detail="Email not verified. Please check your inbox for the verification code.")
+        # Block login only when email_verified is explicitly False AND an OTP is still pending.
+        # Accounts created before Phase 1 have no email_verified field → default True → allowed.
+        # If OTP expired/cleared but email_verified is still False, auto-mark verified so user
+        # is never permanently locked out.
+        if db_user.get("email_verified") is False:
+            if db_user.get("verification_otp"):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Email not verified. Please check your inbox for the verification code."
+                )
+            else:
+                # OTP gone (expired or cleared) — unlock the account
+                user_collection.update_one(
+                    {"email": db_user["email"]},
+                    {"$set": {"email_verified": True}}
+                )
 
         user_role = db_user.get("role", "user")
         account_type = db_user.get("account_type", "customer")
@@ -360,14 +374,14 @@ def resend_otp(req: ResendOTPRequest):
         expiry = datetime.utcnow() + timedelta(minutes=15)
         user_collection.update_one(
             {"email": req.email.strip()},
-            {"$set": {"verification_otp": otp, "otp_expiry": expiry}},
+            {"$set": {"verification_otp": otp, "otp_expiry": expiry}}
         )
         try:
-            send_otp_email(user["email"], otp)
+            send_otp_email(req.email.strip(), otp)
         except Exception:
-            _log.warning("OTP email delivery failed on resend (non-fatal)")
+            _log.warning("OTP email delivery failed during resend (non-fatal)")
 
-        return {"message": "Verification code resent successfully"}
+        return {"message": "A new verification code has been sent to your email."}
     except HTTPException:
         raise
     except Exception:

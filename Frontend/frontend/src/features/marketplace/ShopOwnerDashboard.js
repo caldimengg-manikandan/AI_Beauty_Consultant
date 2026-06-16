@@ -4,7 +4,7 @@ import {
   FaEdit, FaClock, FaUsers, FaChartBar, FaToggleOn, FaToggleOff,
   FaPhone, FaMapMarkerAlt, FaPlus, FaTrash, FaSave
 } from 'react-icons/fa';
-import { getMySalon, registerSalon, updateMySalon, getOwnerBookings, updateBookingStatus } from '../../services/salonApi';
+import { getMySalon, registerSalon, updateMySalon, getOwnerBookings, updateBookingStatus, uploadGalleryImages } from '../../services/salonApi';
 import { toast } from 'react-toastify';
 
 // ── Core B2B Modules ──────────────────────────────────────────────────────────
@@ -98,8 +98,6 @@ const RegisterForm = ({ onSuccess }) => {
         const formData = new FormData();
         selectedFiles.forEach(file => formData.append('images', file));
         
-        // Import uploadGalleryImages dynamically or ensure it's imported at the top
-        const { uploadGalleryImages } = require('../../services/salonApi');
         const res = await uploadGalleryImages(formData);
         
         if (res?.gallery_urls?.length > 0) {
@@ -246,8 +244,12 @@ const SECTION_TO_TAB = {
   campaigns: 'marketing',
   coupons: 'marketing',
   insights: 'insights',
-  forms: 'forms',
+  forms: 'developer',   // Custom Forms lives inside the Developer API tab
   webhooks: 'developer',
+  hr: 'staff',
+  inventory: 'profile',
+  invoices: 'profile',
+  'supply-chain': 'profile',
 };
 
 const ShopOwnerDashboard = ({ section }) => {
@@ -259,6 +261,14 @@ const ShopOwnerDashboard = ({ section }) => {
   const [activeTab, setActiveTab] = useState(SECTION_TO_TAB[section] || 'bookings');
   const [filterDate, setFilterDate] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+
+  // Sync activeTab when section prop changes (React doesn't remount when navigating
+  // between sibling routes that render the same component, so useState init won't re-run)
+  useEffect(() => {
+    if (section !== undefined) {
+      setActiveTab(SECTION_TO_TAB[section] || 'bookings');
+    }
+  }, [section]);
 
   const loadData = async () => {
     setLoading(true);
@@ -537,7 +547,7 @@ const ShopOwnerDashboard = ({ section }) => {
       {activeTab === 'staff'     && <StaffManagement />}
 
       {/* Extended Enterprise Modules */}
-      {activeTab === 'marketing' && <MarketingTools />}
+      {activeTab === 'marketing' && <MarketingTools initialTab={section === 'coupons' ? 'coupons' : 'campaigns'} />}
       {activeTab === 'developer' && <DeveloperAPI />}
       {activeTab === 'clients'   && <ClientIntelligence />}
       {activeTab === 'noshow'    && <NoShowPredictor />}

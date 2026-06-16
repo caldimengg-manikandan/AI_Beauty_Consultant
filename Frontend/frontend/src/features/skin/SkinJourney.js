@@ -304,7 +304,8 @@ export default function SkinJourney() {
     setLoading(true);
     setError(null);
     try {
-      const history = await getHistory();
+      const historyRes = await getHistory();
+      const history = Array.isArray(historyRes) ? historyRes : (historyRes.analyses || []);
       if (!Array.isArray(history)) throw new Error('Invalid response');
 
       const entries = history.map((h, i) => ({

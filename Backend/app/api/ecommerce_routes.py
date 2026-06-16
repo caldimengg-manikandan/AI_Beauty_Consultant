@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 from bson import ObjectId
+import math
 
 from app.auth.jwt_handler import get_current_user
 from app.mongodb.collections import inventory_collection, ecommerce_carts_collection, ecommerce_orders_collection, salons_collection
@@ -35,12 +36,42 @@ def serialize_doc(doc):
 
 # ── Products (Retail Inventory) ───────────────────────────────────────────────
 @router.get("/products")
-async def get_products():
+async def get_products(
+    page: int = 1,
+    limit: int = 12,
+    search: Optional[str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    sort_by: str = "latest"
+):
     """Get all retail products available across salons."""
-    products_cursor = inventory_collection.find({
+    query = {
         "category": "Retail",
         "quantity_in_stock": {"$gt": 0}
-    })
+    }
+    
+    if search:
+        query["item_name"] = {"$regex": search, "$options": "i"}
+        
+    if min_price is not None or max_price is not None:
+        price_query = {}
+        if min_price is not None:
+            price_query["$gte"] = min_price
+        if max_price is not None:
+            price_query["$lte"] = max_price
+        query["unit_price"] = price_query
+
+    # Sorting
+    sort_query = [("_id", -1)] # default latest
+    if sort_by == "price_asc":
+        sort_query = [("unit_price", 1)]
+    elif sort_by == "price_desc":
+        sort_query = [("unit_price", -1)]
+
+    total_count = inventory_collection.count_documents(query)
+    
+    products_cursor = inventory_collection.find(query).sort(sort_query).skip((page - 1) * limit).limit(limit)
+    
     products = []
     for p in products_cursor:
         p_dict = serialize_doc(p)
@@ -55,7 +86,13 @@ async def get_products():
         else:
             p_dict["vendor_name"] = "HQ"
         products.append(p_dict)
-    return products
+        
+    return {
+        "products": products,
+        "total": total_count,
+        "page": page,
+        "pages": math.ceil(total_count / limit) if limit else 1
+    }
 
 # ── Cart Management ───────────────────────────────────────────────────────────
 @router.get("/cart")
