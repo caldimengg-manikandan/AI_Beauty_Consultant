@@ -21,6 +21,6 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8000 ^| findstr LISTENING') 
 echo Starting FastAPI backend on http://localhost:8000 ...
 echo.
 
-venv\Scripts\python.exe run.py
+.venv\Scripts\python.exe run.py
 
 pause

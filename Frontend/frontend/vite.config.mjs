@@ -4,6 +4,7 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+    base: '/AI_Beauty/',
     plugins: [react()],
     resolve: {
         alias: {

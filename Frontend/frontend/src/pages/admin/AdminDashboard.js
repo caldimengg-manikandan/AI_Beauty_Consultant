@@ -37,11 +37,11 @@ const AdminDashboard = () => {
             const [statsData, usersData, ticketsData] = await Promise.all([
                 getAdminStats(),
                 getAllUsers(),
-                getSupportTickets().catch(() => [])
+                getSupportTickets().catch(() => ({ tickets: [] }))
             ]);
             setStats(statsData);
             setUsers(usersData);
-            setTickets(ticketsData);
+            setTickets(ticketsData?.tickets || []);
         } catch (error) {
             console.error("Failed to fetch admin data", error);
         } finally {
