@@ -1,3 +1,7 @@
+import logging
+_log = logging.getLogger("beauty_api.ingredient")
+
+from app.utils.upload_validator import validate_image_upload
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from app.auth.jwt_handler import get_current_user
 from pydantic import BaseModel
@@ -31,6 +35,7 @@ async def ocr_ingredients(image: UploadFile = File(...), current_user: dict = De
     """
     Offline OCR using Tesseract. No API keys or quotas. Completely free.
     """
+    await validate_image_upload(image)
     try:
         import pytesseract
         from PIL import Image, ImageFilter, ImageEnhance
@@ -41,7 +46,7 @@ async def ocr_ingredients(image: UploadFile = File(...), current_user: dict = De
         else:
             raise Exception("Tesseract not found. Please install from: https://github.com/UB-Mannheim/tesseract/wiki")
 
-        print("[OCR] Running Tesseract on uploaded label..."
+        _log.debug("[OCR] Running Tesseract on uploaded label..."
 )
         contents = await image.read()
 
@@ -70,7 +75,7 @@ async def ocr_ingredients(image: UploadFile = File(...), current_user: dict = De
         # --- RUN OCR ---
         # PSM 6 = Assume single uniform block of text (best for ingredient lists)
         raw_text = pytesseract.image_to_string(img, config='--psm 6 --oem 3')
-        print(f"[OCR] Raw text:\n{raw_text}")
+        _log.debug("[OCR] Raw text: %s", raw_text)
 
         if not raw_text.strip():
             return {
@@ -90,7 +95,7 @@ async def ocr_ingredients(image: UploadFile = File(...), current_user: dict = De
             ingredient_lines.append(line)
 
         extracted_text = ', '.join(ingredient_lines)
-        print(f"[OCR] Cleaned text: {extracted_text}")
+        _log.debug("[OCR] Cleaned text: %s", extracted_text)
 
         if not extracted_text.strip():
             return {"success": False, "message": "No readable text found. Please try a clearer photo."}
@@ -105,8 +110,8 @@ async def ocr_ingredients(image: UploadFile = File(...), current_user: dict = De
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[OCR] Error: {e}")
-        raise HTTPException(status_code=500, detail=f"OCR Error: {str(e)}")
+        _log.error("OCR processing error", exc_info=True)
+        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
 
 @router.post("/scan")

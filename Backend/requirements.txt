@@ -21,3 +21,6 @@ reportlab>=4.1.0
 psutil>=5.9.0
 httpx>=0.27.0
 razorpay>=1.4.1
+
+# ── Redis (optional — for multi-worker rate limiting) ─────────────────────────
+redis>=5.0.0  # optional: install for production multi-worker rate limiting

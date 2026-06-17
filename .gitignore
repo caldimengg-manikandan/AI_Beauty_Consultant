@@ -109,3 +109,7 @@ tmp/
 Backend/tf_gpu/
 Backend/venv_311/
 Backend/venv_train/
+# Environment secrets
+.env
+*.env
+!.env.example

@@ -71,7 +71,7 @@ export default function CartDrawer({ open, onClose }) {
               <p className="text-white/70 text-xs">{cartCount} item{cartCount !== 1 ? 's' : ''}</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
+          <button onClick={onClose} aria-label="Close cart" className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
             <FiX size={16} />
           </button>
         </div>
@@ -129,16 +129,16 @@ export default function CartDrawer({ open, onClose }) {
                         </p>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Decrease quantity"
                           className="w-7 h-7 rounded-lg bg-slate-200 flex items-center justify-center hover:bg-slate-300 transition-colors">
                           <FiMinus size={12} />
                         </button>
                         <span className="w-6 text-center text-sm font-bold">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="Increase quantity"
                           className="w-7 h-7 rounded-lg bg-slate-200 flex items-center justify-center hover:bg-slate-300 transition-colors">
                           <FiPlus size={12} />
                         </button>
-                        <button onClick={() => removeFromCart(item.id)}
+                        <button onClick={() => removeFromCart(item.id)} aria-label="Remove item from cart"
                           className="w-7 h-7 rounded-lg bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-colors ml-1">
                           <FiTrash2 size={12} />
                         </button>

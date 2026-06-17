@@ -98,7 +98,7 @@ export default function ChatWidget() {
                 </p>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded-full transition-colors">
+            <button onClick={() => setIsOpen(false)} aria-label="Minimize chat" className="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded-full transition-colors">
               <FiMinimize2 size={18} />
             </button>
           </div>

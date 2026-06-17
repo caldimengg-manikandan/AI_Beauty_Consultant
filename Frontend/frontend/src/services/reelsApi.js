@@ -1,9 +1,11 @@
 import api from './api';
 
-export const getReelsFeed = async (category) => {
-  const params = category ? { category } : {};
+export const getReelsFeed = async (category, page = 1, limit = 20) => {
+  const params = { page, limit, ...(category ? { category } : {}) };
   const res = await api.get('/api/reels/feed', { params });
-  return res.data;
+  // Backend returns paginated envelope { reels, total, page, pages }
+  // Extract the array so callers don't have to unwrap it
+  return Array.isArray(res.data) ? res.data : (res.data.reels ?? []);
 };
 
 export const getOwnerReels = async () => {

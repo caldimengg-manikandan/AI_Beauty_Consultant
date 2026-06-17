@@ -344,7 +344,7 @@ const ProductCatalog = () => {
                                                 <div className="space-y-1">
                                                     <p className="text-[9px] font-black text-indigo-500 uppercase">{p.brand}</p>
                                                     <p className="text-sm font-black text-slate-900 line-clamp-2">{p.name}</p>
-                                                    <button onClick={() => toggleCompare(p)} className="text-slate-300 hover:text-rose-400 transition-all text-xs"><FaTimes /></button>
+                                                    <button onClick={() => toggleCompare(p)} aria-label="Remove from comparison" className="text-slate-300 hover:text-rose-400 transition-all text-xs"><FaTimes /></button>
                                                 </div>
                                             </th>
                                         ))}

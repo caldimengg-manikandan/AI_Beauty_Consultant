@@ -4,7 +4,7 @@ import {
   FaEdit, FaClock, FaUsers, FaChartBar, FaToggleOn, FaToggleOff,
   FaPhone, FaMapMarkerAlt, FaPlus, FaTrash, FaSave
 } from 'react-icons/fa';
-import { getMySalon, registerSalon, updateMySalon, getOwnerBookings, updateBookingStatus } from '../../services/salonApi';
+import { getMySalon, registerSalon, updateMySalon, getOwnerBookings, updateBookingStatus, uploadGalleryImages } from '../../services/salonApi';
 import { toast } from 'react-toastify';
 
 // ── Core B2B Modules ──────────────────────────────────────────────────────────
@@ -98,8 +98,6 @@ const RegisterForm = ({ onSuccess }) => {
         const formData = new FormData();
         selectedFiles.forEach(file => formData.append('images', file));
         
-        // Import uploadGalleryImages dynamically or ensure it's imported at the top
-        const { uploadGalleryImages } = require('../../services/salonApi');
         const res = await uploadGalleryImages(formData);
         
         if (res?.gallery_urls?.length > 0) {
@@ -198,7 +196,7 @@ const RegisterForm = ({ onSuccess }) => {
             {previewUrls.map((url, i) => (
               <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden shadow-sm group">
                 <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover" />
-                <button type="button" onClick={() => removeFile(i)} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm"><FaTimes /></button>
+                <button type="button" onClick={() => removeFile(i)} aria-label={`Remove image ${i + 1}`} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow-sm"><FaTimes /></button>
                 {i === 0 && <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5">COVER</span>}
               </div>
             ))}
@@ -246,8 +244,12 @@ const SECTION_TO_TAB = {
   campaigns: 'marketing',
   coupons: 'marketing',
   insights: 'insights',
-  forms: 'forms',
+  forms: 'developer',   // Custom Forms lives inside the Developer API tab
   webhooks: 'developer',
+  hr: 'staff',
+  inventory: 'profile',
+  invoices: 'profile',
+  'supply-chain': 'profile',
 };
 
 const ShopOwnerDashboard = ({ section }) => {
@@ -259,6 +261,14 @@ const ShopOwnerDashboard = ({ section }) => {
   const [activeTab, setActiveTab] = useState(SECTION_TO_TAB[section] || 'bookings');
   const [filterDate, setFilterDate] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+
+  // Sync activeTab when section prop changes (React doesn't remount when navigating
+  // between sibling routes that render the same component, so useState init won't re-run)
+  useEffect(() => {
+    if (section !== undefined) {
+      setActiveTab(SECTION_TO_TAB[section] || 'bookings');
+    }
+  }, [section]);
 
   const loadData = async () => {
     setLoading(true);
@@ -537,7 +547,7 @@ const ShopOwnerDashboard = ({ section }) => {
       {activeTab === 'staff'     && <StaffManagement />}
 
       {/* Extended Enterprise Modules */}
-      {activeTab === 'marketing' && <MarketingTools />}
+      {activeTab === 'marketing' && <MarketingTools initialTab={section === 'coupons' ? 'coupons' : 'campaigns'} />}
       {activeTab === 'developer' && <DeveloperAPI />}
       {activeTab === 'clients'   && <ClientIntelligence />}
       {activeTab === 'noshow'    && <NoShowPredictor />}

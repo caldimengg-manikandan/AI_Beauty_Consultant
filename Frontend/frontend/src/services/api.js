@@ -55,10 +55,9 @@ export const analyzeImage = async (formData) => {
   return res.data;
 };
 
-// HISTORY
 export const getHistory = async () => {
   const res = await api.get("/history");
-  return res.data;
+  return Array.isArray(res.data) ? res.data : (res.data.history ?? []);
 };
 
 // CHAT

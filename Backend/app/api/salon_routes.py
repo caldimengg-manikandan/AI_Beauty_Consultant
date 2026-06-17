@@ -1,3 +1,7 @@
+import logging
+_log = logging.getLogger("beauty_api.salon")
+
+from app.utils.upload_validator import validate_image_upload
 from fastapi import APIRouter, HTTPException, Depends, Query, File, UploadFile
 from typing import List
 from app.schemas.salon import SalonCreate, SalonUpdate, ReviewCreate, SlotBookingCreate
@@ -261,11 +265,23 @@ async def google_place_photo(photo_ref: str = Query(...), max_width: int = Query
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/my-slot-bookings")
-async def my_slot_bookings(current_user: dict = Depends(get_current_user)):
-    bookings = list(slot_bookings_collection.find(
-        {"user_id": current_user.get("sub")}
-    ).sort("created_at", -1))
-    return [_strip_id(b) for b in bookings]
+async def my_slot_bookings(
+    current_user: dict = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, le=100),
+):
+    query = {"user_id": current_user.get("sub")}
+    total = slot_bookings_collection.count_documents(query)
+    skip = (page - 1) * limit
+    bookings = list(
+        slot_bookings_collection.find(query).sort("created_at", -1).skip(skip).limit(limit)
+    )
+    return {
+        "bookings": [_strip_id(b) for b in bookings],
+        "total": total,
+        "page": page,
+        "pages": -(-total // limit),
+    }
 
 
 @router.patch("/my-slot-bookings/{booking_id}/cancel")
@@ -333,6 +349,8 @@ async def get_owner_bookings(
     current_user: dict = Depends(get_current_user),
     date: str = Query(None),
     status: str = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, le=200),
 ):
     salon = salons_collection.find_one({"owner_user_id": current_user.get("sub")})
     if not salon:
@@ -342,8 +360,17 @@ async def get_owner_bookings(
         query["appointment_date"] = date
     if status:
         query["status"] = status
-    bookings = list(slot_bookings_collection.find(query).sort("appointment_date", 1))
-    return [_strip_id(b) for b in bookings]
+    total = slot_bookings_collection.count_documents(query)
+    skip = (page - 1) * limit
+    bookings = list(
+        slot_bookings_collection.find(query).sort("appointment_date", 1).skip(skip).limit(limit)
+    )
+    return {
+        "bookings": [_strip_id(b) for b in bookings],
+        "total": total,
+        "page": page,
+        "pages": -(-total // limit),
+    }
 
 
 @router.patch("/owner/bookings/{booking_id}/status")
@@ -410,9 +437,23 @@ async def get_salon(salon_id: str):
 
 
 @router.get("/{salon_id}/reviews")
-async def get_salon_reviews(salon_id: str):
-    reviews = list(reviews_collection.find({"salon_id": salon_id}).sort("created_at", -1))
-    return [_strip_id(r) for r in reviews]
+async def get_salon_reviews(
+    salon_id: str,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, le=100),
+):
+    query = {"salon_id": salon_id}
+    total = reviews_collection.count_documents(query)
+    skip = (page - 1) * limit
+    reviews = list(
+        reviews_collection.find(query).sort("created_at", -1).skip(skip).limit(limit)
+    )
+    return {
+        "reviews": [_strip_id(r) for r in reviews],
+        "total": total,
+        "page": page,
+        "pages": -(-total // limit),
+    }
 
 
 @router.get("/{salon_id}/available-slots")
@@ -734,6 +775,7 @@ async def upload_salon_gallery(
         file_path = os.path.join(upload_dir, filename)
         
         with open(file_path, "wb") as buffer:
+            await validate_image_upload(image)
             content = await image.read()
             buffer.write(content)
             

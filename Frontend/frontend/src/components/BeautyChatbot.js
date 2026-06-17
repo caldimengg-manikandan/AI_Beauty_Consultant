@@ -234,7 +234,7 @@ const BeautyChatbot = () => {
                 <p className="text-[10px] text-indigo-200">AI-powered · Always available</p>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white transition-colors">
+            <button onClick={() => setOpen(false)} aria-label="Close chat" className="text-white/70 hover:text-white transition-colors">
               <FaTimes />
             </button>
           </div>

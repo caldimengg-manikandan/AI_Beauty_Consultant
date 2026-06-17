@@ -140,7 +140,7 @@ export default function RazorpayCheckout({
             <p className="text-white/70 text-xs font-bold uppercase tracking-widest">Confirm Payment</p>
             <h3 className="text-xl font-black mt-0.5">{salonName || 'Salon Booking'}</h3>
           </div>
-          <button onClick={onClose} className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
+          <button onClick={onClose} aria-label="Close payment dialog" className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
             <FiX size={16} />
           </button>
         </div>

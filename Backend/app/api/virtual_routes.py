@@ -1,3 +1,6 @@
+import logging
+_log = logging.getLogger("beauty_api.virtual")
+
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
@@ -87,8 +90,8 @@ async def virtual_tryon(request: TryOnRequest):
             "status": "success"
         }
     except Exception as e:
-        print(f"❌ Try-On API Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        _log.error("Virtual try-on error", exc_info=True)
+        raise HTTPException(status_code=500, detail="Virtual try-on service encountered an error. Please try again.")
 
 @router.post("/tryon/foundation-match")
 async def foundation_match(request: dict):
@@ -109,4 +112,5 @@ async def foundation_match(request: dict):
         match_data = detect_intelligent_skin_tone(img, faces[0]["landmarks"])
         return {"status": "success", "data": match_data}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        import logging; logging.getLogger("beauty_api.virtual").error("Skin tone detection error", exc_info=True)
+        return {"status": "error", "message": "Skin tone detection failed."}

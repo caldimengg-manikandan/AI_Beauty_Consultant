@@ -91,6 +91,11 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       try {
         const decoded = jwtDecode(token);
+        if (!decoded || typeof decoded !== "object") {
+          // Malformed payload — clear and bail
+          logout();
+          return;
+        }
         if (decoded.exp && decoded.exp * 1000 < Date.now()) {
           logout();
           return;
@@ -98,11 +103,14 @@ export const AuthProvider = ({ children }) => {
         setUser(decoded);
         api.get("/api/onboarding/profile")
           .then(res => setProfile(res.data?.profile || res.data))
-          .catch(e => console.error("Failed to fetch profile", e));
+          .catch(() => {
+            // Profile fetch failed (e.g. token signed with old secret) — silently clear token
+            logout();
+          });
       } catch (error) {
-        console.error("Failed to decode token:", error);
-        setUser(null);
-        setProfile(null);
+        // jwtDecode threw (malformed/invalid token) — clear it so the app doesn't get stuck
+        console.warn("Clearing invalid token from storage:", error?.message);
+        logout();
       }
     } else {
       setUser(null);

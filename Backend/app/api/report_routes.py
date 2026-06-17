@@ -1,3 +1,6 @@
+import logging
+_log = logging.getLogger("beauty_api.report")
+
 """
 PDF Report Generation API Route
 Generates a professional beauty analysis report as a PDF
@@ -362,8 +365,8 @@ async def download_report(
         pdf_bytes = generate_pdf_report(analysis, user_email)
     except Exception as e:
         import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+        _log.exception("Unhandled error")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
     filename = f"beauty_report_{analysis['id'][:8]}.pdf"
 
@@ -397,8 +400,8 @@ async def download_latest_report(current_user: dict = Depends(get_current_user))
         pdf_bytes = generate_pdf_report(analysis, user_email)
     except Exception as e:
         import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+        _log.exception("Unhandled error")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
     filename = f"beauty_report_latest.pdf"
     return StreamingResponse(
@@ -426,8 +429,8 @@ async def download_demo_report(
         pdf_bytes = generate_pdf_report(analysis, user_email)
     except Exception as e:
         import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+        _log.exception("Unhandled error")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
     filename = "beauty_report_demo.pdf"
     return StreamingResponse(

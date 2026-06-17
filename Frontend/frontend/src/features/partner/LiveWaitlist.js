@@ -41,7 +41,7 @@ export default function LiveWaitlist({ salonId }) {
     wsRef.current = new WebSocket(`${wsProtocol}//${wsHost}/api/waitlist/ws/${activeSalonId}`);
 
 
-    wsRef.current.onopen = () => console.log('WebSocket connected for Live Waitlist');
+    wsRef.current.onopen = () => { if (process.env.NODE_ENV === 'development') console.log('WebSocket connected for Live Waitlist'); };
     
     wsRef.current.onmessage = (event) => {
       try {

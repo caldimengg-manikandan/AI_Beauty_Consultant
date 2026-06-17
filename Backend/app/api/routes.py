@@ -1,4 +1,8 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
+import logging
+_log = logging.getLogger("beauty_api.analysis")
+
+from app.utils.upload_validator import validate_image_upload
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordBearer
 from app.utils.image_utils import read_image
 from app.pipeline.face_detection import detect_faces
@@ -44,6 +48,7 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
         print(f"⏱️ Usage check took: {time.time() - t_usage:.3f}s")
         
         t_read = time.time()
+        await validate_image_upload(image)
         img_bytes = await image.read()
         img = read_image(img_bytes)
         print(f"⏱️ Image read & decode took: {time.time() - t_read:.3f}s")
@@ -174,7 +179,7 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
             if weather_info and weather_info.get("advice"):
                  recommendations.append(f"\n🌍 **Environment Intelligence**: {weather_info['advice']}")
         except Exception as parallel_err:
-            print(f"⚠️ Parallel AI Error: {parallel_err}")
+            _log.warning("Parallel AI task error: %s", parallel_err)
             # Fallbacks if parallel execution fails
             weather_info = {}
             recommendations = []
@@ -273,18 +278,25 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
         }
     except Exception as e:
         import traceback
-        traceback.print_exc()
-        return {"error": f"Internal Server Error: {str(e)}"}
+        _log.exception("Unhandled error")
+        _log.exception("Analysis endpoint error")
+        return {"error": "An unexpected error occurred during analysis. Please try again."}
 
 @router.get("/history")
-async def get_history(current_user: dict = Depends(get_current_user)):
+async def get_history(
+    current_user: dict = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, le=100),
+):
     try:
         email = current_user.get("sub")
-        # Fetch last 20 records, sorted by date DESC
-        # Note: In pymongo, find() returns a cursor, we need to list() it.
-        history = list(analysis_collection.find({"user_email": email}).sort("created_at", -1).limit(20))
-        
-        # Convert ObjectId and DateTime to string
+        query = {"user_email": email}
+        total = analysis_collection.count_documents(query)
+        skip = (page - 1) * limit
+        history = list(
+            analysis_collection.find(query).sort("created_at", -1).skip(skip).limit(limit)
+        )
+        result = []
         for item in history:
             item["id"] = str(item["_id"])
             del item["_id"]
@@ -292,11 +304,16 @@ async def get_history(current_user: dict = Depends(get_current_user)):
                 item["date"] = item["created_at"].strftime("%Y-%m-%d")
                 item["time"] = item["created_at"].strftime("%H:%M")
                 del item["created_at"]
-                
-        return history
-    except Exception as e:
-        print(f"Error fetching history: {e}")
-        return []
+            result.append(item)
+        return {
+            "history": result,
+            "total": total,
+            "page": page,
+            "pages": -(-total // limit),
+        }
+    except Exception:
+        _log.exception("Error fetching analysis history")
+        return {"history": [], "total": 0, "page": page, "pages": 0}
 
 # --- AI CONSULTANT CHATBOT (LLM POWERED) ---
 from pydantic import BaseModel
@@ -432,7 +449,7 @@ async def chat_consultant(req: ChatRequest, current_user: dict = Depends(get_cur
                 print(f"⚠️ Model {model} failed: {response.status_code}")
                 
             except Exception as e:
-                print(f"⚠️ Model {model} error: {str(e)}")
+                _log.warning("Non-critical error in sub-step", exc_info=True)
                 continue
         
         print("⚠️ All OpenRouter models failed, using local fallback...")
@@ -445,6 +462,6 @@ async def chat_consultant(req: ChatRequest, current_user: dict = Depends(get_cur
         print(f"💬 Local Chatbot Response: {reply[:100]}...")
         return {"reply": reply}
     except Exception as e:
-        print(f"⚠️ Chatbot Error: {e}")
+        _log.error("Chatbot error", exc_info=True)
         return {"reply": "I'm here to help! Ask me about skincare, makeup, hairstyles, or our salon services. ✨"}
 
