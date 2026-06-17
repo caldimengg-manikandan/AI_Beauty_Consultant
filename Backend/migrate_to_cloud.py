@@ -1,13 +1,18 @@
 import os
 from pymongo import MongoClient
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # 1. Connect to your LOCAL database (the one with your 51 users)
 local_client = MongoClient("mongodb://localhost:27017")
 local_db = local_client["ai_beauty_db"]
 
 # 2. Connect to your NEW CLOUD database
-# We include tlsAllowInvalidCertificates=true to prevent the SSL error
-cloud_uri = "mongodb+srv://jasminedorathyvasantharaj_db_user:Jasmine1522@cluster0.llmmx89.mongodb.net/ai_beauty_db?tlsAllowInvalidCertificates=true"
+cloud_uri = os.getenv("MONGO_URI")
+if not cloud_uri:
+    print("Error: MONGO_URI is missing from your .env file!")
+    exit(1)
 cloud_client = MongoClient(cloud_uri)
 cloud_db = cloud_client["ai_beauty_db"]
 
