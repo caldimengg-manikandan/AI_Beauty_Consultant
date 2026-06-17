@@ -202,10 +202,10 @@ const ShopOwnerNav = ({ can }) => (
       {can("beauty_reels") && <NavItem to="/dashboard/reels"  icon={<FaVideo />}    label="Beauty Reels" badge="NEW" badgeColor="bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400" />}
     </NavSection>
 
-    <NavSection title="Developer" collapsible color="text-zinc-400">
+    {/* <NavSection title="Developer" collapsible color="text-zinc-400">
       {can("custom_forms") && <NavItem to="/dashboard/forms"    icon={<FaWpforms />}     label="Custom Forms" />}
       {can("webhooks_api") && <NavItem to="/dashboard/webhooks" icon={<FaNetworkWired />} label="Webhooks & API" />}
-    </NavSection>
+    </NavSection> */}
   </>
 );
 

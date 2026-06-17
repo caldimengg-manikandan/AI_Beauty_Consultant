@@ -83,7 +83,10 @@ export const createInvoice = (invoiceData) =>
   api.post('/api/invoices/create', invoiceData).then(r => r.data);
 
 export const getInvoices = (params = {}) =>
-  api.get('/api/invoices/', { params }).then(r => r.data);
+  api.get('/api/invoices/', { params }).then(r =>
+    // Backend returns paginated envelope { invoices, total, page }
+    Array.isArray(r.data) ? r.data : (r.data.invoices ?? [])
+  );
 
 export const getInvoice = (invoiceId) =>
   api.get(`/api/invoices/${invoiceId}`).then(r => r.data);
@@ -163,7 +166,10 @@ export const createTicket = (ticketData) =>
   api.post('/api/support/create', ticketData).then(r => r.data);
 
 export const getMyTickets = (params = {}) =>
-  api.get('/api/support/my-tickets', { params }).then(r => r.data);
+  api.get('/api/support/my-tickets', { params }).then(r =>
+    // Backend returns { tickets, total }
+    Array.isArray(r.data) ? r.data : (r.data.tickets ?? [])
+  );
 
 export const getTicket = (ticketId) =>
   api.get(`/api/support/${ticketId}`).then(r => r.data);

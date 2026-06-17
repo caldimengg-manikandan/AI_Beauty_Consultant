@@ -244,8 +244,8 @@ const SECTION_TO_TAB = {
   campaigns: 'marketing',
   coupons: 'marketing',
   insights: 'insights',
-  forms: 'developer',   // Custom Forms lives inside the Developer API tab
-  webhooks: 'developer',
+  // forms: 'developer',   // Custom Forms lives inside the Developer API tab
+  // webhooks: 'developer',
   hr: 'staff',
   inventory: 'profile',
   invoices: 'profile',
@@ -548,7 +548,7 @@ const ShopOwnerDashboard = ({ section }) => {
 
       {/* Extended Enterprise Modules */}
       {activeTab === 'marketing' && <MarketingTools initialTab={section === 'coupons' ? 'coupons' : 'campaigns'} />}
-      {activeTab === 'developer' && <DeveloperAPI />}
+      {activeTab === 'developer' && <DeveloperAPI section={section} />}
       {activeTab === 'clients'   && <ClientIntelligence />}
       {activeTab === 'noshow'    && <NoShowPredictor />}
 

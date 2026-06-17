@@ -4,6 +4,7 @@
  * Helpers for screen-reader text, focus management, and ARIA patterns
  * used across the AI Beauty Consultant application.
  */
+import { useRef, useEffect } from "react";
 
 /**
  * VisuallyHidden — renders text only visible to screen readers.
@@ -35,7 +36,6 @@ export function VisuallyHidden({ children }) {
  *        <div ref={ref}>...</div>
  */
 export function useFocusTrap(isActive) {
-  const { useRef, useEffect } = require("react");
   const containerRef = useRef(null);
 
   useEffect(() => {

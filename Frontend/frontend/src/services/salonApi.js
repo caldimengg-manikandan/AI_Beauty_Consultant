@@ -13,7 +13,8 @@ export const getSalon = async (salonId) => {
 
 export const getSalonReviews = async (salonId) => {
   const res = await api.get(`/api/salons/${salonId}/reviews`);
-  return res.data;
+  // Backend returns paginated envelope { reviews, total, page, pages }
+  return Array.isArray(res.data) ? res.data : (res.data.reviews ?? []);
 };
 
 export const getAvailableSlots = async (salonId, date) => {
@@ -63,7 +64,8 @@ export const toggleWishlist = async (salonId) => {
 
 export const getMyWishlist = async () => {
   const res = await api.get('/api/salons/my-wishlist');
-  return res.data;
+  // Backend returns { wishlist: [...] }
+  return Array.isArray(res.data) ? res.data : (res.data.wishlist ?? []);
 };
 
 // ─── Shop Owner ───────────────────────────────────────────────────────────────

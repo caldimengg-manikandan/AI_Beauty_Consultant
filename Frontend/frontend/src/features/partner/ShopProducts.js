@@ -23,7 +23,7 @@ const EMPTY_PRODUCT = {
 
 function ProductModal({ product, onSave, onClose, saving }) {
   const [form, setForm] = useState(product
-    ? { ...product, price: String(product.price || ""), cost_price: String(product.cost_price || ""), quantity: String(product.quantity || "0"), low_stock_threshold: String(product.low_stock_threshold || "10") }
+    ? { ...product, price: String(product.unit_price || product.price || ""), cost_price: String(product.cost_price || ""), quantity: String(product.quantity || "0"), low_stock_threshold: String(product.low_stock_threshold || "10") }
     : EMPTY_PRODUCT
   );
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -238,7 +238,8 @@ export default function ShopProducts() {
         name: form.name.trim(),
         brand: form.brand?.trim() || "",
         category: form.category,
-        price: parseFloat(form.price) || 0,
+        unit_price: parseFloat(form.price) || 0,
+        selling_price: parseFloat(form.price) || 0,
         cost_price: parseFloat(form.cost_price) || 0,
         quantity: isEdit ? parseInt(form.quantity) : parseInt(form.quantity) || 0,
         low_stock_threshold: parseInt(form.low_stock_threshold) || 10,
@@ -402,7 +403,7 @@ export default function ShopProducts() {
                         <td className="px-4 py-3">
                           <span className="px-2 py-0.5 bg-violet-50 text-violet-700 text-[10px] font-bold rounded-full">{p.category}</span>
                         </td>
-                        <td className="px-4 py-3 font-bold text-slate-800">₹{(p.price || 0).toLocaleString()}</td>
+                        <td className="px-4 py-3 font-bold text-slate-800">₹{(p.unit_price || p.price || 0).toLocaleString()}</td>
                         <td className="px-4 py-3">
                           <button onClick={() => setAdjustModal(p)} className="font-semibold text-slate-700 hover:text-violet-600 transition-colors underline decoration-dotted">
                             {p.quantity} {p.unit}

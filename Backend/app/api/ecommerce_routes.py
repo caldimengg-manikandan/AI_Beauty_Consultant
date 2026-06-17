@@ -45,13 +45,20 @@ async def get_products(
     sort_by: str = "latest"
 ):
     """Get all retail products available across salons."""
-    query = {
-        "category": "Retail",
-        "quantity_in_stock": {"$gt": 0}
+    base_query = {
+        "$or": [
+            {"category": "Retail", "quantity_in_stock": {"$gt": 0}},
+            {"is_active": True, "quantity": {"$gt": 0}}
+        ]
     }
     
     if search:
-        query["item_name"] = {"$regex": search, "$options": "i"}
+        base_query["$and"] = [
+            {"$or": [
+                {"item_name": {"$regex": search, "$options": "i"}},
+                {"name": {"$regex": search, "$options": "i"}}
+            ]}
+        ]
         
     if min_price is not None or max_price is not None:
         price_query = {}
@@ -59,7 +66,7 @@ async def get_products(
             price_query["$gte"] = min_price
         if max_price is not None:
             price_query["$lte"] = max_price
-        query["unit_price"] = price_query
+        base_query["unit_price"] = price_query
 
     # Sorting
     sort_query = [("_id", -1)] # default latest
@@ -68,13 +75,20 @@ async def get_products(
     elif sort_by == "price_desc":
         sort_query = [("unit_price", -1)]
 
-    total_count = inventory_collection.count_documents(query)
+    total_count = inventory_collection.count_documents(base_query)
     
-    products_cursor = inventory_collection.find(query).sort(sort_query).skip((page - 1) * limit).limit(limit)
+    products_cursor = inventory_collection.find(base_query).sort(sort_query).skip((page - 1) * limit).limit(limit)
     
     products = []
     for p in products_cursor:
         p_dict = serialize_doc(p)
+        
+        # Normalize fields for EcommerceStore
+        if "item_name" not in p_dict and "name" in p_dict:
+            p_dict["item_name"] = p_dict["name"]
+        if "quantity_in_stock" not in p_dict and "quantity" in p_dict:
+            p_dict["quantity_in_stock"] = p_dict["quantity"]
+            
         # Fetch salon info for vendor details
         salon_id = p_dict.get("salon_id")
         if salon_id:
@@ -109,6 +123,11 @@ async def get_cart(user: dict = Depends(get_current_user)):
         prod = inventory_collection.find_one({"_id": ObjectId(item["product_id"])})
         if prod:
             enriched = serialize_doc(prod)
+            if "item_name" not in enriched and "name" in enriched:
+                enriched["item_name"] = enriched["name"]
+            if "quantity_in_stock" not in enriched and "quantity" in enriched:
+                enriched["quantity_in_stock"] = enriched["quantity"]
+                
             enriched["cart_quantity"] = item["quantity"]
             enriched_items.append(enriched)
             total += enriched.get("unit_price", 0) * item["quantity"]
@@ -123,10 +142,17 @@ async def add_to_cart(item: CartItem, user: dict = Depends(get_current_user)):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid product ID format")
 
-    if not prod or prod.get("category") != "Retail":
-        raise HTTPException(status_code=404, detail="Product not found or not retail")
+    if not prod:
+        raise HTTPException(status_code=404, detail="Product not found")
+        
+    is_retail = prod.get("category") == "Retail"
+    is_active_shop = prod.get("is_active", False)
     
-    if prod.get("quantity_in_stock", 0) < item.quantity:
+    if not (is_retail or is_active_shop):
+        raise HTTPException(status_code=404, detail="Product not available for online purchase")
+    
+    stock = prod.get("quantity_in_stock", prod.get("quantity", 0))
+    if stock < item.quantity:
         raise HTTPException(status_code=400, detail="Not enough stock")
 
     cart = ecommerce_carts_collection.find_one({"user_id": user_id})
@@ -174,14 +200,19 @@ async def process_checkout(req: CheckoutRequest, user: dict = Depends(get_curren
         except Exception:
             raise HTTPException(status_code=400, detail=f"Invalid product ID: {item['product_id']}")
 
-        if not prod or prod.get("quantity_in_stock", 0) < item["quantity"]:
+        if not prod:
+            raise HTTPException(status_code=400, detail=f"Product not found: {item['product_id']}")
+            
+        stock = prod.get("quantity_in_stock", prod.get("quantity", 0))
+        if stock < item["quantity"]:
             raise HTTPException(status_code=400, detail=f"Insufficient stock for product ID {item['product_id']}")
         
         cost = prod.get("unit_price", 0) * item["quantity"]
         total += cost
+        item_name = prod.get("item_name", prod.get("name", "Unknown Product"))
         order_items.append({
             "product_id": item["product_id"],
-            "item_name": prod.get("item_name"),
+            "item_name": item_name,
             "vendor_id": prod.get("salon_id"),
             "quantity": item["quantity"],
             "unit_price": prod.get("unit_price", 0),
@@ -190,10 +221,17 @@ async def process_checkout(req: CheckoutRequest, user: dict = Depends(get_curren
     
     # Deduct stock
     for item in cart.get("items", []):
-        inventory_collection.update_one(
-            {"_id": ObjectId(item["product_id"])},
-            {"$inc": {"quantity_in_stock": -item["quantity"]}}
-        )
+        prod = inventory_collection.find_one({"_id": ObjectId(item["product_id"])})
+        if prod and "quantity" in prod:
+            inventory_collection.update_one(
+                {"_id": ObjectId(item["product_id"])},
+                {"$inc": {"quantity": -item["quantity"]}}
+            )
+        elif prod and "quantity_in_stock" in prod:
+            inventory_collection.update_one(
+                {"_id": ObjectId(item["product_id"])},
+                {"$inc": {"quantity_in_stock": -item["quantity"]}}
+            )
     
     # Create order
     order_doc = {

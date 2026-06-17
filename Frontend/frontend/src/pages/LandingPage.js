@@ -322,13 +322,13 @@ const LandingPage = () => {
           {/* ── Trust badge — enterprise grade, no emoji ── */}
           <div className="flex justify-center mb-6">
             <div className="inline-flex items-center gap-0 border border-slate-200 bg-white/70 backdrop-blur-sm rounded-full px-5 py-2 shadow-xs">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.08em]">
+              {/* <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.08em]">
                 Global Presence in 12 Countries
-              </span>
-              <span className="mx-3 text-slate-300 text-xs font-light">•</span>
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.08em]">
+              </span> */}
+              {/* <span className="mx-3 text-slate-300 text-xs font-light">•</span> */}
+              {/* <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.08em]">
                 Trusted by 50,000+ Customers
-              </span>
+              </span> */}
             </div>
           </div>
 
