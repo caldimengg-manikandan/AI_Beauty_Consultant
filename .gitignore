@@ -4,6 +4,8 @@ __pycache__/
 *$py.class
 *.so
 .Python
+check*.py 
+debug*.py 
 venv/
 env/
 ENV/
@@ -113,3 +115,6 @@ Backend/venv_train/
 .env
 *.env
 !.env.example
+
+# Developer scripts
+scripts/

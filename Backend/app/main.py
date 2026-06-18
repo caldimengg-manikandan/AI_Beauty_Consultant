@@ -102,21 +102,15 @@ from app.api.payment_routes import router as payment_router
 from app.api.staff_routes import router as staff_router
 from app.api.coupon_routes import router as coupon_router
 from app.api.loyalty_routes import router as loyalty_router
-from app.api.inventory_routes import router as inventory_router
 from app.api.support_routes import router as support_router
-from app.api.invoice_routes import router as invoice_router
 from app.api.campaign_routes import router as campaign_router
 from app.api.ecommerce_routes import router as ecommerce_router
 from app.api.insights_routes import router as insights_router
 from app.api.reels_routes import router as reels_router
-from app.api.franchise_routes import router as franchise_router
-from app.api.membership_routes import router as membership_router
 from app.api.waitlist_routes import router as waitlist_router
 from app.api.webhook_routes import router as webhook_router
-from app.api.supply_chain_routes import router as supply_chain_router
 from app.api.chat_routes import router as chat_router
 from app.api.form_routes import router as form_router
-from app.api.hr_routes import router as hr_router
 from app.api.orders_routes import router as orders_router
 
 # ── Phase 1 New Feature Routers ───────────────────────────────────────────────
@@ -251,21 +245,15 @@ app.include_router(payment_router)
 app.include_router(staff_router)
 app.include_router(coupon_router)
 app.include_router(loyalty_router)
-app.include_router(inventory_router)
 app.include_router(support_router)
-app.include_router(invoice_router)
 app.include_router(campaign_router)
 app.include_router(ecommerce_router)
 app.include_router(insights_router)
 app.include_router(reels_router)
-app.include_router(franchise_router)
-app.include_router(membership_router)
 app.include_router(waitlist_router)
 app.include_router(webhook_router)
-app.include_router(supply_chain_router)
 app.include_router(chat_router)
 app.include_router(form_router)
-app.include_router(hr_router)
 app.include_router(orders_router)
 
 # ── Phase 1 New Feature Routers ───────────────────────────────────────────────
