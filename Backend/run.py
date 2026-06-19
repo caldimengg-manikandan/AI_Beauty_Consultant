@@ -1,6 +1,10 @@
 import uvicorn
 import os
 import sys
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # ── Fix Windows Unicode/Emoji print errors (cp1252 → utf-8) ──────────────────
 os.environ["PYTHONIOENCODING"] = "utf-8"

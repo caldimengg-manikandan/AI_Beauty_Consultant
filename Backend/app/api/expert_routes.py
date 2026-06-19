@@ -17,11 +17,18 @@ class ExpertReviewRequest(BaseModel):
 @router.get("/review-queue")
 async def get_review_queue(current_user: dict = Depends(require_role([ROLE_EXPERT]))):
     """Experts view: Queue of recent analyses waiting for human validation."""
+    import os
+    base_url = os.getenv("BASE_URL", "http://localhost:8000")
     # Find analyses that don't have expert_review yet
     queue = list(analysis_collection.find({"expert_review": {"$exists": False}}).sort("created_at", -1).limit(20))
     for item in queue:
         item["id"] = str(item["_id"])
         del item["_id"]
+        # Normalize scan image URLs dynamically using current BASE_URL
+        for url_key in ["image_url", "annotated_image_url"]:
+            if item.get(url_key):
+                filename = item[url_key].split("/")[-1]
+                item[url_key] = f"{base_url}/static/uploads/{filename}"
     return queue
 
 @router.post("/submit-review")

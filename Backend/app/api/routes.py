@@ -300,6 +300,11 @@ async def get_history(
         for item in history:
             item["id"] = str(item["_id"])
             del item["_id"]
+            # Normalize scan image URLs dynamically using current BASE_URL
+            for url_key in ["image_url", "annotated_image_url"]:
+                if item.get(url_key):
+                    filename = item[url_key].split("/")[-1]
+                    item[url_key] = f"{BASE_URL}/static/uploads/{filename}"
             if "created_at" in item:
                 item["date"] = item["created_at"].strftime("%Y-%m-%d")
                 item["time"] = item["created_at"].strftime("%H:%M")

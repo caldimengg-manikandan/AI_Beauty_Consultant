@@ -1,3 +1,5 @@
+import numpy as np
+
 def generate_consultation(face_shape, skin_scores, gender="Female", image=None, landmarks=None,
                          skin_tone=None, undertone=None, eye_color=None, hair_color=None, 
                          season=None, hair_properties=None, weather_data=None):
