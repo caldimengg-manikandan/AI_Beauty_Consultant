@@ -8,6 +8,7 @@ import {
   FaUsers, FaCalendarCheck, FaShieldAlt, FaCheckCircle
 } from 'react-icons/fa';
 import { listSalons, getNearbySalons } from '../../services/salonApi';
+import { resolveImageUrl } from '../../services/api';
 
 // ─── UTILS & HELPERS ────────────────────────────────────────────────────────
 const TYPE_CONFIG = {
@@ -50,7 +51,7 @@ const SalonCard = ({ salon, onBook, onViewDetails }) => {
   const minPrice = salon?.avg_service_price;
   
   // Real Cover Image or Gradient Fallback
-  const coverUrl = salon?.cover_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=512&font-size=0.33`;
+  const coverUrl = resolveImageUrl(salon?.cover_image_url) || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=512&font-size=0.33`;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col group h-full">

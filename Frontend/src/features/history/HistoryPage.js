@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getHistory } from "../../services/api";
+import { getHistory, resolveImageUrl } from "../../services/api";
 import { FaCalendarAlt, FaMagic, FaRedo, FaTint, FaWind, FaShieldAlt } from "react-icons/fa";
 
 const METRIC_CONFIG = [
@@ -44,7 +44,7 @@ const ScanCard = ({ scan }) => {
       <div className="relative h-44 bg-slate-100 overflow-hidden">
         {(scan.annotated_image_url || scan.image_url) ? (
           <img
-            src={scan.annotated_image_url || scan.image_url}
+            src={resolveImageUrl(scan.annotated_image_url || scan.image_url)}
             alt="skin scan"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />

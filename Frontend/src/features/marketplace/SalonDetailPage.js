@@ -7,6 +7,7 @@ import {
   FaHeart, FaShare
 } from 'react-icons/fa';
 import { getSalon, getSalonReviews, getAvailableSlots, bookSalonSlot, submitReview } from '../../services/salonApi';
+import { resolveImageUrl } from '../../services/api';
 import PaymentButton from '../../components/PaymentButton';
 
 // ─── Star renderer ─────────────────────────────────────────────────────────────
@@ -294,7 +295,7 @@ const SalonDetailPage = () => {
               <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar snap-x">
                 {salon.gallery_urls.map((url, i) => (
                   <div key={i} className="min-w-[200px] h-32 rounded-xl overflow-hidden shadow-sm snap-start shrink-0 relative group cursor-pointer">
-                    <img src={url} alt={`Gallery ${i}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <img src={resolveImageUrl(url)} alt={`Gallery ${i}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                     {i === 0 && <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">Cover</span>}
                   </div>
                 ))}

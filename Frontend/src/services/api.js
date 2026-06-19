@@ -1,6 +1,21 @@
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+export const resolveImageUrl = (url) => {
+  if (!url) return "";
+  if (url.startsWith("data:") || url.startsWith("blob:")) return url;
+  if (url.startsWith("http://localhost:8000")) {
+    return url.replace("http://localhost:8000", API_BASE);
+  }
+  if (url.startsWith("/")) {
+    if (API_BASE.startsWith("/") && url.startsWith(API_BASE)) {
+      return url;
+    }
+    return `${API_BASE}${url}`;
+  }
+  return url;
+};
 
 const api = axios.create({
   baseURL: API_BASE,

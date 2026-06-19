@@ -11,7 +11,7 @@ import {
     ShieldCheck,
     Send
 } from 'lucide-react';
-import { getReviewQueue, submitExpertReview } from '../../services/api';
+import { getReviewQueue, submitExpertReview, resolveImageUrl } from '../../services/api';
 
 const ExpertDashboard = () => {
     const [queue, setQueue] = useState([]);
@@ -130,14 +130,14 @@ const ExpertDashboard = () => {
                             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-12 h-12 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden shadow-inner">
-                                        <img src={selectedAnalysis.image_url} alt="Scan" className="w-full h-full object-cover" />
+                                        <img src={resolveImageUrl(selectedAnalysis.image_url)} alt="Scan" className="w-full h-full object-cover" />
                                     </div>
                                     <div>
                                         <h3 className="font-black text-slate-800 uppercase tracking-tight">Reviewing Scan {selectedAnalysis.id.slice(-8)}</h3>
                                         <p className="text-xs text-slate-400 font-bold">{selectedAnalysis.user_email}</p>
                                     </div>
                                 </div>
-                                <a href={selectedAnalysis.image_url} target="_blank" rel="noreferrer" className="p-2 bg-slate-50 rounded-xl text-slate-400 hover:text-blue-600 transition-colors">
+                                <a href={resolveImageUrl(selectedAnalysis.image_url)} target="_blank" rel="noreferrer" className="p-2 bg-slate-50 rounded-xl text-slate-400 hover:text-blue-600 transition-colors">
                                     <ExternalLink size={20} />
                                 </a>
                             </div>

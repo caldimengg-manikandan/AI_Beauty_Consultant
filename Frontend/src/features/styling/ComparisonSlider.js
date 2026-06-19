@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider';
-import { getHistory } from '../../services/api';
+import { getHistory, resolveImageUrl } from '../../services/api';
 import { FaSyncAlt, FaCalendarAlt, FaChevronDown } from 'react-icons/fa';
 
 const ComparisonSlider = () => {
@@ -107,8 +107,8 @@ const ComparisonSlider = () => {
 
             <div className="rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl relative bg-slate-900 group">
                 <ReactCompareSlider
-                    itemOne={<ReactCompareSliderImage src={beforeAnalysis.image_url} alt="Before" />}
-                    itemTwo={<ReactCompareSliderImage src={afterAnalysis.image_url} alt="After" />}
+                    itemOne={<ReactCompareSliderImage src={resolveImageUrl(beforeAnalysis.image_url)} alt="Before" />}
+                    itemTwo={<ReactCompareSliderImage src={resolveImageUrl(afterAnalysis.image_url)} alt="After" />}
                     style={{ height: '450px', width: '100%' }}
                 />
 
