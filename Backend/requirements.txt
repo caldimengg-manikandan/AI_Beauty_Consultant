@@ -24,3 +24,17 @@ razorpay>=1.4.1
 
 # ── Redis (optional — for multi-worker rate limiting) ─────────────────────────
 redis>=5.0.0  # optional: install for production multi-worker rate limiting
+
+# ── Deep learning model backends (skin + face-shape analysis) ────────────────
+# Both are imported LAZILY and gated by a memory check (see
+# app/core/model_memory_guard.py) — on a low-memory host (e.g. Render free
+# tier, ~512MB RAM) neither will actually be imported/loaded, and the app
+# automatically falls back to the existing OpenCV/geometry heuristics. This
+# means it's safe to ship these dependencies even on constrained hosting;
+# they simply activate once you deploy to a host with >= ~1-1.5GB RAM.
+#
+# For production, prefer CPU-only wheels to reduce install size/memory:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+torch>=2.2.0,<2.4.0            # used by app/ml/face_shape_predictor.py (EfficientNetV2S)
+torchvision>=0.17.0,<0.19.0
+tensorflow-cpu>=2.15.0,<2.17.0 # used by app/ml/skin_model_loader.py (DenseNet-201 skin model)

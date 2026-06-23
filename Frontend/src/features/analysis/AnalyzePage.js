@@ -99,7 +99,14 @@ const AnalyzePage = () => {
           recommendations: res.data.recommendations || [],
           personalizedTips: res.data.personalized_tips || [],
           imageUrl: res.data.image_url,
-          annotatedImageUrl: res.data.annotated_image_url
+          annotatedImageUrl: res.data.annotated_image_url,
+          // Additive: transparency/diagnostic fields already sent by the backend
+          // but previously dropped here. Optional-chained everywhere they're
+          // consumed, so older/cached responses without these keys still work.
+          faceQuality: res.data.face_quality,
+          facesDetectedCount: res.data.faces_detected_count,
+          multipleFacesDetected: res.data.multiple_faces_detected,
+          faceShapeModelStatus: res.data.face_shape_model_status
         };
       }
 
@@ -283,6 +290,11 @@ const AnalyzePage = () => {
               image={preview}
               annotatedImage={result.annotated_image_url}
               gender={result.gender}
+              faceShapeConfidence={result.faceShapeConfidence}
+              faceQuality={result.faceQuality}
+              facesDetectedCount={result.facesDetectedCount}
+              multipleFacesDetected={result.multipleFacesDetected}
+              faceShapeModelStatus={result.faceShapeModelStatus}
             />
           </div>
         )}

@@ -160,6 +160,23 @@ async def _create_sync_indexes():
         logging.getLogger(__name__).warning(f"Startup index creation skipped: {e}")
 
 
+# ── Startup event: report memory headroom for ML models (no models are force-
+# loaded here — they stay lazy and load on first use, gated by
+# app/core/model_memory_guard.py — this just logs visibility into what to expect) ──
+@app.on_event("startup")
+async def _log_model_memory_headroom():
+    try:
+        from app.core.model_memory_guard import get_total_ram_gb
+        _startup_log = logging.getLogger("beauty_api.startup")
+        total_ram = get_total_ram_gb()
+        _startup_log.info(
+            f"Host memory: {total_ram:.2f}GB total. Skin/face-shape CNN models load lazily "
+            f"on first analysis request if memory allows (see GET /api/admin/model-status)."
+        )
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Startup memory check skipped: {e}")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CORRELATION ID MIDDLEWARE
 # Injects X-Request-ID into every request/response for log tracing.

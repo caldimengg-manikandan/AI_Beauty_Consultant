@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from app.auth.jwt_handler import get_current_user
 from app.auth.rbac import ROLE_ADMIN, require_role, log_admin_action
@@ -7,7 +8,42 @@ from app.mongodb.settings_collection import settings_collection
 from app.schemas.settings import UserSettings
 from datetime import datetime
 
+_log = logging.getLogger("beauty_api.admin")
+
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
+
+@router.get("/model-status")
+async def get_model_status(current_user: dict = Depends(require_role([ROLE_ADMIN]))):
+    """
+    Admin diagnostic: reports whether each ML model is actually running on its
+    trained CNN/DenseNet weights, or has fallen back to the OpenCV/geometric
+    heuristic path (e.g. due to low memory, missing weights file, or missing
+    torch/tensorflow). Does not force-load any model that hasn't already been
+    requested at least once by a real /analyze call.
+    """
+    from app.ml.skin_model_loader import get_skin_model_status, SKIN_CLASS_ORDER, MODEL_PATH as SKIN_MODEL_PATH
+    from app.ml.face_shape_predictor import get_face_shape_model_status
+    from app.core.model_memory_guard import get_total_ram_gb, get_available_ram_gb
+    import os
+
+    return {
+        "system_memory": {
+            "total_gb": round(get_total_ram_gb(), 2),
+            "available_gb": round(get_available_ram_gb(), 2),
+        },
+        "skin_model": {
+            "status": get_skin_model_status(),
+            "weights_file_present": os.path.exists(SKIN_MODEL_PATH),
+            "class_order": SKIN_CLASS_ORDER,
+            "note": "LOADED = trained DenseNet model is active. Any other status means "
+                    "analysis is using the OpenCV/K-means heuristic fallback for skin scoring.",
+        },
+        "face_shape_model": {
+            "status": get_face_shape_model_status(),
+            "note": "LOADED = trained EfficientNetV2S model is active. Any other status means "
+                    "analysis is using the geometric-vector-similarity fallback for face shape.",
+        },
+    }
 
 @router.get("/users")
 async def get_all_users(current_user: dict = Depends(require_role([ROLE_ADMIN]))):
@@ -18,44 +54,44 @@ async def get_all_users(current_user: dict = Depends(require_role([ROLE_ADMIN]))
 @router.post("/update-role")
 async def update_user_role(target_email: str, new_role: str, current_user: dict = Depends(require_role([ROLE_ADMIN]))):
     """Admin tool: Change a user's role (admin, expert, premium, user)."""
-    print(f"🛠️ ADMIN: Updating role for {target_email} to {new_role}")
+    _log.info(f"Admin: updating role for {target_email} to {new_role}")
     valid_roles = ["admin", "expert", "premium", "user"]
     if new_role not in valid_roles:
-        print(f"❌ ADMIN: Invalid role {new_role}")
+        _log.warning(f"Admin: invalid role {new_role}")
         raise HTTPException(status_code=400, detail="Invalid role")
-    
+
     result = user_collection.update_one(
         {"email": target_email},
         {"$set": {"role": new_role}}
     )
-    
+
     if result.matched_count == 0:
-        print(f"❌ ADMIN: User {target_email} not found")
+        _log.warning(f"Admin: user {target_email} not found")
         raise HTTPException(status_code=404, detail="User not found")
-        
+
     log_admin_action(current_user["sub"], "UPDATE_ROLE", target_email, {"new_role": new_role})
-    print(f"✅ ADMIN: Role updated for {target_email}")
+    _log.info(f"Admin: role updated for {target_email}")
     return {"message": f"Successfully updated {target_email} to {new_role}"}
 
 @router.post("/update-status")
 async def update_user_status(target_email: str, status: str, current_user: dict = Depends(require_role([ROLE_ADMIN]))):
     """Admin tool: Block or activate a user account."""
-    print(f"🛠️ ADMIN: Updating status for {target_email} to {status}")
+    _log.info(f"Admin: updating status for {target_email} to {status}")
     if status not in ["active", "blocked"]:
-        print(f"❌ ADMIN: Invalid status {status}")
+        _log.warning(f"Admin: invalid status {status}")
         raise HTTPException(status_code=400, detail="Invalid status")
-    
+
     result = user_collection.update_one(
         {"email": target_email},
         {"$set": {"status": status}}
     )
-    
+
     if result.matched_count == 0:
-        print(f"❌ ADMIN: User {target_email} not found")
+        _log.warning(f"Admin: user {target_email} not found")
         raise HTTPException(status_code=404, detail="User not found")
-        
+
     log_admin_action(current_user["sub"], "UPDATE_STATUS", target_email, {"new_status": status})
-    print(f"✅ ADMIN: Status updated for {target_email}")
+    _log.info(f"Admin: status updated for {target_email}")
     return {"message": f"Successfully updated {target_email} to {status}"}
 
 @router.get("/stats")
@@ -178,7 +214,7 @@ async def delete_user_analysis(analysis_id: str, current_user: dict = Depends(re
                 if os.path.exists(local_path):
                     os.remove(local_path)
     except Exception as e:
-        print(f"⚠️ Failed to delete files for analysis {analysis_id}: {e}")
+        _log.warning(f"Failed to delete files for analysis {analysis_id}: {e}")
 
     # 3. Delete from DB
     analysis_collection.delete_one({"_id": obj_id})

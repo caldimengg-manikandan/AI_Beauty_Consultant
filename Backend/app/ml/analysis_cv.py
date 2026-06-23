@@ -1,14 +1,20 @@
+import logging
 import cv2
 import numpy as np
 import math
 import os
 from app.ml.face_shape_predictor import get_face_shape_predictor
+from app.ml.skin_model_loader import get_skin_model, predict_skin_probs, get_skin_model_status
 
-# Try to load DenseNet-201 for Skin Analysis (97% accuracy target)
-# MIGRATION UPDATE: Switched to PyTorch. TensorFlow models disabled.
-skin_model = None
-MODEL_TYPE = None
-print("[INFO] Analysis: Running in PyTorch Migration Mode (TF models disabled)")
+_log = logging.getLogger("beauty_api.analysis_cv")
+
+# Skin model is loaded lazily and memory-gated (see app/ml/skin_model_loader.py).
+# It will only actually load if the host has enough RAM and tensorflow is
+# installed; otherwise skin analysis transparently falls back to the
+# pure computer-vision (K-means/heuristic) path that was already in place.
+MODEL_TYPE = "DenseNet-201 (Keras)"
+_log.info(f"[INFO] Analysis: Skin model status will be resolved on first request "
+          f"(see get_skin_model_status() / /api/admin/model-status).")
 
 # --- ADVANCED PREPROCESSING (Industry Standard) ---
 
@@ -115,13 +121,13 @@ def calculate_face_shape(landmarks, width, height, image=None):
             
             if face_crop.size > 0:
                 cnn_shape, cnn_conf = predictor.predict(face_crop)
-                print(f"🧬 CNN FACE SHAPE: {cnn_shape} ({cnn_conf*100:.1f}%)")
-                
+                _log.info(f"CNN face shape: {cnn_shape} ({cnn_conf*100:.1f}%)")
+
                 # If CNN is highly confident, return immediately
                 if cnn_conf > 0.85:
                     return cnn_shape, cnn_conf, cnn_shape
         except Exception as e:
-            print(f"⚠️ CNN Prediction Failed: {e}")
+            _log.warning(f"CNN prediction failed: {e}")
 
     # 2. GEOMETRIC FALLBACK / SUPPLEMENT
     def get_coords(idx):
@@ -191,7 +197,7 @@ def calculate_face_shape(landmarks, width, height, image=None):
         final_shape = geo_shape
         final_conf = geo_conf
 
-    print(f"✅ FINAL RESULT: {final_shape} (Confidence: {final_conf*100:.1f}%)")
+    _log.info(f"Final face shape result: {final_shape} (Confidence: {final_conf*100:.1f}%)")
     return final_shape, final_conf, geo_shape
 
 # --- 2. GENDER ANALYSIS (HYBRID AI FUSION) ---
@@ -211,12 +217,12 @@ def get_gender_net():
         
         if os.path.exists(GENDER_PROTO) and os.path.exists(GENDER_MODEL):
             _gender_net = cv2.dnn.readNetFromCaffe(GENDER_PROTO, GENDER_MODEL)
-            print("✅ Analysis: Gender CNN Loaded")
+            _log.info("Gender CNN loaded")
         else:
-            print("⚠️ Analysis: Gender CNN files not found")
+            _log.warning("Gender CNN files not found")
             _gender_net = None
     except Exception as e:
-        print(f"⚠️ Analysis: Gender CNN Error {e}")
+        _log.warning(f"Gender CNN error: {e}")
         _gender_net = None
     return _gender_net
 
@@ -260,10 +266,10 @@ def classify_gender_geometric(landmarks, width, height, image=None, face_shape=N
                 # If CNN is extremely confident (>98%), return early
                 if max(male_prob, female_prob) > 0.98:
                     res = "Male" if male_prob > female_prob else "Female"
-                    print(f"🧬 GENDER CNN (Ultra Confidence): {res} ({max(male_prob, female_prob)*100:.1f}%)")
+                    _log.info(f"Gender CNN (ultra confidence): {res} ({max(male_prob, female_prob)*100:.1f}%)")
                     return res
         except Exception as e:
-            print(f"⚠️ Gender CNN Error: {e}")
+            _log.warning(f"Gender CNN error: {e}")
 
     # 2. BIOMETRIC VOTING (Shape-Aware)
     bio_res, bio_scores = _gender_fallback_analysis(landmarks, width, height, image, face_shape=face_shape, return_scores=True)
@@ -280,7 +286,7 @@ def classify_gender_geometric(landmarks, width, height, image=None, face_shape=N
             m_total += 1.0
             
     result = "Male" if m_total > f_total else "Female"
-    print(f"🔮 HYBRID GENDER [% {result.upper()} %] CNN_F:{female_prob:.2f} BIO_F:{bio_scores['female']} | CNN_M:{male_prob:.2f} BIO_M:{bio_scores['male']}")
+    _log.info(f"Hybrid gender [{result.upper()}] CNN_F:{female_prob:.2f} BIO_F:{bio_scores['female']} | CNN_M:{male_prob:.2f} BIO_M:{bio_scores['male']}")
     return result
 
 def _gender_fallback_analysis(landmarks, width, height, image=None, face_shape=None, return_scores=False):
@@ -421,21 +427,19 @@ def analyze_skin_cv(image, landmarks):
     mask_tzone = cv2.bitwise_or(get_mask(forehead_indices), get_mask(nose_indices))
 
     # --- A. CNN PREDICTION (Global Analysis) ---
+    # Uses the lazily-loaded, memory-gated DenseNet model (app/ml/skin_model_loader.py).
+    # Returns None if the model isn't available (low memory, missing deps, missing
+    # weights file, or inference error) — in that case we fall back to pure CV below,
+    # identical to the previous behavior.
     cnn_acne = 0.0
     cnn_oil = 0.0
-    
-    if skin_model:
-        try:
-            # Preprocess for CNN (224x224, scale)
-            img_in = cv2.resize(image, (224, 224))
-            img_in = img_in.astype("float32") / 255.0
-            img_in = np.expand_dims(img_in, axis=0)
-            
-            preds = skin_model.predict(img_in, verbose=0)[0]
-            cnn_acne = float(preds[0])
-            cnn_oil = float(preds[2])
-        except Exception as e:
-            print(f"⚠️ CNN Error: {e}")
+    cnn_available = False
+
+    skin_probs = predict_skin_probs(image)
+    if skin_probs is not None:
+        cnn_available = True
+        cnn_acne = skin_probs.get("acne", 0.0)
+        cnn_oil = skin_probs.get("oily", 0.0)
 
     # --- B. K-MEANS CLUSTERING (Local Analysis) ---
     kmeans_acne = 0.0
@@ -452,18 +456,26 @@ def analyze_skin_cv(image, landmarks):
             red_cluster = 0 if centers[0][1] > centers[1][1] else 1
             ratio = np.sum(labels == red_cluster) / len(labels)
             
+            # Adjust sensitivity: Natural blush shouldn't trigger 100% acne.
+            # We ignore a baseline 10% redness and scale the rest gently.
+            base_acne = max(0.0, (ratio - 0.1) * 2.5)
+            
             # Use a smooth multiplier instead of a hard cutoff for better progress tracking
-            # Sensitivity boost: 1.5 is a better threshold for subtle redness
-            multiplier = 1.0 / (1.0 + np.exp(-(a_diff - 1.5) * 2)) 
-            kmeans_acne = min(ratio * 4.0 * multiplier, 1.0) 
+            # Sensitivity boost: 2.0 is a better threshold for subtle redness to avoid false positives
+            multiplier = 1.0 / (1.0 + np.exp(-(a_diff - 2.0) * 2)) 
+            kmeans_acne = min(base_acne * multiplier, 0.95) 
     except:
         pass
             
     # --- HYBRID VOTING ---
-    if cnn_acne > 0.6:
-        final_acne = (0.7 * cnn_acne) + (0.3 * kmeans_acne)
+    if cnn_available:
+        if cnn_acne > 0.6:
+            final_acne = (0.7 * cnn_acne) + (0.3 * kmeans_acne)
+        else:
+            final_acne = (0.3 * cnn_acne) + (0.7 * kmeans_acne)
     else:
-        final_acne = (0.3 * cnn_acne) + (0.7 * kmeans_acne)
+        # Fallback entirely to pure computer vision (K-means) if CNN is unavailable
+        final_acne = kmeans_acne
     
     # --- OILINESS (CV + CNN) ---
     v = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:,:,2]
@@ -817,7 +829,7 @@ def detect_hair_properties(image, landmarks):
             "health_score": round(100 - (recession_score * 0.4), 1)
         }
     except Exception as e:
-        print(f"⚠️ Hair Analysis Error: {e}")
+        _log.warning(f"Hair analysis error: {e}")
         return {
             "density": "Medium", 
             "texture": "Straight", 

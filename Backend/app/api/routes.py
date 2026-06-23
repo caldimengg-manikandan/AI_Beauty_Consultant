@@ -6,7 +6,6 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status,
 from fastapi.security import OAuth2PasswordBearer
 from app.utils.image_utils import read_image
 from app.pipeline.face_detection import detect_faces
-from app.ml.predictor import predict_skin_conditions
 from app.auth.jwt_handler import verify_access_token
 from app.mongodb.collections import analysis_collection
 from app.ml.analysis_cv import calculate_face_shape, analyze_skin_cv, generate_annotated_image, detect_hair_properties
@@ -30,7 +29,7 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
     start_total = time.time()
     try:
         user_email = current_user.get('sub')
-        print(f"🔍 STARTING ANALYSIS for user: {user_email}")
+        _log.info(f"Starting analysis for user: {user_email}")
         
         # Check usage limits (RBAC)
         t_usage = time.time()
@@ -45,13 +44,13 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
                 "limit": usage_check["limit"],
                 "upgrade_required": True
             }
-        print(f"⏱️ Usage check took: {time.time() - t_usage:.3f}s")
+        _log.info(f"Usage check took: {time.time() - t_usage:.3f}s")
         
         t_read = time.time()
         await validate_image_upload(image)
         img_bytes = await image.read()
         img = read_image(img_bytes)
-        print(f"⏱️ Image read & decode took: {time.time() - t_read:.3f}s")
+        _log.info(f"Image read & decode took: {time.time() - t_read:.3f}s")
         
         if img is None:
              return {"error": "Failed to decode image. Please upload a valid image file."}
@@ -63,14 +62,14 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
         if max(h_orig, w_orig) > max_dim:
             scale = max_dim / max(h_orig, w_orig)
             img = cv2.resize(img, (0,0), fx=scale, fy=scale)
-            print(f"⚡ DOWNSAMPLED large image ({w_orig}x{h_orig}) to ({img.shape[1]}x{img.shape[0]}) for performance")
-        print(f"⏱️ Resizing check took: {time.time() - t_resize:.3f}s")
+            _log.info(f"Downsampled large image ({w_orig}x{h_orig}) to ({img.shape[1]}x{img.shape[0]}) for performance")
+        _log.info(f"Resizing check took: {time.time() - t_resize:.3f}s")
 
         # --- PROFESSIONAL QUALITY VALIDATION ---
         t_qual = time.time()
         from app.pipeline.preprocess import ImageQualityValidator
         quality = ImageQualityValidator.validate(img)
-        print(f"⏱️ Quality validation took: {time.time() - t_qual:.3f}s")
+        _log.info(f"Quality validation took: {time.time() - t_qual:.3f}s")
         if not quality["passed"]:
             return {
                 "success": False,
@@ -82,7 +81,7 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
 
         t_det = time.time()
         faces = detect_faces(img)
-        print(f"⏱️ Face detection took: {time.time() - t_det:.3f}s")
+        _log.info(f"Face detection took: {time.time() - t_det:.3f}s")
 
         if len(faces) == 0:
             return {
@@ -93,25 +92,47 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
                 "error": "No face detected. Please ensure the face is clearly visible."
             }
 
-        # Use the first detected face
-        face_data = faces[0]
+        # Multi-face handling: if more than one face is detected, analyze the
+        # largest one (by bounding-box area) rather than always taking faces[0].
+        # This is additive — single-face requests behave exactly as before.
+        multiple_faces_detected = len(faces) > 1
+        if multiple_faces_detected:
+            face_data = max(faces, key=lambda f: f["bbox"][2] * f["bbox"][3])
+            _log.info(f"Multiple faces detected ({len(faces)}); analyzing the largest face.")
+        else:
+            face_data = faces[0]
         bbox = face_data["bbox"]
         landmarks = face_data["landmarks"]
-        
+
         x, y, w, h = bbox
-        
+
+        # Additive, non-blocking face-geometry diagnostic (face-area-ratio +
+        # rough frontal-pose check). This never rejects the request -- it only
+        # surfaces a helpful tip in the response if the capture is borderline.
+        from app.pipeline.preprocess import ImageQualityValidator
+        face_quality = ImageQualityValidator.validate_face_geometry(img, landmarks)
+
         # 1. Face Shape & Gender Analysis
         t_shape = time.time()
         from app.ml.analysis_cv import classify_gender_geometric
         shape_name, shape_conf, _ = calculate_face_shape(landmarks, img.shape[1], img.shape[0], img)
         gender = classify_gender_geometric(landmarks, img.shape[1], img.shape[0], img, face_shape=shape_name)
-        print(f"⏱️ Shape & Gender detection took: {time.time() - t_shape:.3f}s")
+        _log.info(f"Shape & Gender detection took: {time.time() - t_shape:.3f}s")
+
+        # Additive: surface whether the face-shape result came from the trained
+        # CNN or the geometric fallback, so the frontend can show a transparent
+        # "method" badge. Never raises -- defaults to "UNKNOWN" on any error.
+        try:
+            from app.ml.face_shape_predictor import get_face_shape_model_status
+            face_shape_model_status = get_face_shape_model_status()
+        except Exception:
+            face_shape_model_status = "UNKNOWN"
 
         # 2. Skin Analysis (OpenCV)
         t_skin = time.time()
         # FIX: Passing the full resized image to ensure landmarks match relative coordinates
         skin_scores = analyze_skin_cv(img, landmarks) 
-        print(f"⏱️ Skin analysis (CV) took: {time.time() - t_skin:.3f}s")
+        _log.info(f"Skin analysis (CV) took: {time.time() - t_skin:.3f}s")
 
         # 3. COLOR ANALYSIS
         t_color = time.time()
@@ -126,7 +147,7 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
         eye_color, eye_hex = detect_eye_color(img, landmarks)
         hair_color, hair_hex = detect_hair_color(img, landmarks)
         season, palette = get_seasonal_color_palette(skin_tone, undertone, eye_color, hair_color)
-        print(f"⏱️ Color analysis took: {time.time() - t_color:.3f}s")
+        _log.info(f"Color analysis took: {time.time() - t_color:.3f}s")
         
         # 3.5 ADVANCED DIAGNOSTICS
         t_adv = time.time()
@@ -141,14 +162,14 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
         eyebrow_data = analyze_eyebrows(landmarks, img.shape[1], img.shape[0], shape_name)
         undereye_data = detect_undereye_concerns(img, landmarks)
         hair_props = detect_hair_properties(img, landmarks)
-        print(f"⏱️ Advanced diagnostics took: {time.time() - t_adv:.3f}s")
+        _log.info(f"Advanced diagnostics took: {time.time() - t_adv:.3f}s")
 
         # 4. PARALLEL GENERATION (Weather, Tips, Consultation)
         import asyncio
         from app.utils.weather_utils import get_weather_intelligence
         from app.ml.personalized_tips import generate_personalized_tips
 
-        print("🚀 Launching Parallel AI Generations...")
+        _log.info("Launching parallel AI generations...")
         t_parallel = time.time()
         
         async def run_parallel():
@@ -185,12 +206,12 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
             recommendations = []
             personalized_tips = ["AI insights are momentarily unavailable. Please check your network."]
 
-        print(f"⏱️ Parallel AI Logic took: {time.time() - t_parallel:.3f}s")
+        _log.info(f"Parallel AI logic took: {time.time() - t_parallel:.3f}s")
 
         # --- GENERATE ANNOTATED IMAGE ---
         t_anno = time.time()
         annotated_img = generate_annotated_image(img, landmarks, gender)
-        print(f"⏱️ Annotation took: {time.time() - t_anno:.3f}s")
+        _log.info(f"Annotation took: {time.time() - t_anno:.3f}s")
         
         # --- SAVE TO DB & DISK ---
         t_save = time.time()
@@ -231,12 +252,12 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
             analysis_collection.insert_one(analysis_doc)
             increment_usage(user_email, "analysis")
         except Exception as db_err:
-            print(f"⚠️ DB Save Failed: {db_err}")
+            _log.warning(f"DB save failed: {db_err}")
             image_url = None
             annotated_image_url = None
-        print(f"⏱️ DB/Disk Save took: {time.time() - t_save:.3f}s")
+        _log.info(f"DB/disk save took: {time.time() - t_save:.3f}s")
 
-        print(f"🏁 TOTAL ANALYSIS TIME: {time.time() - start_total:.3f}s")
+        _log.info(f"Total analysis time: {time.time() - start_total:.3f}s")
 
         # --- RETURN RESPONSE ---
         return {
@@ -274,11 +295,13 @@ async def analyze_face(image: UploadFile = File(...), current_user: dict = Depen
                 "symmetry": symmetry_data,
                 "eyebrows": eyebrow_data,
                 "undereye": undereye_data,
+                "faces_detected_count": len(faces),
+                "multiple_faces_detected": multiple_faces_detected,
+                "face_quality": face_quality,
+                "face_shape_model_status": face_shape_model_status,
             }
         }
     except Exception as e:
-        import traceback
-        _log.exception("Unhandled error")
         _log.exception("Analysis endpoint error")
         return {"error": "An unexpected error occurred during analysis. Please try again."}
 
@@ -333,10 +356,10 @@ def load_api_key():
     """Load OpenRouter API key from environment variable"""
     key = os.getenv("OPENROUTER_API_KEY")
     if key:
-        print(f"✅ Loaded OpenRouter API key from environment: {key[:10]}...")
+        _log.info(f"Loaded OpenRouter API key from environment: {key[:10]}...")
         return key
-    
-    print("⚠️ No OPENROUTER_API_KEY found in environment variables")
+
+    _log.warning("No OPENROUTER_API_KEY found in environment variables")
     return None
 
 
@@ -422,7 +445,7 @@ async def chat_consultant(req: ChatRequest, current_user: dict = Depends(get_cur
         import time
         for model in models_to_try:
             try:
-                print(f"🤖 Trying OpenRouter Model: {model}...")
+                _log.info(f"Trying OpenRouter model: {model}...")
                 response = requests.post(
                     url="https://openrouter.ai/api/v1/chat/completions",
                     headers={
@@ -441,30 +464,30 @@ async def chat_consultant(req: ChatRequest, current_user: dict = Depends(get_cur
                 )
                 
                 if response.status_code == 401:
-                    print("⚠️ OpenRouter Auth Failed (401). Breaking.")
+                    _log.warning("OpenRouter auth failed (401). Breaking.")
                     break
-                    
+
                 if response.status_code == 200:
                     data = response.json()
                     if 'choices' in data and len(data['choices']) > 0:
                         ai_reply = data['choices'][0]['message']['content']
-                        print(f"✅ OpenRouter Success: {ai_reply[:100]}...")
+                        _log.info(f"OpenRouter success: {ai_reply[:100]}...")
                         return {"reply": ai_reply}
-                
-                print(f"⚠️ Model {model} failed: {response.status_code}")
+
+                _log.warning(f"Model {model} failed: {response.status_code}")
                 
             except Exception as e:
                 _log.warning("Non-critical error in sub-step", exc_info=True)
                 continue
         
-        print("⚠️ All OpenRouter models failed, using local fallback...")
+        _log.warning("All OpenRouter models failed, using local fallback...")
     
     # 3. FALLBACK TO LOCAL CHATBOT (always reliable)
     from app.ml.chatbot import get_bot_response
     
     try:
         reply = get_bot_response(msg, user_context)
-        print(f"💬 Local Chatbot Response: {reply[:100]}...")
+        _log.info(f"Local chatbot response: {reply[:100]}...")
         return {"reply": reply}
     except Exception as e:
         _log.error("Chatbot error", exc_info=True)

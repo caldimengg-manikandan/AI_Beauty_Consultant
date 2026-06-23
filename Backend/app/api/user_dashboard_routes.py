@@ -77,12 +77,47 @@ async def get_user_dashboard_summary(current_user: dict = Depends(get_current_us
         nails_score = latest_trend["nails"]
         global_score = latest_trend["overall"]
     
-    # --- 2. Active Goals (Simulated until a Goals collection exists) ---
-    active_goals = [
-        {"label": "Skin Brightening", "progress": 65, "color": "bg-amber-400"},
-        {"label": "Acne Reduction", "progress": 82, "color": "bg-emerald-400"},
-        {"label": "Hydration Boost", "progress": 40, "color": "bg-violet-400"}
-    ] if has_data else []
+    # --- 2. Active Goals (Dynamically generated from database) ---
+    onboarding_profile = onboarding_collection.find_one({"user_email": email}) or {}
+    user_goals = onboarding_profile.get("beauty_goals", [])
+    
+    # If the user hasn't set goals yet but has scan data, auto-assign goals based on their lowest scores
+    if not user_goals and has_data:
+        latest_scores = scans[0].get("skin_scores", {})
+        if latest_scores.get("acne", 0) > 0.3: user_goals.append("Acne Reduction")
+        if latest_scores.get("hydration", 1) < 0.6: user_goals.append("Hydration Boost")
+        if latest_scores.get("evenness", 1) < 0.6: user_goals.append("Skin Brightening")
+        if not user_goals: user_goals = ["Maintain Skin Health"] # Default if their skin is already perfect
+    
+    active_goals = []
+    if has_data and user_goals:
+        latest_scores = scans[0].get("skin_scores", {})
+        colors = ["bg-amber-400", "bg-emerald-400", "bg-violet-400", "bg-pink-400", "bg-blue-400"]
+        
+        for idx, goal in enumerate(user_goals[:3]): # Show top 3 goals
+            goal_lower = goal.lower()
+            progress = 50 # default
+            
+            # Dynamically calculate real progress based on their latest AI scan
+            if "acne" in goal_lower or "clear" in goal_lower or "breakout" in goal_lower:
+                progress = int(100 - (latest_scores.get("acne", 0.5) * 100))
+            elif "hydrat" in goal_lower or "moistur" in goal_lower:
+                progress = int(latest_scores.get("hydration", 0.5) * 100)
+            elif "bright" in goal_lower or "even" in goal_lower or "pigment" in goal_lower or "spot" in goal_lower:
+                progress = int(latest_scores.get("evenness", 0.5) * 100)
+            elif "aging" in goal_lower or "wrinkle" in goal_lower or "fine line" in goal_lower or "elasticity" in goal_lower:
+                progress = int(latest_scores.get("elasticity", 0.5) * 100)
+            elif "texture" in goal_lower or "pore" in goal_lower or "smooth" in goal_lower:
+                progress = int(latest_scores.get("texture", 0.5) * 100)
+            else:
+                # Stable pseudo-random progress based on goal name
+                progress = 40 + (sum(ord(c) for c in goal) % 45)
+                
+            active_goals.append({
+                "label": goal,
+                "progress": max(5, min(95, progress)), # Keep between 5-95% for realistic UI
+                "color": colors[idx % len(colors)]
+            })
     
     # --- 3. AI Recommendations ---
     recommendations = []
