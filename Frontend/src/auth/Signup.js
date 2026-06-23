@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import {
   FaEnvelope, FaLock, FaEye, FaEyeSlash,
-  FaUser, FaPhone, FaBuilding, FaMapMarkerAlt
+  FaUser, FaPhone, FaBuilding, FaMapMarkerAlt, FaGlobe
 } from "react-icons/fa";
 import illustration from "../assets/auth_illustration.png";
 
@@ -94,20 +94,53 @@ const Signup = () => {
   const [success, setSuccess] = useState(null);
 
   // Customer fields
-  const [customerForm, setCustomerForm] = useState({ email: "", password: "", confirmPassword: "", name: "", phone: "" });
+  const [customerForm, setCustomerForm] = useState({ email: "", password: "", confirmPassword: "", name: "", phone: "", country: "IN" });
 
   // Shop Owner fields
   const [ownerForm, setOwnerForm] = useState({
     email: "", password: "", confirmPassword: "",
-    name: "", phone: "", business_name: "", business_city: "", business_type: "salon"
+    name: "", phone: "", country: "IN", business_name: "", business_city: "", business_type: "salon"
   });
 
   const isShopOwner = roleType === "shop_owner";
+
+  const validatePhone = (phone, countryCode) => {
+    if (!phone) return { isValid: false, error: "Phone number is required." };
+    let num = phone.replace(/\D/g, '');
+
+    if (countryCode === 'IN') {
+      if (num.length === 12 && num.startsWith('91')) num = num.slice(2);
+      else if (num.length === 11 && num.startsWith('0')) num = num.slice(1);
+      
+      if (num.length !== 10 || !/^[6-9]\d{9}$/.test(num)) {
+        return { isValid: false, error: "Please enter a valid 10-digit Indian phone number." };
+      }
+    } else if (countryCode === 'US') {
+      if (num.length === 11 && num.startsWith('1')) num = num.slice(1);
+      if (num.length !== 10 || !/^[2-9]\d{2}[2-9]\d{6}$/.test(num)) {
+        return { isValid: false, error: "Please enter a valid US phone number (Area & Exchange codes cannot start with 0 or 1)." };
+      }
+    } else if (countryCode === 'UK') {
+      if (num.length >= 11 && num.startsWith('44')) num = num.slice(2);
+      else if (num.startsWith('0')) num = num.slice(1); 
+      if (num.length < 9 || num.length > 11 || !/^[1-9]\d{8,10}$/.test(num)) {
+        return { isValid: false, error: "Please enter a valid UK phone number (9-11 digits after dropping leading 0)." };
+      }
+    }
+    return { isValid: true, error: null };
+  };
 
   const handleCustomerSignup = async (e) => {
     e.preventDefault();
     if (customerForm.password !== customerForm.confirmPassword) { setError("Passwords do not match"); return; }
     if (customerForm.password.length < 6) { setError("Password must be at least 6 characters"); return; }
+    if (customerForm.phone) {
+      const { isValid, error: phoneErr } = validatePhone(customerForm.phone, customerForm.country);
+      if (!isValid) {
+        setError(phoneErr);
+        return;
+      }
+    }
     setLoading(true); setError(null);
     try {
       await axios.post(`${API_BASE}/api/auth/customer/signup`, {
@@ -129,6 +162,15 @@ const Signup = () => {
     e.preventDefault();
     if (ownerForm.password !== ownerForm.confirmPassword) { setError("Passwords do not match"); return; }
     if (ownerForm.password.length < 6) { setError("Password must be at least 6 characters"); return; }
+    if (!ownerForm.phone) {
+      setError("Phone number is required.");
+      return;
+    }
+    const { isValid, error: phoneErr } = validatePhone(ownerForm.phone, ownerForm.country);
+    if (!isValid) {
+      setError(phoneErr);
+      return;
+    }
     setLoading(true); setError(null);
     try {
       await axios.post(`${API_BASE}/api/auth/shop-owner/signup`, {
@@ -218,9 +260,20 @@ const Signup = () => {
         {/* ── CUSTOMER FORM ── */}
         {!isShopOwner && (
           <form onSubmit={handleCustomerSignup} className="space-y-4 w-full max-w-md" noValidate>
-            <div className="grid grid-cols-2 gap-3">
-              <Field id="c-name" label="Full Name" icon={FaUser} value={customerForm.name} onChange={e => setCustomerForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" isShopOwner={false} />
-              <Field id="c-phone" label="Phone Number" icon={FaPhone} type="tel" value={customerForm.phone} onChange={e => setCustomerForm(f => ({ ...f, phone: e.target.value }))} placeholder="+91 98765..." required={false} isShopOwner={false} />
+            <Field id="c-name" label="Full Name" icon={FaUser} value={customerForm.name} onChange={e => setCustomerForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" isShopOwner={false} />
+            <div className="grid grid-cols-[110px_1fr] gap-3">
+              <div>
+                <label htmlFor="c-country" className="text-[13px] font-semibold text-slate-700 mb-1.5 block">Country</label>
+                <div className="relative">
+                  <FaGlobe className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+                  <select id="c-country" value={customerForm.country} onChange={e => setCustomerForm(f => ({ ...f, country: e.target.value }))} className="w-full pl-9 pr-2 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B4FF7]/25 focus:border-[#5B4FF7]/50 text-[13px] font-medium shadow-xs cursor-pointer appearance-none">
+                    <option value="IN">🇮🇳 IN</option>
+                    <option value="US">🇺🇸 US</option>
+                    <option value="UK">🇬🇧 UK</option>
+                  </select>
+                </div>
+              </div>
+              <Field id="c-phone" label="Phone Number" icon={FaPhone} type="tel" value={customerForm.phone} onChange={e => setCustomerForm(f => ({ ...f, phone: e.target.value }))} placeholder={customerForm.country === 'IN' ? "+91 9876543210" : customerForm.country === 'US' ? "+1 2025550123" : "+44 7911123456"} required={false} isShopOwner={false} />
             </div>
             <Field id="c-email" label="Email Address" icon={FaEnvelope} type="email" value={customerForm.email} onChange={e => setCustomerForm(f => ({ ...f, email: e.target.value }))} placeholder="name@example.com" isShopOwner={false} />
             <Field id="c-password" label="Password" icon={FaLock} isShopOwner={false}>
@@ -255,9 +308,20 @@ const Signup = () => {
         {/* ── SHOP OWNER FORM ── */}
         {isShopOwner && (
           <form onSubmit={handleOwnerSignup} className="space-y-4 w-full max-w-md" noValidate>
-            <div className="grid grid-cols-2 gap-3">
-              <Field id="o-name" label="Owner Name *" icon={FaUser} value={ownerForm.name} onChange={e => setOwnerForm(f => ({ ...f, name: e.target.value }))} placeholder="Your full name" isShopOwner={true} />
-              <Field id="o-phone" label="Phone Number *" icon={FaPhone} type="tel" value={ownerForm.phone} onChange={e => setOwnerForm(f => ({ ...f, phone: e.target.value }))} placeholder="+91 98765..." isShopOwner={true} />
+            <Field id="o-name" label="Owner Name *" icon={FaUser} value={ownerForm.name} onChange={e => setOwnerForm(f => ({ ...f, name: e.target.value }))} placeholder="Your full name" isShopOwner={true} />
+            <div className="grid grid-cols-[110px_1fr] gap-3">
+              <div>
+                <label htmlFor="o-country" className="text-[13px] font-semibold text-slate-700 mb-1.5 block">Country *</label>
+                <div className="relative">
+                  <FaGlobe className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+                  <select id="o-country" value={ownerForm.country} onChange={e => setOwnerForm(f => ({ ...f, country: e.target.value }))} className="w-full pl-9 pr-2 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400/60 text-[13px] font-medium shadow-xs cursor-pointer appearance-none">
+                    <option value="IN">🇮🇳 IN</option>
+                    <option value="US">🇺🇸 US</option>
+                    <option value="UK">🇬🇧 UK</option>
+                  </select>
+                </div>
+              </div>
+              <Field id="o-phone" label="Phone Number *" icon={FaPhone} type="tel" value={ownerForm.phone} onChange={e => setOwnerForm(f => ({ ...f, phone: e.target.value }))} placeholder={ownerForm.country === 'IN' ? "+91 9876543210" : ownerForm.country === 'US' ? "+1 2025550123" : "+44 7911123456"} isShopOwner={true} />
             </div>
             <Field id="o-email" label="Email Address *" icon={FaEnvelope} type="email" value={ownerForm.email} onChange={e => setOwnerForm(f => ({ ...f, email: e.target.value }))} placeholder="salon@business.com" isShopOwner={true} />
             <Field id="o-bname" label="Business Name *" icon={FaBuilding} value={ownerForm.business_name} onChange={e => setOwnerForm(f => ({ ...f, business_name: e.target.value }))} placeholder="e.g. Bliss Beauty Parlour" isShopOwner={true} />
