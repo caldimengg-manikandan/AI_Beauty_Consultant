@@ -66,6 +66,43 @@ const ErrorMessage = ({
         return 'Something unexpected happened. Our team has been notified.';
     };
 
+    // Additive: classify the error so retryable issues (bad photo, network
+    // blip, server hiccup) are visually and functionally distinguished from
+    // account-level issues (usage limit reached, session expired) where
+    // hitting "Try Again" would just fail again with the same result.
+    const getCategory = (msg) => {
+        if (!msg) return 'unknown';
+        const msgLower = msg.toLowerCase();
+
+        if (
+            msgLower.includes('usage limit') ||
+            msgLower.includes('upgrade') ||
+            msgLower.includes('401') ||
+            msgLower.includes('unauthorized') ||
+            msgLower.includes('session') ||
+            msgLower.includes('token')
+        ) {
+            return 'account';
+        }
+
+        if (
+            msgLower.includes('network') ||
+            msgLower.includes('fetch') ||
+            msgLower.includes('500') ||
+            msgLower.includes('internal server') ||
+            msgLower.includes('no face') ||
+            msgLower.includes('blur') ||
+            msgLower.includes('quality') ||
+            msgLower.includes('timeout') ||
+            msgLower.includes('dark') ||
+            msgLower.includes('bright')
+        ) {
+            return 'retryable';
+        }
+
+        return 'unknown';
+    };
+
     const config = {
         error: {
             icon: <FaTimesCircle className="text-2xl" />,
@@ -99,6 +136,12 @@ const ErrorMessage = ({
 
     const style = config[type] || config.error;
     const friendlyMsg = getFriendlyMessage(message);
+    const category = getCategory(message);
+    // Account-level issues aren't fixed by retrying the same request, so the
+    // retry button is only offered for retryable/unknown errors. This is
+    // additive: callers that never pass onRetry are unaffected, and most
+    // existing retryable error paths keep the exact same "Try Again" button.
+    const showRetry = !!onRetry && category !== 'account';
 
     return (
         <div className={`${style.bgColor} ${style.borderColor} border-l-4 p-6 rounded-lg shadow-md`}>
@@ -107,17 +150,34 @@ const ErrorMessage = ({
                     {style.icon}
                 </div>
                 <div className="flex-1">
-                    <h3 className={`font-bold ${style.textColor} mb-2`}>
-                        {type === 'error' && 'Analysis Could Not Complete'}
-                        {type === 'warning' && 'Heads Up!'}
-                        {type === 'info' && 'Information'}
-                        {type === 'success' && 'Success!'}
-                    </h3>
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <h3 className={`font-bold ${style.textColor}`}>
+                            {type === 'error' && 'Analysis Could Not Complete'}
+                            {type === 'warning' && 'Heads Up!'}
+                            {type === 'info' && 'Information'}
+                            {type === 'success' && 'Success!'}
+                        </h3>
+                        {type === 'error' && category === 'account' && (
+                            <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                                Account action needed
+                            </span>
+                        )}
+                        {type === 'error' && category === 'retryable' && (
+                            <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                Retryable
+                            </span>
+                        )}
+                    </div>
                     <p className={`${style.textColor} mb-3`}>{friendlyMsg}</p>
+                    {category === 'account' && (
+                        <p className={`text-sm ${style.textColor} opacity-80 mb-3`}>
+                            This needs action on your account rather than a retry — for example upgrading your plan or signing in again.
+                        </p>
+                    )}
 
                     {/* Action Buttons */}
                     <div className="flex items-center gap-3 mt-4">
-                        {onRetry && (
+                        {showRetry && (
                             <button
                                 onClick={onRetry}
                                 className="px-4 py-2 bg-white border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
@@ -125,7 +185,7 @@ const ErrorMessage = ({
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
-                                Try Again
+                                {category === 'retryable' ? 'Retake Photo' : 'Try Again'}
                             </button>
                         )}
 

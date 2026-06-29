@@ -52,11 +52,23 @@ _RULES = [
 ]
 
 
+# Whether to trust the X-Forwarded-For header for determining the client IP.
+# Defaults to True to preserve the original behavior on platforms like Render
+# that sit behind a single trusted reverse proxy/load balancer (X-Forwarded-For
+# is required there, or every request would appear to come from the proxy's
+# own IP and share one rate-limit bucket). Set RATE_LIMIT_TRUST_PROXY_HEADERS=
+# false for any deployment where there is NOT a trusted proxy in front of the
+# app — otherwise a client can simply send an arbitrary X-Forwarded-For value
+# on every request to dodge per-IP rate limits entirely.
+_TRUST_PROXY_HEADERS = os.getenv("RATE_LIMIT_TRUST_PROXY_HEADERS", "true").strip().lower() != "false"
+
+
 def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for", "")
-    return forwarded.split(",")[0].strip() or (
-        str(request.client.host) if request.client else "unknown"
-    )
+    if _TRUST_PROXY_HEADERS:
+        forwarded = request.headers.get("x-forwarded-for", "")
+        if forwarded.strip():
+            return forwarded.split(",")[0].strip()
+    return str(request.client.host) if request.client else "unknown"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -157,12 +169,42 @@ class _InMemoryRateLimiter:
 
 # Initialise once at import time
 _redis_client = _try_get_redis()
+
+# The in-memory backend only tracks counters within a single process. On a
+# multi-worker production deployment (e.g. several Uvicorn/Gunicorn workers),
+# each worker gets its own counters, so the *effective* limit silently
+# becomes (configured limit * worker count) instead of what's documented
+# above. This previously happened silently. Operators who need a hard
+# guarantee that limits are enforced exactly (not multiplied by worker count)
+# can set REQUIRE_REDIS_RATE_LIMIT=true — combined with ENVIRONMENT=production,
+# this fails fast at startup instead of silently degrading. Left unset (the
+# default), behavior is unchanged: Redis is used if reachable, otherwise the
+# in-memory fallback keeps the app running.
+_ENVIRONMENT = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "development").strip().lower()
+_IS_PRODUCTION = _ENVIRONMENT in ("production", "prod")
+_REQUIRE_REDIS = os.getenv("REQUIRE_REDIS_RATE_LIMIT", "false").strip().lower() == "true"
+
+if _redis_client is None and _IS_PRODUCTION and _REQUIRE_REDIS:
+    raise RuntimeError(
+        "REQUIRE_REDIS_RATE_LIMIT=true but no working Redis connection was found "
+        "(check REDIS_URL). Refusing to start with weakened per-worker rate "
+        "limits in production. Unset REQUIRE_REDIS_RATE_LIMIT to allow the "
+        "in-memory fallback instead."
+    )
+
 _backend = (
     _RedisRateLimiter(_redis_client)
     if _redis_client is not None
     else _InMemoryRateLimiter()
 )
 _backend_name = "Redis" if _redis_client is not None else "in-memory"
+if _backend_name == "in-memory" and _IS_PRODUCTION:
+    _log.warning(
+        "Rate limiter is using the IN-MEMORY backend in production. If this app "
+        "runs with more than one worker process, effective rate limits are "
+        "multiplied by the worker count. Configure REDIS_URL for accurate "
+        "limits, or set REQUIRE_REDIS_RATE_LIMIT=true to enforce this at startup."
+    )
 _log.info("Rate limiter using %s backend", _backend_name)
 
 

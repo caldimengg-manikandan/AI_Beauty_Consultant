@@ -23,21 +23,35 @@ _WEAK_DEFAULTS = {"super_secret_key", "secret", "changeme", "password", "jwt_sec
 
 SECRET_KEY: str = os.getenv("JWT_SECRET", "")
 
-if not SECRET_KEY:
-    _log.critical(
-        "JWT_SECRET environment variable is not set. "
-        "The application will refuse to sign tokens until this is configured. "
-        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
-    )
-    # Fall back to a random key so the app starts in dev, but tokens won't survive restarts.
-    import secrets as _secrets
-    SECRET_KEY = _secrets.token_hex(32)
-elif SECRET_KEY.lower() in _WEAK_DEFAULTS or len(SECRET_KEY) < 32:
-    _log.warning(
-        "JWT_SECRET appears weak (known default or < 32 chars). "
-        "Replace it in your .env file with a 256-bit random value before deploying to production. "
-        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
-    )
+# Production must fail fast on a missing/weak secret rather than silently
+# running with one — an ephemeral or weak secret in production means
+# sessions break on every restart/redeploy and tokens are easier to forge.
+# Non-production environments keep the original lenient dev fallback (loud
+# warning + ephemeral key) so local/demo runs without a configured .env
+# continue to work exactly as before this change.
+_ENVIRONMENT = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "development").strip().lower()
+_IS_PRODUCTION = _ENVIRONMENT in ("production", "prod")
+
+if not SECRET_KEY or SECRET_KEY.lower() in _WEAK_DEFAULTS or len(SECRET_KEY) < 32:
+    if _IS_PRODUCTION:
+        raise RuntimeError(
+            "JWT_SECRET must be set to a random value of at least 32 characters in production. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+    if not SECRET_KEY:
+        _log.critical(
+            "JWT_SECRET environment variable is not set. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+        # Fall back to a random key so the app starts in dev, but tokens won't survive restarts.
+        import secrets as _secrets
+        SECRET_KEY = _secrets.token_hex(32)
+    else:
+        _log.warning(
+            "JWT_SECRET appears weak (known default or < 32 chars). "
+            "Replace it in your .env file with a 256-bit random value before deploying to production. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480"))  # 8h for shop-owner sessions

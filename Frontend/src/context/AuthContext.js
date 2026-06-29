@@ -1,6 +1,9 @@
 import { createContext, useState, useEffect, useContext } from "react";
 import { jwtDecode } from "jwt-decode";
-import api from "../services/api";
+import axios from "axios";
+import api, { setApiToken } from "../services/api";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export const AuthContext = createContext(null);
 
@@ -83,51 +86,77 @@ export const ROLE_PERMISSIONS = {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  // Security: Access token is now stored purely in React state (memory).
+  // The refresh token is an HttpOnly, Secure cookie managed by the browser.
+  const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  // On initial load, try to get a new access token via the refresh cookie
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const res = await axios.post(`${API_BASE}/api/auth/refresh`, {}, { withCredentials: true });
+        if (res.data?.access_token) {
+          setToken(res.data.access_token);
+        }
+      } catch (err) {
+        // No valid refresh cookie, user is logged out
+        console.log("No valid session found.");
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+    initAuth();
+  }, []);
 
   useEffect(() => {
     if (token) {
       try {
         const decoded = jwtDecode(token);
         if (!decoded || typeof decoded !== "object") {
-          // Malformed payload — clear and bail
-          logout();
+          // Malformed payload
+          setToken(null);
           return;
         }
         if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-          logout();
+          setToken(null);
           return;
         }
         setUser(decoded);
         api.get("/api/onboarding/profile")
           .then(res => setProfile(res.data?.profile || res.data))
           .catch(() => {
-            // Profile fetch failed (e.g. token signed with old secret) — silently clear token
-            logout();
+            setToken(null);
           });
       } catch (error) {
-        // jwtDecode threw (malformed/invalid token) — clear it so the app doesn't get stuck
-        console.warn("Clearing invalid token from storage:", error?.message);
-        logout();
+        console.warn("Clearing invalid token from memory:", error?.message);
+        setToken(null);
+        setApiToken(null);
       }
     } else {
       setUser(null);
       setProfile(null);
+      setApiToken(null);
     }
   }, [token]);
 
   const login = (newToken) => {
-    localStorage.setItem("token", newToken);
     setToken(newToken);
+    setApiToken(newToken);
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("email");
+  const logout = async () => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch (e) {
+      // ignore
+    }
     setToken(null);
+    setApiToken(null);
     setUser(null);
+    setProfile(null);
   };
 
   const can = (permission) => {
@@ -141,12 +170,17 @@ export const AuthProvider = ({ children }) => {
   const isAdmin     = () => hasRole("admin");
   const isPremium   = () => hasRole("premium", "admin", "expert");
 
+  if (isInitializing) {
+    return null; // Or a loading spinner
+  }
+
   return (
     <AuthContext.Provider value={{
       token, user, login, logout, can, hasRole,
       isShopOwner, isExpert, isAdmin, isPremium,
       role: user?.role || "user",
       profile,
+      isInitializing,
     }}>
       {children}
     </AuthContext.Provider>

@@ -7,13 +7,28 @@ import json
 import os
 
 def load_api_key():
-    """Load OpenRouter API key from .env file"""
+    """Load OpenRouter API key from the environment.
+
+    Previously this only read a local ".env" file on disk, which is empty on
+    most hosting platforms (Render, Docker, Heroku, etc.) where the key is
+    injected directly as a real environment variable rather than shipped as a
+    file. python-dotenv (loaded once in app/main.py) already copies any
+    .env-file values into os.environ at startup, so os.getenv() picks up the
+    key either way -- from an injected env var OR from a local .env file --
+    while the old code only ever worked for the latter.
+    """
+    key = os.getenv("OPENROUTER_API_KEY")
+    if key:
+        return key
+
+    # Last-resort fallback for any environment where .env exists but wasn't
+    # loaded into the process environment for some reason.
     try:
         with open(".env", "r") as f:
             for line in f:
                 if line.startswith("OPENROUTER_API_KEY"):
-                    return line.strip().split("=")[1]
-    except:
+                    return line.strip().split("=", 1)[1]
+    except Exception:
         return None
     return None
 

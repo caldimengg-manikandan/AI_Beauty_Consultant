@@ -335,6 +335,7 @@ const Navbar = ({ onMenuClick }) => {
           onClick={() => { logout(); navigate("/login"); }}
           className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-[12px] font-semibold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.97]"
           style={{ background: "linear-gradient(135deg,#7c3aed,#5b21b6)", boxShadow: "var(--shadow-sm)" }}
+          aria-label="Logout"
         >
           <FaSignOutAlt size={12} />
           <span className="hidden sm:inline">Logout</span>

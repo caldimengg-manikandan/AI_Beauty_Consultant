@@ -55,13 +55,42 @@ app = FastAPI(
     version="1.0"
 )
 
-# 2️⃣ ADD MIDDLEWARE — allow localhost for dev, Vercel domain for prod
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "https://localhost:3000",
-    "http://127.0.0.1:3000",
-    os.getenv("FRONTEND_URL", "http://localhost:3000"), # Default to localhost if not set
-]
+# 2️⃣ ADD MIDDLEWARE — environment-specific origin allowlist.
+# Previously this list always included the three localhost dev origins, even
+# in production, alongside allow_credentials=True — meaning a credentialed
+# CORS request from "http://localhost:3000" would be honored by a live
+# production deployment. Now: production only allows explicitly configured
+# domains (FRONTEND_URL and/or CORS_ALLOWED_ORIGINS); the localhost dev
+# origins are only added outside production, so local/demo runs work exactly
+# as before this change.
+_ENVIRONMENT = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "development").strip().lower()
+_IS_PRODUCTION = _ENVIRONMENT in ("production", "prod")
+
+ALLOWED_ORIGINS = []
+
+if not _IS_PRODUCTION:
+    ALLOWED_ORIGINS += [
+        "http://localhost:3000",
+        "https://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+
+_frontend_url = os.getenv("FRONTEND_URL", "" if _IS_PRODUCTION else "http://localhost:3000")
+if _frontend_url:
+    ALLOWED_ORIGINS.append(_frontend_url)
+
+# Optional comma-separated list for additional production domains
+# (e.g. "https://app.example.com,https://www.example.com").
+_extra_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
+if _extra_origins:
+    ALLOWED_ORIGINS += [o.strip() for o in _extra_origins.split(",") if o.strip()]
+
+if _IS_PRODUCTION and not ALLOWED_ORIGINS:
+    logging.getLogger("beauty_api").warning(
+        "No CORS origins configured for production (set FRONTEND_URL and/or "
+        "CORS_ALLOWED_ORIGINS) — credentialed cross-origin requests from the "
+        "frontend will be rejected by the browser until this is set."
+    )
 
 # Ensure we don't have duplicates and remove any '*' if credentials are True
 ALLOWED_ORIGINS = list(set([o for o in ALLOWED_ORIGINS if o and o != "*"]))
@@ -291,14 +320,28 @@ def recommend_services(analysis_result: dict = Body(...)):
     """Given a skin analysis result, return recommended beauty services & salon types."""
     return get_recommendations_from_analysis(analysis_result)
 
-# 5️⃣ SERVE STATIC FILES (Images)
-from fastapi.staticfiles import StaticFiles
+# 5️⃣ SERVE STATIC FILES
+# ──────────────────────────────────────────────────────────────────────────────
+# IMPORTANT: static/uploads is intentionally NOT mounted as a public StaticFiles
+# route.  All face-scan and annotated images are biometric data; they must only
+# be accessed through the time-limited, HMAC-signed endpoint:
+#
+#   GET /analyze/secure-image/{filename}?exp=<unix_ts>&sig=<hmac_hex>
+#
+# That endpoint (app/api/routes.py) verifies the signature and expiry before
+# serving the file, so direct guessing or sharing of raw /static/uploads/...
+# URLs is no longer possible.
+#
+# If you need truly public static assets (e.g. a logo or a public salon banner)
+# place them under static/public/ and mount ONLY that sub-directory below.
 import os
+from fastapi.staticfiles import StaticFiles
 
-# Ensure static directory exists
 os.makedirs("static/uploads", exist_ok=True)
+os.makedirs("static/public", exist_ok=True)
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Only mount the intentionally-public sub-directory, not the whole /static tree.
+app.mount("/static/public", StaticFiles(directory="static/public"), name="static_public")
 
 @app.get("/health")
 def health_check():

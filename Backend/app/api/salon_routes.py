@@ -94,7 +94,7 @@ async def list_salons(
     page: int = Query(1, ge=1),
     limit: int = Query(12, le=50),
 ):
-    query: dict = {"is_active": True}
+    query: dict = {"is_active": True, "is_verified": True}
     if city:
         query["city"] = {"$regex": city, "$options": "i"}
     if salon_type:
@@ -164,7 +164,7 @@ async def nearby_salons(
     limit: int = Query(20, le=50),
 ):
     """Return registered salons within radius_km of the user, sorted by distance."""
-    query: dict = {"is_active": True}
+    query: dict = {"is_active": True, "is_verified": True}
     if salon_type:
         query["salon_type"] = salon_type
     if gender_served:
@@ -603,7 +603,12 @@ async def register_salon(salon: SalonCreate, current_user: dict = Depends(get_cu
 
     new_salon = {
         "id": salon_id, "owner_user_id": current_user.get("sub"),
-        "is_active": True, "is_verified": True, "avg_rating": 0.0,
+        # New salons start unverified and pending admin approval — the
+        # existing admin endpoint below (POST /{salon_id}/verify) is what
+        # flips this to True and makes the salon visible in customer
+        # listings. Previously this was set to True at registration time,
+        # which let any shop owner self-verify and skip admin review entirely.
+        "is_active": True, "is_verified": False, "avg_rating": 0.0,
         "created_at": datetime.utcnow(), **salon_dict,
     }
     salons_collection.insert_one(new_salon)
@@ -629,7 +634,7 @@ async def register_salon(salon: SalonCreate, current_user: dict = Depends(get_cu
     )
     return {
         "status": "success",
-        "message": "Salon registered successfully! It is now live.",
+        "message": "Salon registered successfully! It will appear in customer listings once an admin verifies it.",
         "salon_id": salon_id, "data": new_salon,
     }
 
@@ -759,7 +764,10 @@ async def upload_salon_gallery(
     if current_user["role"] != "shop_owner":
         raise HTTPException(status_code=403, detail="Only shop owners can upload gallery images")
     
-    upload_dir = "static/uploads/salons"
+    # Salon gallery images are intentionally public (customers need to browse them).
+    # They are stored under static/public/ which is served by the public StaticFiles
+    # mount — NOT static/uploads/ which is now private (biometric face scans only).
+    upload_dir = "static/public/salons"
     os.makedirs(upload_dir, exist_ok=True)
     
     saved_urls = []
@@ -770,18 +778,34 @@ async def upload_salon_gallery(
         ext = image.filename.split('.')[-1].lower()
         if ext not in ['jpg', 'jpeg', 'png', 'webp']:
             continue
-            
-        filename = f"{uuid.uuid4().hex}_{image.filename.replace(' ', '_')}"
-        file_path = os.path.join(upload_dir, filename)
-        
-        with open(file_path, "wb") as buffer:
+
+        try:
+            # Validate the upload (real image bytes, size limits, magic-byte
+            # checks, etc.) BEFORE creating/writing anything on disk.
             await validate_image_upload(image)
             content = await image.read()
-            buffer.write(content)
-            
-        saved_urls.append(f"/{file_path.replace(chr(92), '/')}")
-        
+        except HTTPException:
+            continue
+        except Exception:
+            _log.exception("Gallery image validation/read failed; skipping file")
+            continue
+
+        # Server-generated filename only — the original client-supplied
+        # filename is never used to build the on-disk path.
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        file_path = os.path.join(upload_dir, filename)
+
+        try:
+            with open(file_path, "wb") as buffer:
+                buffer.write(content)
+        except Exception:
+            _log.exception("Failed to save gallery image to disk; skipping file")
+            continue
+
+        # Return a URL that resolves through the public /static/public mount
+        saved_urls.append(f"/static/public/salons/{filename}")
+
     if not saved_urls:
         raise HTTPException(status_code=400, detail="No valid images were uploaded")
-        
+
     return {"gallery_urls": saved_urls}

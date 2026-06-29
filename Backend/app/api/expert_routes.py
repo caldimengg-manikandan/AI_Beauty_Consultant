@@ -17,8 +17,18 @@ class ExpertReviewRequest(BaseModel):
 @router.get("/review-queue")
 async def get_review_queue(current_user: dict = Depends(require_role([ROLE_EXPERT]))):
     """Experts view: Queue of recent analyses waiting for human validation."""
+    # Same signed, short-lived image links used by /api/analyze and
+    # /api/history — see app/utils/signed_url.py. Keeps these biometric
+    # images off the public static mount while experts (already role-gated
+    # by require_role) can still view them in the review queue.
+    from app.utils.signed_url import sign_filename
     import os
     base_url = os.getenv("BASE_URL", "http://localhost:8000")
+
+    def _secure_url(filename: str) -> str:
+        sig, exp = sign_filename(filename)
+        return f"{base_url}/api/analyze/secure-image/{filename}?exp={exp}&sig={sig}"
+
     # Find analyses that don't have expert_review yet
     queue = list(analysis_collection.find({"expert_review": {"$exists": False}}).sort("created_at", -1).limit(20))
     for item in queue:
@@ -27,8 +37,8 @@ async def get_review_queue(current_user: dict = Depends(require_role([ROLE_EXPER
         # Normalize scan image URLs dynamically using current BASE_URL
         for url_key in ["image_url", "annotated_image_url"]:
             if item.get(url_key):
-                filename = item[url_key].split("/")[-1]
-                item[url_key] = f"{base_url}/static/uploads/{filename}"
+                filename = item[url_key].split("/")[-1].split("?")[0]
+                item[url_key] = _secure_url(filename)
     return queue
 
 @router.post("/submit-review")

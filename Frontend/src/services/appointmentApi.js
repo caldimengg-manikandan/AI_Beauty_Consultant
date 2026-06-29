@@ -1,22 +1,11 @@
-import axios from 'axios';
-
-const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/appointments`;
-
-const getAuthHeader = () => {
-    const token = localStorage.getItem('token');
-    return { Authorization: `Bearer ${token}` };
-};
+import api from './api';
 
 export const bookAppointment = async (appointmentData) => {
-    const response = await axios.post(`${API_URL}/book`, appointmentData, {
-        headers: getAuthHeader()
-    });
+    const response = await api.post(`/api/appointments/book`, appointmentData);
     return response.data;
 };
 
 export const getMyBookings = async () => {
-    const response = await axios.get(`${API_URL}/my-bookings`, {
-        headers: getAuthHeader()
-    });
+    const response = await api.get(`/api/appointments/my-bookings`);
     return response.data;
 };

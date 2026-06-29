@@ -1,6 +1,7 @@
 import os
 import smtplib
 import sys
+import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -10,13 +11,33 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 SMTP_EMAIL = os.getenv("SMTP_EMAIL", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 
+_log = logging.getLogger("beauty_api.email")
+
+# OTP codes must never reach logs/stdout/stderr in production — that's the
+# verification credential itself. The dev-mode console fallback below is
+# only safe on a local/dev machine where the "log" is just your own terminal.
+_ENVIRONMENT = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "development").strip().lower()
+_IS_PRODUCTION = _ENVIRONMENT in ("production", "prod")
+
+
 def send_otp_email(to_email: str, otp: str) -> bool:
     """
     Sends a 6-digit verification OTP email to the user.
-    If credentials are not supplied, falls back to logging the OTP in the server terminal (for development).
+    In non-production environments, if SMTP credentials are not supplied,
+    falls back to printing the OTP to the local terminal (for development
+    convenience only). In production, this fallback is disabled — if email
+    can't be sent, the OTP is never written anywhere and this returns False
+    so the caller can surface a "verification email failed to send" error
+    instead of silently leaking/dropping the code.
     """
     if not SMTP_EMAIL or not SMTP_PASSWORD:
-        # Fallback for development/testing
+        if _IS_PRODUCTION:
+            _log.error(
+                "OTP email for %s could not be sent: SMTP_EMAIL/SMTP_PASSWORD not configured in production.",
+                to_email,
+            )
+            return False
+        # Fallback for development/testing only — never in production.
         print("\n" + "="*80, file=sys.stderr)
         print(f"📧 [DEVELOPMENT MODE] Email OTP for {to_email} is: {otp}", file=sys.stderr)
         print("="*80 + "\n", file=sys.stderr)
@@ -154,7 +175,12 @@ def send_otp_email(to_email: str, otp: str) -> bool:
 
         return True
     except Exception as e:
-        # If SMTP fails, log the exception and fallback to console output so the app won't crash
+        if _IS_PRODUCTION:
+            # Never print the OTP itself in production — just the failure.
+            _log.error("SMTP send failed for %s: %s", to_email, e)
+            return False
+        # Non-production: log the exception and fall back to console output
+        # so local development isn't blocked by a misconfigured SMTP setup.
         print(f"❌ SMTP Send Failed: {str(e)}", file=sys.stderr)
         print("\n" + "="*80, file=sys.stderr)
         print(f"📧 [FALLBACK DEV MODE] Email OTP for {to_email} is: {otp}", file=sys.stderr)

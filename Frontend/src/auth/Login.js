@@ -1,7 +1,7 @@
 import { useState, useContext } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import axios from "axios";
+import api from "../services/api";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import illustration from "../assets/auth_illustration.png";
 
@@ -55,18 +55,14 @@ const Login = () => {
     setError(null);
 
     try {
-      const res = await axios.post(`${API_BASE}/api/auth/login`, {
+      const res = await api.post(`/api/auth/login`, {
         email,
         password,
         role_type: roleType,
       });
 
-      const { access_token, role, name, account_type } = res.data;
+      const { access_token, role, account_type } = res.data;
       login(access_token);
-      localStorage.setItem("email", email);
-      localStorage.setItem("name", name || email);
-      localStorage.setItem("role", role);
-      localStorage.setItem("account_type", account_type || "customer");
 
       if (role === "admin") {
         navigate("/dashboard/admin");

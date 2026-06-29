@@ -186,6 +186,33 @@ const AnalyzePage = () => {
         {/* Upload Section */}
         <div className="bg-white rounded-3xl shadow-xl p-8 mb-8 text-center transition-all duration-300 hover:shadow-2xl">
 
+          {/* Additive: pre-upload capture guidance, shown only before a photo
+              is selected, so it doesn't compete with the preview/result UI. */}
+          {!preview && (
+            <div className="mb-6 bg-slate-50 border border-slate-100 rounded-2xl p-5 text-left max-w-md mx-auto">
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-3">For the most accurate results</p>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-500 mt-0.5">✓</span>
+                  <span>Good, even lighting (avoid harsh shadows or backlight)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-500 mt-0.5">✓</span>
+                  <span>Face centered and looking straight at the camera</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-500 mt-0.5">✓</span>
+                  <span>No sunglasses, hats, or hair covering your forehead</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-500 mt-0.5">✓</span>
+                  <span>Hold the camera steady to avoid blur</span>
+                </li>
+              </ul>
+              <p className="text-[11px] text-slate-400 mt-3">Accepted formats: JPG, PNG, WEBP · Max size 10MB</p>
+            </div>
+          )}
+
           <div className="mb-6 flex justify-center">
             {preview ? (
               <div className="relative group">
@@ -260,7 +287,17 @@ const AnalyzePage = () => {
         {/* Loading Overlay */}
         {loading && (
           <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
-            <Loader variant="ai-analysis" message="Analyzing your beautiful features..." />
+            <Loader
+              variant="ai-analysis"
+              message="Analyzing your beautiful features..."
+              stages={[
+                "Checking image quality",
+                "Detecting face",
+                "Analyzing skin & shape",
+                "Reading color & tone",
+                "Building recommendations"
+              ]}
+            />
           </div>
         )}
 

@@ -23,7 +23,27 @@ router = APIRouter(prefix="/api/payments", tags=["Payments"])
 RAZORPAY_KEY_ID     = os.getenv("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
 
+# Demo (no-Razorpay-keys) payment confirmation is only allowed when the app is
+# explicitly NOT running in production. This closes the "free booking
+# confirmation" gap: previously, simply omitting Razorpay keys in any
+# environment (including a misconfigured production deploy) silently let
+# every booking be confirmed for free. Set ENVIRONMENT=production (or
+# APP_ENV=production) to disable demo payments outright, regardless of
+# whether Razorpay keys are configured.
+_ENVIRONMENT = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or "development").strip().lower()
+DEMO_PAYMENTS_ALLOWED = _ENVIRONMENT not in ("production", "prod")
+
 payments_collection = db["payments"]
+
+
+def _find_owned_booking(booking_id: str, user_id: str):
+    """Looks up a booking AND verifies it belongs to user_id. Returns None if
+    the booking doesn't exist OR belongs to someone else — callers should
+    treat both cases identically (404) so booking ownership can't be probed."""
+    return slot_bookings_collection.find_one({
+        "$or": [{"id": booking_id}, {"booking_ref": booking_id}],
+        "user_id": user_id,
+    })
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -66,8 +86,9 @@ async def create_payment_order(
     current_user: dict = Depends(get_current_user)
 ):
     """Create a Razorpay order. Falls back to demo mode if keys not set."""
-    # Validate booking exists
-    booking = slot_bookings_collection.find_one({"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}]})
+    # Validate booking exists AND belongs to the requesting user — otherwise
+    # a user could create a payment order against someone else's booking.
+    booking = _find_owned_booking(req.booking_id, current_user.get("sub"))
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
 
@@ -75,6 +96,11 @@ async def create_payment_order(
 
     # ── Demo Mode (no API keys) ───────────────────────────────────────────────
     if not RAZORPAY_KEY_ID or not RAZORPAY_KEY_SECRET:
+        if not DEMO_PAYMENTS_ALLOWED:
+            raise HTTPException(
+                status_code=503,
+                detail="Payment service not configured. Demo payments are disabled in production."
+            )
         demo_order_id = f"order_demo_{uuid.uuid4().hex[:12]}"
         # Record pending payment
         payments_collection.insert_one({
@@ -159,10 +185,22 @@ async def verify_payment(
 ):
     """Verify Razorpay payment signature and mark booking as paid."""
 
+    # Ownership check up front: a booking must belong to the requesting user
+    # before any payment/booking state can be changed below, in either the
+    # demo or real-signature path.
+    owned_booking = _find_owned_booking(req.booking_id, current_user.get("sub"))
+    if not owned_booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
     # ── Demo Mode ─────────────────────────────────────────────────────────────
     if req.razorpay_order_id.startswith("order_demo_"):
+        if not DEMO_PAYMENTS_ALLOWED:
+            raise HTTPException(
+                status_code=503,
+                detail="Demo payments are disabled in production."
+            )
         slot_bookings_collection.update_one(
-            {"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}]},
+            {"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}], "user_id": current_user.get("sub")},
             {"$set": {
                 "status": "confirmed",
                 "payment_status": "paid",
@@ -172,7 +210,7 @@ async def verify_payment(
             }}
         )
         payments_collection.update_one(
-            {"booking_id": req.booking_id, "razorpay_order_id": req.razorpay_order_id},
+            {"booking_id": req.booking_id, "razorpay_order_id": req.razorpay_order_id, "user_id": current_user.get("sub")},
             {"$set": {"status": "paid", "paid_at": datetime.utcnow().isoformat()}}
         )
         return {
@@ -195,9 +233,9 @@ async def verify_payment(
     if expected_signature != req.razorpay_signature:
         raise HTTPException(status_code=400, detail="Payment verification failed — invalid signature")
 
-    # Mark booking as paid and confirmed
+    # Mark booking as paid and confirmed (scoped to this user's booking only)
     slot_bookings_collection.update_one(
-        {"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}]},
+        {"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}], "user_id": current_user.get("sub")},
         {"$set": {
             "status": "confirmed",
             "payment_status": "paid",
@@ -208,7 +246,7 @@ async def verify_payment(
         }}
     )
     payments_collection.update_one(
-        {"booking_id": req.booking_id},
+        {"booking_id": req.booking_id, "user_id": current_user.get("sub")},
         {"$set": {
             "status": "paid",
             "razorpay_payment_id": req.razorpay_payment_id,

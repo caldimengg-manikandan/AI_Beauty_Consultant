@@ -139,11 +139,20 @@ async def validate_image_upload(
         # Special case: WebP has RIFF....WEBP structure
         if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
             detected = "image/webp"
-    if detected is None and ext:
-        # Warn but don't block — some valid images may lack standard magic bytes
+    if detected is None:
+        # Every extension in ALLOWED_IMAGE_EXTENSIONS has a known magic-byte
+        # signature checked above, so a genuine image in one of those formats
+        # will always match. Failing to match means the file's actual content
+        # doesn't match its claimed type (or extension) — most likely a
+        # disguised/spoofed upload. Previously this only logged a warning and
+        # let the file through; now it's rejected outright.
         _log.warning(
-            "Upload: could not verify magic bytes for file '%s' (ext=%s, size=%.1f MB)",
+            "Upload rejected: could not verify magic bytes for file '%s' (ext=%s, size=%.1f MB)",
             filename, ext, size_mb,
+        )
+        raise HTTPException(
+            status_code=400,
+            detail="This file's content does not match a supported image format.",
         )
 
     _log.info("Upload validated: %s (%.1f MB, mime=%s)", filename, size_mb, detected or declared_mime)

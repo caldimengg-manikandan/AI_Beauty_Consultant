@@ -14,7 +14,7 @@ import random
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from app.auth.jwt_handler import (
@@ -22,6 +22,8 @@ from app.auth.jwt_handler import (
     create_refresh_token,
     get_current_user,
     verify_refresh_token,
+    _IS_PRODUCTION,
+    REFRESH_TOKEN_EXPIRE_DAYS,
 )
 from app.auth.schemas import UserAuth
 from app.auth.security import hash_password, verify_password
@@ -232,15 +234,27 @@ def login(user: LoginRequest):
         access_token = create_access_token(token_data)
         refresh_token = create_refresh_token({"sub": db_user["email"], "role": user_role})
 
-        return {
+        # Set cookie and return JSON response
+        from fastapi.responses import JSONResponse
+        response_body = {
             "access_token": access_token,
-            "refresh_token": refresh_token,
             "token_type": "bearer",
             "role": user_role,
             "account_type": account_type,
             "name": db_user.get("name", ""),
             "email": db_user["email"],
         }
+        response = JSONResponse(content=response_body)
+        
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=_IS_PRODUCTION,
+            samesite="lax",
+            max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+        )
+        return response
     except HTTPException:
         raise
     except Exception:
@@ -250,9 +264,13 @@ def login(user: LoginRequest):
 
 # ── Refresh Token ─────────────────────────────────────────────────────────────
 @router.post("/refresh")
-def refresh_access_token(req: RefreshTokenRequest):
+def refresh_access_token(req: Request):
     """Exchange a valid refresh token for a new access token."""
-    payload = verify_refresh_token(req.refresh_token)
+    refresh_token = req.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="Refresh token missing.")
+    
+    payload = verify_refresh_token(refresh_token)
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token.")
 
@@ -267,28 +285,43 @@ def refresh_access_token(req: RefreshTokenRequest):
         "account_type": db_user.get("account_type", "customer"),
         "name": db_user.get("name", ""),
     })
-    return {"access_token": new_access, "token_type": "bearer"}
+    
+    new_refresh = create_refresh_token({
+        "sub": email, 
+        "role": db_user.get("role", "user")
+    })
+    
+    response = Response(status_code=200)
+    import json
+    response.body = json.dumps({"access_token": new_access, "token_type": "bearer"}).encode("utf-8")
+    response.headers["Content-Type"] = "application/json"
+    
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh,
+        httponly=True,
+        secure=_IS_PRODUCTION,
+        samesite="lax",
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    )
+    return response
+
+@router.post("/logout")
+def logout():
+    response = Response(status_code=200)
+    import json
+    response.body = json.dumps({"message": "Logged out successfully"}).encode("utf-8")
+    response.headers["Content-Type"] = "application/json"
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=_IS_PRODUCTION,
+        samesite="lax"
+    )
+    return response
 
 
-# ── Legacy signup (backward compatibility) ────────────────────────────────────
-@router.post("/signup")
-def signup(user: UserAuth):
-    try:
-        existing = user_collection.find_one({"email": user.email})
-        if not existing:
-            hashed = hash_password(user.password.strip())
-            user_collection.insert_one({
-                "email": user.email,
-                "password": hashed,
-                "role": "user",
-                "account_type": "customer",
-            })
-        return {"message": "If this email is not already registered, your account has been created."}
-    except HTTPException:
-        raise
-    except Exception:
-        _log.exception("Unexpected error during legacy signup")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
+# Legacy signup endpoint removed.
 
 
 # ── Get Current User Profile ──────────────────────────────────────────────────

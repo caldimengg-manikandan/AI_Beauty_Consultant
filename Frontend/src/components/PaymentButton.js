@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { FaLock, FaCreditCard, FaCheckCircle, FaSpinner, FaShieldAlt, FaTimes, FaRupeeSign } from 'react-icons/fa';
-import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import api from '../services/api';
 
 /**
  * Razorpay Payment Button Component
@@ -51,14 +49,10 @@ const PaymentButton = ({
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
-
       // 1. Create order on backend
-      const { data: order } = await axios.post(
-        `${API_BASE}/api/payments/create-order`,
-        { booking_id: bookingId, amount, currency: 'INR', description: `${serviceName} at ${salonName}` },
-        { headers }
+      const { data: order } = await api.post(
+        `/api/payments/create-order`,
+        { booking_id: bookingId, amount, currency: 'INR', description: `${serviceName} at ${salonName}` }
       );
 
       // If backend is in demo mode (no Razorpay keys configured)
@@ -131,21 +125,14 @@ const PaymentButton = ({
     setDemoStep('processing');
     setProcessingDemo(true);
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
-
-      // Simulate processing delay for UX
-      await new Promise(r => setTimeout(r, 1800));
-
-      const { data: verified } = await axios.post(
-        `${API_BASE}/api/payments/verify`,
+      const { data: verified } = await api.post(
+        `/api/payments/verify`,
         {
           booking_id: bookingId,
           razorpay_order_id: demoOrder.order_id,
           razorpay_payment_id: 'demo_pay_' + Date.now(),
           razorpay_signature: 'demo_signature',
-        },
-        { headers }
+        }
       );
 
       setDemoStep('done');

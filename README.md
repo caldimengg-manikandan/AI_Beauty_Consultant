@@ -1,11 +1,11 @@
 # AI Beauty Consultant 💄✨
 
-> An intelligent, AI-powered beauty analysis platform that provides personalized skincare recommendations, face shape analysis, and styling suggestions using advanced machine learning and computer vision.
+> An intelligent, AI-powered beauty analysis platform that provides personalized skincare recommendations, face shape analysis, and styling suggestions using computer vision and (optionally) trained deep-learning models.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
-![React](https://img.shields.io/badge/react-18.0+-61dafb.svg)
-![Flask](https://img.shields.io/badge/flask-2.0+-000000.svg)
+![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
+![React](https://img.shields.io/badge/react-19.0+-61dafb.svg)
+![FastAPI](https://img.shields.io/badge/fastapi-0.110+-009688.svg)
 
 ---
 
@@ -21,7 +21,6 @@
   - [Running the Application](#running-the-application)
 - [Project Structure](#project-structure)
 - [API Documentation](#api-documentation)
-- [Frontend Components](#frontend-components)
 - [Machine Learning Models](#machine-learning-models)
 - [Configuration](#configuration)
 - [Troubleshooting](#troubleshooting)
@@ -32,22 +31,21 @@
 
 ## 🎯 About the Project
 
-**AI Beauty Consultant** is a comprehensive beauty analysis platform that leverages artificial intelligence and computer vision to provide personalized beauty recommendations. The application analyzes facial features, skin conditions, and provides tailored suggestions for skincare routines, hairstyles, and makeup.
+**AI Beauty Consultant** is a comprehensive beauty analysis platform that combines computer vision, deep learning, and a rules-based recommendation engine to give users personalized skincare, hairstyle, and makeup guidance from a single uploaded photo.
 
 ### Key Objectives
 
-- **Personalized Analysis**: Provide accurate, AI-driven skin and facial analysis
-- **User-Friendly Interface**: Modern, intuitive UI with smooth animations and professional design
-- **Real-Time Processing**: Instant analysis using webcam or uploaded images
-- **Comprehensive Recommendations**: Detailed suggestions for skincare, hair, and makeup
-- **Educational**: Help users understand their skin type and beauty needs
+- **Personalized Analysis**: Skin and face-shape analysis from an uploaded photo
+- **Transparency**: The app reports *how* a result was produced (trained model vs. geometric/heuristic fallback) and a confidence score, instead of presenting every result as equally certain
+- **Comprehensive Recommendations**: Skincare, hair, and makeup suggestions, plus an AI chat consultant
+- **Operational safety**: Designed to run reliably on small, memory-constrained hosting (see [Machine Learning Models](#machine-learning-models))
 
 ### Target Users
 
 - Beauty enthusiasts seeking personalized recommendations
 - Individuals wanting to understand their skin type and concerns
 - People looking for hairstyle and makeup suggestions
-- Beauty professionals for client consultations
+- Beauty professionals/salons using the platform for client consultations and bookings
 
 ---
 
@@ -55,56 +53,38 @@
 
 ### 🔍 Core Features
 
-#### 1. **Face Analysis**
-- Upload photos for instant AI-powered skin analysis
-- Detects skin type (oily, dry, combination, normal)
-- Identifies skin concerns (acne, dark spots, fine lines, wrinkles)
-- Analyzes face shape (oval, round, square, heart, diamond)
-- Provides confidence scores for each detection
+#### 1. **Face & Skin Analysis**
+- Upload a photo for AI-assisted skin and face-shape analysis
+- Face shape classification (Oval, Round, Square, Heart, Diamond, Long, Pear, Triangle)
+- Skin condition scoring (acne, oiliness, and related concerns)
+- Confidence score and **model/method badge** shown with every result, so it's clear whether a trained model or a geometric/heuristic fallback produced it
+- Multi-face detection: if more than one face is found, the app analyzes the primary/largest face and flags this in the result
+- Image quality gate with explicit guidance (lighting, blur, framing) before and after analysis
 
-#### 2. **Live Camera Analysis**
-- Real-time face analysis using webcam
-- Instant feedback on skin conditions
-- Live face shape detection
-- Interactive visual overlays
+#### 2. **Color & Style Analysis**
+- Skin tone, undertone, eye color, and hair color detection
+- Seasonal color palette and personalized product/shade tips
 
-#### 3. **Skin Health Dashboard**
-- Track hydration levels over time
-- Monitor sun protection habits
-- Analyze skin texture improvements
-- Visual progress indicators with charts
+#### 3. **AI Consultant Chat**
+- Conversational beauty consultant backed by an LLM (OpenRouter), with a local rules-based fallback if no LLM is available
 
 #### 4. **Personalized Recommendations**
-- Custom skincare routine suggestions
-- Product recommendations based on skin type
-- Dietary and lifestyle tips
-- SPF and sun protection guidance
+- Skincare routine and product suggestions based on detected skin profile
+- Hairstyle and nail styling suggestions based on face shape and skin tone
 
-#### 5. **Hair Styling Suggestions**
-- Hairstyle recommendations based on face shape
-- Color suggestions based on skin tone
-- Style gallery with examples
-- Virtual try-on capabilities
+#### 5. **Salon & Booking Features**
+- Salon directory, appointment booking, staff scheduling, loyalty/gamification, coupons, and e-commerce/order flows
 
-#### 6. **Nail Art Studio**
-- Curated nail designs based on skin tone
-- Occasion-based recommendations
-- Nail shape suggestions
-- Color palette matching
-
-#### 7. **Analysis History**
-- Track all previous analyses
-- Compare results over time
-- Export analysis reports
-- View improvement trends
+#### 6. **Accounts & Security**
+- JWT-based authentication with refresh tokens, role-based access control (RBAC), and optional two-factor authentication (TOTP via `pyotp`)
 
 ### 🎨 UI/UX Features
 
 - **Modern Design**: Purple & Teal color scheme with glassmorphism effects
 - **Smooth Animations**: Staggered fade-ins, hover effects, and transitions
-- **Responsive Layout**: Works seamlessly on desktop, tablet, and mobile
-- **Dark Mode Support**: Eye-friendly interface for all lighting conditions
-- **Accessibility**: WCAG compliant with keyboard navigation
+- **Responsive Layout**: Works on desktop, tablet, and mobile
+- **Progress feedback**: Multi-stage progress indicator during analysis instead of a single generic spinner
+- **Categorized errors**: Errors are labeled as "Retryable" (bad photo, network blip) vs. "Account action needed" (session expired, usage limit) so the UI doesn't offer a misleading "Try Again" button when retrying won't help
 
 ---
 
@@ -112,32 +92,33 @@
 
 ### Frontend
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **React** | 18.2+ | UI framework for building interactive components |
-| **React Router** | 6.0+ | Client-side routing and navigation |
-| **Tailwind CSS** | 3.0+ | Utility-first CSS framework for styling |
-| **React Icons** | 4.0+ | Icon library for UI elements |
-| **Axios** | 1.0+ | HTTP client for API requests |
+| Technology | Purpose |
+|------------|---------|
+| **React 19** | UI framework |
+| **React Router 7** | Client-side routing |
+| **Vite** | Dev server / build tool |
+| **Tailwind CSS** | Styling |
+| **MediaPipe** (`@mediapipe/face_mesh`, `@mediapipe/tasks-vision`, etc.) | In-browser face mesh / live camera face detection |
+| **Axios** | HTTP client |
+| **react-i18next** | Internationalization |
+| **Framer Motion / React Icons / Recharts** | Animation, icons, charts |
 
 ### Backend
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Python** | 3.8+ | Core programming language |
-| **Flask** | 2.0+ | Web framework for REST API |
-| **TensorFlow** | 2.0+ | Deep learning framework for ML models |
-| **OpenCV** | 4.0+ | Computer vision library for image processing |
-| **NumPy** | 1.20+ | Numerical computing library |
-| **Pillow** | 8.0+ | Image processing library |
-| **scikit-learn** | 1.0+ | Machine learning utilities |
+| Technology | Purpose |
+|------------|---------|
+| **Python 3.10+** | Core language |
+| **FastAPI** + **Uvicorn** | Async REST API framework / ASGI server |
+| **PyTorch + torchvision** | Face-shape classifier (EfficientNetV2-S), loaded lazily and only on hosts with enough RAM |
+| **TensorFlow / Keras** | Skin classifier (DenseNet-201, `.h5`), loaded lazily and only on hosts with enough RAM |
+| **OpenCV (headless)** | Image preprocessing, heuristic/geometric analysis fallback |
+| **MediaPipe (Python)** | Face landmark detection (468-point face mesh) |
+| **MongoDB** (via `pymongo`) | Primary datastore (users, analyses, bookings, etc.) |
+| **python-jose + passlib/argon2-cffi + pyotp** | JWT auth, password hashing, TOTP 2FA |
+| **Razorpay** | Payment processing |
+| **psutil** | Runtime memory checks that gate heavy model loading (see below) |
 
-### Development Tools
-
-- **Git** - Version control
-- **npm** - Package manager for frontend
-- **pip** - Package manager for backend
-- **VS Code** - Recommended IDE
+> **Note on the previous version of this README**: earlier drafts described this project as Flask + TensorFlow + Haar Cascade/MTCNN with no database. That description was out of date. The backend has since moved to **FastAPI + PyTorch/TensorFlow + MediaPipe + MongoDB**, with JWT/RBAC/2FA auth and a much larger feature set (payments, salon marketplace, loyalty, gamification). This document reflects the current stack.
 
 ---
 
@@ -146,35 +127,46 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        USER INTERFACE                        │
-│                     (React Frontend)                         │
+│                  (React 19 + Vite Frontend)                  │
 │  ┌────────────┐  ┌────────────┐  ┌────────────┐            │
 │  │ Dashboard  │  │  Analysis  │  │  History   │            │
 │  └────────────┘  └────────────┘  └────────────┘            │
 └─────────────────────────────────────────────────────────────┘
-                            │
+                            │ REST (JSON / multipart)
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      REST API LAYER                          │
-│                     (Flask Backend)                          │
+│                  (FastAPI + Uvicorn Backend)                 │
 │  ┌────────────┐  ┌────────────┐  ┌────────────┐            │
-│  │   Routes   │  │Middleware  │  │   Auth     │            │
+│  │   Routes   │  │  RBAC/2FA  │  │ JWT Auth   │            │
 │  └────────────┘  └────────────┘  └────────────┘            │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   ML/CV PROCESSING LAYER                     │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐            │
-│  │Face Detect │  │Skin Analyze│  │ Feature    │            │
-│  │   (CV)     │  │   (ML)     │  │ Extract    │            │
-│  └────────────┘  └────────────┘  └────────────┘            │
+│                   ML/CV PROCESSING LAYER                      │
+│  ┌────────────────┐ ┌──────────────────┐ ┌────────────────┐ │
+│  │ MediaPipe Face │ │ Skin Model       │ │ Face-Shape     │ │
+│  │ Mesh Detection │ │ (DenseNet-201,   │ │ Model          │ │
+│  │ + Quality Gate │ │  TF, optional)   │ │ (EfficientNet  │ │
+│  │                │ │ → CV heuristic   │ │  V2-S, PyTorch,│ │
+│  │                │ │   fallback       │ │  optional)     │ │
+│  │                │ │                  │ │ → geometric    │ │
+│  │                │ │                  │ │   fallback     │ │
+│  └────────────────┘ └──────────────────┘ └────────────────┘ │
+│      Each heavy model is gated by a memory check (psutil)    │
+│      before TensorFlow/PyTorch is even imported — on a       │
+│      low-RAM host, analysis transparently runs on the CV/    │
+│      geometric fallback path instead of risking an OOM crash.│
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      DATA STORAGE                            │
 │  ┌────────────┐  ┌────────────┐  ┌────────────┐            │
-│  │  Models    │  │  Datasets  │  │   Cache    │            │
+│  │  MongoDB   │  │  Model     │  │  Static    │            │
+│  │ (users,    │  │  Weights   │  │  Uploads   │            │
+│  │  analyses) │  │ (.h5/.pth) │  │            │            │
 │  └────────────┘  └────────────┘  └────────────┘            │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -185,201 +177,88 @@
 
 ### Prerequisites
 
-Before you begin, ensure you have the following installed:
-
-#### Required Software
-
-1. **Node.js** (v14.0 or higher)
-   - Download: https://nodejs.org/
-   - Verify installation: `node --version`
-
-2. **Python** (v3.8 or higher)
-   - Download: https://www.python.org/
-   - Verify installation: `python --version`
-
-3. **Git**
-   - Download: https://git-scm.com/
-   - Verify installation: `git --version`
-
-4. **pip** (Python package manager)
-   - Usually comes with Python
-   - Verify installation: `pip --version`
+1. **Node.js** (v18 or higher) — https://nodejs.org/
+2. **Python** (3.10 or higher) — https://www.python.org/
+3. **MongoDB** — a local instance or a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster
+4. **Git**
 
 #### Optional but Recommended
 
-- **VS Code** - Code editor with extensions for React and Python
-- **Postman** - For testing API endpoints
-- **Chrome DevTools** - For frontend debugging
+- **VS Code** with React/Python extensions
+- **Postman** or the built-in FastAPI Swagger UI (`/docs`) for testing API endpoints
 
 ---
 
 ### Installation
 
-Follow these step-by-step instructions to set up the project on your local machine.
-
 #### Step 1: Clone the Repository
 
 ```bash
-# Clone the repository
 git clone https://github.com/jasminedorathy/AI-Beauty-Consultant.git
-
-# Navigate to project directory
 cd AI-Beauty-Consultant
 ```
 
-#### Step 2: Frontend Setup
-
-##### Option A: Automated Setup (Recommended)
-
-**Windows:**
-```bash
-# Simply double-click the setup file or run:
-setup_frontend.bat
-```
-
-**Mac/Linux:**
-```bash
-# Make the script executable
-chmod +x setup_frontend.sh
-
-# Run the setup script
-./setup_frontend.sh
-```
-
-##### Option B: Manual Setup
+#### Step 2: Backend Setup
 
 ```bash
-# Navigate to frontend directory
-cd Frontend/frontend
-
-# Install all dependencies (this may take 2-3 minutes)
-npm install
-
-# Verify installation
-npm list --depth=0
-```
-
-**Expected Output:**
-```
-├── react@18.2.0
-├── react-dom@18.2.0
-├── react-router-dom@6.x.x
-├── tailwindcss@3.x.x
-└── ... (other dependencies)
-```
-
-#### Step 3: Backend Setup
-
-##### Option A: Automated Setup (Recommended)
-
-**Windows:**
-```bash
-# Simply double-click the setup file or run:
-setup_backend.bat
-```
-
-**Mac/Linux:**
-```bash
-# Make the script executable
-chmod +x setup_backend.sh
-
-# Run the setup script
-./setup_backend.sh
-```
-
-##### Option B: Manual Setup
-
-```bash
-# Navigate to backend directory
 cd Backend
 
-# Create virtual environment
+# Create and activate a virtual environment
 python -m venv venv
-
-# Activate virtual environment
 # Windows:
 venv\Scripts\activate
 # Mac/Linux:
 source venv/bin/activate
 
-# Upgrade pip
 pip install --upgrade pip
-
-# Install all dependencies (this may take 3-5 minutes)
 pip install -r requirements.txt
-
-# Verify installation
-pip list
 ```
 
-**Expected Output:**
-```
-Flask==2.x.x
-tensorflow==2.x.x
-opencv-python==4.x.x
-numpy==1.x.x
-... (other packages)
+> The trained skin model (`app/models/densenet_skin_best.h5`, TensorFlow) and face-shape model (`app/models/face_shape_efficientnetv2s.pth`, PyTorch) are loaded **lazily and only if the host has enough RAM** (see [Machine Learning Models](#machine-learning-models)). `tensorflow` and `torch` are not pinned in `requirements.txt` by default — install them separately if you want the trained-model paths active locally:
+> ```bash
+> pip install tensorflow torch torchvision
+> ```
+> Without them, analysis still works end-to-end using the OpenCV/geometric fallback paths.
+
+#### Step 3: Frontend Setup
+
+```bash
+cd Frontend
+npm install
 ```
 
 #### Step 4: Environment Configuration
 
-##### Frontend Environment Variables
-
-Create a `.env` file in `Frontend/frontend/`:
+Copy `Backend/.env.example` to `Backend/.env` and fill in your values:
 
 ```env
-# API Configuration
-REACT_APP_API_URL=http://localhost:5000
-REACT_APP_API_TIMEOUT=30000
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 
-# Feature Flags
-REACT_APP_ENABLE_LIVE_CAMERA=true
-REACT_APP_ENABLE_HISTORY=true
+JWT_SECRET=REPLACE_WITH_256_BIT_RANDOM_VALUE
+ACCESS_TOKEN_EXPIRE_MINUTES=480
+REFRESH_TOKEN_EXPIRE_DAYS=30
 
-# Analytics (optional)
-REACT_APP_GA_TRACKING_ID=your-tracking-id
+MONGODB_URL=mongodb://localhost:27017
+MONGODB_DB_NAME=beauty_consultant
+
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=465
+SMTP_EMAIL=your_email@gmail.com
+SMTP_PASSWORD=your_app_password_here
+
+GOOGLE_PLACES_API_KEY=your_google_places_api_key
+
+REDIS_URL=redis://localhost:6379/0
+REDIS_RATE_LIMIT_ENABLED=false
+
+FRONTEND_URL=http://localhost:3000
+BASE_URL=http://localhost:8000
 ```
 
-##### Backend Environment Variables
-
-Create a `.env` file in `Backend/`:
-
-```env
-# Flask Configuration
-FLASK_APP=app.py
-FLASK_ENV=development
-FLASK_DEBUG=True
-
-# Server Configuration
-HOST=0.0.0.0
-PORT=5000
-
-# Model Paths
-MODEL_PATH=models/
-DATASET_PATH=datasets/
-
-# Security
-SECRET_KEY=your-secret-key-here
-MAX_CONTENT_LENGTH=16777216  # 16MB max file size
-
-# CORS
-CORS_ORIGINS=http://localhost:3000
-```
-
-#### Step 5: Verify Installation
-
-```bash
-# Check if all files are present
-ls -la
-
-# You should see:
-# - Frontend/
-# - Backend/
-# - README.md
-# - setup_frontend.bat/sh
-# - setup_backend.bat/sh
-# - .gitignore
-```
+(Optional) create `Frontend/.env` if you need to override the API URL the frontend points to — check `Frontend/src/services/api.js` for the exact variable name used.
 
 ---
 
@@ -388,62 +267,30 @@ ls -la
 #### Step 1: Start the Backend Server
 
 ```bash
-# Navigate to backend directory
 cd Backend
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Mac/Linux
 
-# Activate virtual environment (if not already activated)
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
-
-# Start Flask server
-python app.py
+python run.py
 ```
 
-**Expected Output:**
-```
- * Serving Flask app 'app'
- * Debug mode: on
- * Running on http://127.0.0.1:5000
- * Press CTRL+C to quit
-```
-
-**Backend will be available at:** `http://localhost:5000`
+This starts Uvicorn on `http://localhost:8000` (with `reload=True` for development). Interactive API docs are available at `http://localhost:8000/docs`.
 
 #### Step 2: Start the Frontend Development Server
 
-Open a **new terminal window** (keep backend running):
-
 ```bash
-# Navigate to frontend directory
-cd Frontend/frontend
-
-# Start React development server
+cd Frontend
 npm start
 ```
 
-**Expected Output:**
-```
-Compiled successfully!
+This runs the Vite dev server, typically at `http://localhost:3000`.
 
-You can now view frontend in the browser.
+#### Step 3: Use the Application
 
-  Local:            http://localhost:3000
-  On Your Network:  http://192.168.x.x:3000
-```
-
-**Frontend will automatically open at:** `http://localhost:3000`
-
-#### Step 3: Access the Application
-
-1. **Open your browser** and navigate to `http://localhost:3000`
-2. **You should see** the AI Beauty Consultant landing page
-3. **Click "Get Started"** to access the dashboard
-4. **Try the features:**
-   - Upload a photo for analysis
-   - Use live camera for real-time analysis
-   - Explore hair and nail styling suggestions
+1. Open `http://localhost:3000` in your browser
+2. Sign up / log in
+3. Go to **Analyze** and upload a photo, or try the demo mode
+4. Explore the dashboard, hair/nail styling, salon booking, and AI consultant chat
 
 ---
 
@@ -452,137 +299,75 @@ You can now view frontend in the browser.
 ```
 AI-Beauty-Consultant/
 │
-├── Frontend/                          # React frontend application
-│   └── frontend/
-│       ├── public/                    # Static files
-│       │   ├── index.html            # HTML template
-│       │   ├── favicon.ico           # App icon
-│       │   └── manifest.json         # PWA manifest
-│       │
-│       ├── src/                       # Source code
-│       │   ├── components/           # Reusable UI components
-│       │   │   ├── Button.js
-│       │   │   ├── Card.js
-│       │   │   └── Modal.js
-│       │   │
-│       │   ├── features/             # Feature modules
-│       │   │   ├── analysis/         # Face analysis feature
-│       │   │   │   ├── AnalyzePage.js
-│       │   │   │   ├── ResultCard.js
-│       │   │   │   └── UploadZone.js
-│       │   │   │
-│       │   │   ├── chat/             # AI consultant chat
-│       │   │   │   └── ConsultantChat.js
-│       │   │   │
-│       │   │   ├── history/          # Analysis history
-│       │   │   │   └── HistoryPage.js
-│       │   │   │
-│       │   │   ├── services/         # Services page
-│       │   │   │   └── ServicesPage.js
-│       │   │   │
-│       │   │   └── styling/          # Hair & nail styling
-│       │   │       ├── HairStyling.js
-│       │   │       └── NailStyling.js
-│       │   │
-│       │   ├── layout/               # Layout components
-│       │   │   ├── DashboardLayout.js
-│       │   │   ├── Sidebar.js
-│       │   │   └── Navbar.js
-│       │   │
-│       │   ├── pages/                # Page components
-│       │   │   ├── LandingPage.js    # Home page
-│       │   │   ├── DashboardHome.js  # Dashboard
-│       │   │   └── NotFound.js       # 404 page
-│       │   │
-│       │   ├── auth/                 # Authentication
-│       │   │   ├── Login.js
-│       │   │   └── Signup.js
-│       │   │
-│       │   ├── App.js                # Main app component
-│       │   ├── index.js              # Entry point
-│       │   └── index.css             # Global styles
-│       │
-│       ├── package.json              # Dependencies
-│       ├── tailwind.config.js        # Tailwind configuration
-│       └── postcss.config.js         # PostCSS configuration
+├── Frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/        # Shared UI components (Loader, ErrorMessage, etc.)
+│   │   ├── features/
+│   │   │   ├── analysis/      # AnalyzePage.js, ResultCard.js
+│   │   │   ├── chat/          # AI consultant chat
+│   │   │   ├── history/
+│   │   │   ├── services/
+│   │   │   └── styling/       # Hair & nail styling
+│   │   ├── layout/             # DashboardLayout.js, Sidebar.js, Navbar.js
+│   │   ├── pages/
+│   │   ├── auth/
+│   │   ├── context/            # AuthContext.js
+│   │   ├── services/           # api.js (Axios client)
+│   │   ├── App.js
+│   │   └── index.js
+│   └── package.json
 │
-├── Backend/                           # Flask backend application
-│   ├── app/                          # Application package
-│   │   ├── __init__.py              # App initialization
-│   │   ├── main.py                  # Main Flask app
-│   │   │
-│   │   ├── api/                     # API routes
-│   │   │   ├── __init__.py
-│   │   │   ├── routes.py            # API endpoints
-│   │   │   └── analysis.py          # Analysis endpoints
-│   │   │
-│   │   ├── models/                  # ML models (not in repo)
-│   │   │   ├── face_detector.h5
-│   │   │   ├── skin_classifier.pkl
-│   │   │   └── shape_detector.pth
-│   │   │
-│   │   └── utils/                   # Utility functions
-│   │       ├── image_processing.py
-│   │       ├── face_detection.py
-│   │       └── skin_analysis.py
+├── Backend/
+│   ├── app/
+│   │   ├── main.py             # FastAPI app instance, CORS, router registration
+│   │   ├── api/                # All route modules (analysis, auth, admin, salon,
+│   │   │                       #   payments, loyalty, gamification, etc.)
+│   │   ├── auth/                # JWT, RBAC, 2FA logic
+│   │   ├── core/                # model_memory_guard.py and other shared utilities
+│   │   ├── ml/                  # analysis_cv.py, face_shape_predictor.py,
+│   │   │                       #   skin_model_loader.py, color_analysis.py, etc.
+│   │   ├── mongodb/              # DB connection/collections
+│   │   ├── models/               # Pydantic schemas
+│   │   ├── pipeline/
+│   │   ├── recommender/
+│   │   └── utils/
 │   │
-│   ├── datasets/                     # Training datasets (not in repo)
-│   ├── static/                       # Static files
-│   │   └── uploads/                 # Uploaded images
-│   │
-│   ├── app.py                       # Flask entry point
-│   ├── requirements.txt             # Python dependencies
-│   ├── config.py                    # Configuration
-│   │
-│   ├── train_densenet.py            # Model training script
-│   ├── collect_kaggle.py            # Dataset collection
-│   ├── collect_stock.py             # Stock image collection
-│   ├── auto_create_dataset.py       # Dataset automation
-│   │
-│   └── Documentation/               # Backend documentation
-│       ├── SIMPLE_METHOD.md         # Simple dataset guide
-│       ├── COLLECTION_GUIDE.md      # Comprehensive guide
-│       ├── QUICK_START.md           # Quick start guide
-│       └── DATASET_GUIDE.md         # Dataset documentation
+│   ├── models/                  # Model weight files (e.g. face_shape_efficientnetv2s.pth)
+│   ├── app/models/               # densenet_skin_best.h5 (skin model weights)
+│   ├── data/skin_dataset/        # Training images (train/val, acne/normal/oily)
+│   ├── static/                   # Uploaded/annotated images served to the frontend
+│   ├── run.py                    # Uvicorn entry point
+│   ├── requirements.txt
+│   ├── .env.example
+│   └── DATASET_GUIDE.md          # Skin-model training dataset guide
 │
-├── .gitignore                        # Git ignore rules
-├── README.md                         # This file
-├── setup_frontend.bat               # Windows frontend setup
-├── setup_backend.bat                # Windows backend setup
-├── setup_frontend.sh                # Mac/Linux frontend setup
-└── setup_backend.sh                 # Mac/Linux backend setup
+├── README.md                     # This file
+└── DATASET_GUIDE.md              # Top-level copy of the dataset guide
 ```
 
 ---
 
 ## 🔌 API Documentation
 
-### Base URL
+Base URL (local dev): `http://localhost:8000`
+
+Full interactive documentation (auto-generated from the FastAPI route definitions, always in sync with the actual API) is available at:
+
 ```
-http://localhost:5000/api
+http://localhost:8000/docs       # Swagger UI
+http://localhost:8000/redoc      # ReDoc
 ```
 
-### Endpoints
+### Key Endpoint: Face Analysis
 
-#### 1. Face Analysis
+**POST** `/api/analyze` (multipart/form-data, requires auth)
 
-**POST** `/api/analyze`
-
-Analyzes an uploaded image for skin type, concerns, and face shape.
-
-**Request:**
 ```http
 POST /api/analyze
 Content-Type: multipart/form-data
 
-{
-  "image": <file>,
-  "options": {
-    "detectSkinType": true,
-    "detectConcerns": true,
-    "detectFaceShape": true
-  }
-}
+image: <file>
 ```
 
 **Response:**
@@ -590,179 +375,58 @@ Content-Type: multipart/form-data
 {
   "success": true,
   "data": {
-    "skinType": "combination",
-    "confidence": 0.89,
-    "concerns": [
-      {
-        "type": "dark_spots",
-        "severity": "moderate",
-        "confidence": 0.76
-      },
-      {
-        "type": "fine_lines",
-        "severity": "mild",
-        "confidence": 0.82
-      }
-    ],
-    "faceShape": "oval",
-    "recommendations": [
-      "Use vitamin C serum for dark spots",
-      "Apply retinol at night for fine lines",
-      "Moisturize twice daily"
-    ]
-  },
-  "timestamp": "2026-01-27T15:30:00Z"
+    "face_shape": "Oval",
+    "confidence": 0.91,
+    "gender": "Female",
+    "skin_analysis": { "acne": 0.12, "...": "..." },
+    "color_analysis": { "skin_tone": "...", "...": "..." },
+    "recommendations": ["..."],
+    "personalized_tips": ["..."],
+    "image_url": "/static/uploads/...",
+    "annotated_image_url": "/static/uploads/...",
+    "faces_detected_count": 1,
+    "multiple_faces_detected": false,
+    "face_quality": { "warning": null },
+    "face_shape_model_status": "LOADED"
+  }
 }
 ```
 
-#### 2. Live Camera Analysis
+`face_shape_model_status` (and the equivalent for the skin model, exposed via `/api/admin/model-status`) tells you whether the trained model actually ran (`LOADED`) or the app fell back to the geometric/heuristic path (`SKIPPED_LOW_MEMORY`, `TORCH_NOT_AVAILABLE` / `TENSORFLOW_NOT_AVAILABLE`, `WEIGHTS_FILE_MISSING`, `LOAD_ERROR`). The frontend surfaces this as the "Method" badge on the result card.
 
-**POST** `/api/analyze/live`
-
-Analyzes a frame from live camera feed.
-
-**Request:**
-```http
-POST /api/analyze/live
-Content-Type: application/json
-
-{
-  "frame": "<base64_encoded_image>",
-  "timestamp": "2026-01-27T15:30:00Z"
-}
-```
-
-#### 3. Get Analysis History
-
-**GET** `/api/history`
-
-Retrieves user's analysis history.
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "abc123",
-      "date": "2026-01-27",
-      "skinType": "combination",
-      "concerns": ["dark_spots", "fine_lines"],
-      "imageUrl": "/uploads/abc123.jpg"
-    }
-  ],
-  "total": 15
-}
-```
-
-#### 4. Get Recommendations
-
-**POST** `/api/recommendations`
-
-Gets personalized recommendations based on analysis.
-
-**Request:**
-```json
-{
-  "skinType": "combination",
-  "concerns": ["dark_spots", "fine_lines"],
-  "age": 28,
-  "gender": "female"
-}
-```
-
----
-
-## 🎨 Frontend Components
-
-### Key Components
-
-#### 1. **DashboardHome**
-- Main dashboard with skin health overview
-- Quick action cards for features
-- Recent analyses timeline
-- Personalized tips section
-
-#### 2. **AnalyzePage**
-- Image upload zone with drag-and-drop
-- Live camera integration
-- Real-time analysis results
-- Annotated image display
-
-#### 3. **Sidebar**
-- Animated navigation menu
-- Staggered fade-in effects
-- Active route highlighting
-- User profile section
-
-#### 4. **ResultCard**
-- Analysis results display
-- Confidence scores
-- Visual indicators
-- Recommendation cards
-
-### Styling System
-
-**Color Palette:**
-```css
-/* Primary Colors */
---purple-500: #a855f7;
---purple-600: #9333ea;
---teal-500: #14b8a6;
---teal-600: #0d9488;
-
-/* Gradients */
---gradient-primary: linear-gradient(135deg, #a855f7 0%, #14b8a6 100%);
---gradient-background: linear-gradient(135deg, #f3e7ff 0%, #e0f2f1 100%);
-```
-
-**Animations:**
-- Fade-in-up: Entry animations for content
-- Bounce-subtle: Hover effects on interactive elements
-- Pulse-glow: Attention-grabbing elements
-- Blob: Background decorative animations
+For the full list of endpoints (auth, admin, salons, appointments, payments, loyalty, gamification, chat, etc.), see `/docs` or browse `Backend/app/api/`.
 
 ---
 
 ## 🤖 Machine Learning Models
 
-### Models Used
+This project uses trained deep-learning models **where available**, with automatic, transparent fallback to classical computer-vision / geometric heuristics when a trained model can't be loaded — by design, so the app keeps working reliably on small hosting tiers (e.g. Render's free plan, ~512MB–1GB RAM) instead of crashing.
 
-#### 1. **Face Detection Model**
-- **Architecture**: Haar Cascade / MTCNN
-- **Purpose**: Detect faces in images
-- **Accuracy**: ~95%
-- **Input**: RGB image
-- **Output**: Bounding box coordinates
+#### 1. **Face Detection & Landmarking**
+- **Method**: MediaPipe Face Mesh (468-point landmarks)
+- **Purpose**: Locate face(s), extract landmarks for geometric measurements, and check image quality (blur, lighting, framing)
 
-#### 2. **Skin Type Classifier**
-- **Architecture**: DenseNet121
-- **Purpose**: Classify skin type (oily, dry, combination, normal)
-- **Accuracy**: ~89%
-- **Input**: Cropped face image (224x224)
-- **Output**: Skin type + confidence score
+#### 2. **Skin Classifier**
+- **Architecture**: DenseNet-201 (Keras/TensorFlow), trained on 3 classes: `acne`, `normal`, `oily`
+- **Weights**: `Backend/app/models/densenet_skin_best.h5`
+- **Loading**: lazy — TensorFlow is only imported, and the model only loaded, if a memory check passes (`min_gb=1.5` by default, tunable via `SKIN_MODEL_MIN_RAM_GB`)
+- **Fallback**: pure OpenCV heuristics (K-means clustering, brightness/entropy statistics) if the model can't load for any reason
+- **Honesty note**: the trained model only classifies acne/normal/oily. Other concerns surfaced in the UI (dark spots, fine lines, wrinkles, redness, sensitivity) are heuristic estimates, not CNN classifications — there is currently no labeled training data for those classes (see [Dataset Guide](#machine-learning-models)).
 
-#### 3. **Skin Concern Detector**
-- **Architecture**: Multi-label CNN
-- **Purpose**: Detect multiple skin concerns
-- **Concerns Detected**: Acne, dark spots, fine lines, wrinkles, redness
-- **Input**: Face image
-- **Output**: List of concerns with severity levels
+#### 3. **Face-Shape Classifier**
+- **Architecture**: EfficientNetV2-S (PyTorch)
+- **Weights**: `Backend/models/face_shape_efficientnetv2s.pth`
+- **Classes**: Diamond, Heart, Long, Oval, Pear, Round, Square, Triangle
+- **Loading**: lazy — torch/torchvision are only imported, and the model only loaded, if a memory check passes (`min_gb=1.0` by default, tunable via `FACE_SHAPE_MODEL_MIN_RAM_GB`)
+- **Fallback**: geometric face-shape classification from MediaPipe landmark ratios if the model can't load for any reason
 
-#### 4. **Face Shape Classifier**
-- **Architecture**: ResNet50
-- **Purpose**: Classify face shape
-- **Shapes**: Oval, round, square, heart, diamond
-- **Accuracy**: ~82%
+#### Checking which path is actually active
+
+Call `GET /api/admin/model-status` (admin role required) or check the `face_shape_model_status` field on any `/api/analyze` response. Possible statuses: `LOADED`, `SKIPPED_LOW_MEMORY`, `TORCH_NOT_AVAILABLE` / `TENSORFLOW_NOT_AVAILABLE`, `WEIGHTS_FILE_MISSING`, `LOAD_ERROR`, `NOT_LOADED` (not yet resolved).
 
 ### Training the Models
 
-See `Backend/COLLECTION_GUIDE.md` for detailed instructions on:
-- Collecting training datasets
-- Preparing data
-- Training models
-- Evaluating performance
-- Deploying models
+See [`DATASET_GUIDE.md`](./DATASET_GUIDE.md) for the skin-model dataset layout, sources, and the `train_densenet.py` training command.
 
 ---
 
@@ -770,92 +434,54 @@ See `Backend/COLLECTION_GUIDE.md` for detailed instructions on:
 
 ### Frontend Configuration
 
-**`tailwind.config.js`** - Customize theme:
-```javascript
-module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        primary: '#a855f7',
-        secondary: '#14b8a6',
-      },
-      animation: {
-        'fade-in-up': 'fadeInUp 0.5s ease-out',
-      },
-    },
-  },
-}
-```
+**`Frontend/tailwind.config.js`** — theme customization (colors, animations).
+
+Vite-based env vars (if used) go in `Frontend/.env`; check `Frontend/src/services/api.js` for the exact variable name your build expects.
 
 ### Backend Configuration
 
-**`config.py`** - Server settings:
-```python
-class Config:
-    DEBUG = True
-    TESTING = False
-    SECRET_KEY = 'your-secret-key'
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
-    UPLOAD_FOLDER = 'static/uploads'
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-```
+All backend configuration is via environment variables (`Backend/.env`, see `.env.example`) — JWT secrets/expiry, MongoDB connection, Razorpay keys, SMTP, Google Places, Redis, and frontend/base URLs. There is no separate `config.py` `Config` class; FastAPI app setup (CORS origins, etc.) lives in `Backend/app/main.py`.
+
+Memory thresholds for the optional ML models can be tuned without a code change via `SKIN_MODEL_MIN_RAM_GB` and `FACE_SHAPE_MODEL_MIN_RAM_GB`.
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Common Issues
-
-#### Frontend Issues
+### Frontend Issues
 
 **Issue**: `npm install` fails
 ```bash
-# Solution 1: Clear npm cache
 npm cache clean --force
 npm install
-
-# Solution 2: Delete node_modules and reinstall
+# or
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-**Issue**: Port 3000 already in use
+**Issue**: Port 3000 already in use — Vite will usually pick the next free port automatically; check the terminal output for the actual URL.
+
+### Backend Issues
+
+**Issue**: `ModuleNotFoundError` for a package in `requirements.txt`
 ```bash
-# Solution: Use a different port
-PORT=3001 npm start
-```
-
-#### Backend Issues
-
-**Issue**: `ModuleNotFoundError: No module named 'flask'`
-```bash
-# Solution: Ensure virtual environment is activated
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
-
-# Then reinstall
+# Ensure the virtual environment is activated, then:
 pip install -r requirements.txt
 ```
 
-**Issue**: Model files not found
-```bash
-# Solution: Download or train models
-# See Backend/COLLECTION_GUIDE.md for instructions
-```
+**Issue**: Skin/face-shape model not loading (`face_shape_model_status` is not `"LOADED"`)
+- Check `GET /api/admin/model-status` for the exact reason (`TORCH_NOT_AVAILABLE`, `SKIPPED_LOW_MEMORY`, `WEIGHTS_FILE_MISSING`, etc.)
+- If it's `TORCH_NOT_AVAILABLE` / `TENSORFLOW_NOT_AVAILABLE`: install `torch`/`tensorflow` locally (see [Installation](#installation))
+- If it's `SKIPPED_LOW_MEMORY`: either run on a host with more RAM, or lower the threshold via `SKIN_MODEL_MIN_RAM_GB` / `FACE_SHAPE_MODEL_MIN_RAM_GB` (only do this if you've confirmed the host can actually handle the memory cost — the whole point of the guard is to avoid an OOM crash)
+- This is expected, by-design behavior on low-memory hosting, not a bug — the app is meant to keep working via the CV/geometric fallback either way
 
-**Issue**: CORS errors
-```bash
-# Solution: Check CORS configuration in Backend/app.py
-# Ensure frontend URL is in allowed origins
-```
+**Issue**: CORS errors — check `ALLOWED_ORIGINS` in `Backend/app/main.py` and `FRONTEND_URL` in `.env`
+
+**Issue**: MongoDB connection errors — verify `MONGODB_URL`/`MONGODB_DB_NAME` in `.env` and that MongoDB is reachable from where the backend is running
 
 ---
 
 ## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
 
 1. **Fork the repository**
 2. **Create a feature branch**: `git checkout -b feature/AmazingFeature`
@@ -867,8 +493,8 @@ We welcome contributions! Please follow these steps:
 
 - **Frontend**: Follow React best practices and ESLint rules
 - **Backend**: Follow PEP 8 Python style guide
+- **Backward compatibility**: Prefer additive, optional changes over breaking existing API response shapes or component props
 - **Commits**: Use conventional commit messages
-- **Documentation**: Update README for new features
 
 ---
 
@@ -888,37 +514,10 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🙏 Acknowledgments
 
-- TensorFlow team for the ML framework
-- React team for the frontend framework
-- OpenCV community for computer vision tools
-- Tailwind CSS for the styling system
+- PyTorch and TensorFlow teams for the ML frameworks
+- MediaPipe team for face landmark detection
+- React and FastAPI communities
 - All contributors and testers
-
----
-
-## 📞 Support
-
-If you encounter any issues or have questions:
-
-1. **Check the documentation** in `Backend/` directory
-2. **Search existing issues** on GitHub
-3. **Create a new issue** with detailed information
-4. **Contact**: Open an issue on GitHub
-
----
-
-## 🗺️ Roadmap
-
-### Upcoming Features
-
-- [ ] User authentication and profiles
-- [ ] Social sharing of analyses
-- [ ] Product recommendations with affiliate links
-- [ ] Mobile app (React Native)
-- [ ] Advanced skin concern detection
-- [ ] Virtual makeup try-on
-- [ ] Integration with beauty brands
-- [ ] Multi-language support
 
 ---
 

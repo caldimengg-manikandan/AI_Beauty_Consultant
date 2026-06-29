@@ -210,9 +210,12 @@ async def upload_reel(
     """Upload a new beauty reel. Resolves uploader's own salon automatically."""
     user_id = current_user.get("sub")
 
+    # Reel videos are public-facing content (marketing videos displayed to all users).
+    # They live under static/public/ which is served by the public StaticFiles mount —
+    # NOT static/uploads/ which is now reserved for private biometric face-scan images.
     filename  = f"reel_{uuid.uuid4().hex}.mp4"
-    file_path = os.path.join("static/uploads", filename)
-    os.makedirs("static/uploads", exist_ok=True)
+    file_path = os.path.join("static/public/reels", filename)
+    os.makedirs("static/public/reels", exist_ok=True)
 
     video_bytes = await validate_video_upload(video)
     try:
@@ -223,7 +226,7 @@ async def upload_reel(
         raise HTTPException(status_code=500, detail="An unexpected error occurred saving the video.")
 
     BASE_URL  = os.getenv("BASE_URL", "http://localhost:8000")
-    video_url = f"{BASE_URL}/static/uploads/{filename}"
+    video_url = f"{BASE_URL}/static/public/reels/{filename}"
 
     # Resolve the uploader's own salon (shop_owner flow) or fall back
     salon = (

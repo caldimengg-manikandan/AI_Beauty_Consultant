@@ -4,6 +4,11 @@ services:
     env: python
     region: singapore       # closest to India
     plan: free
+    # The FastAPI app (requirements.txt, app/main.py, etc.) lives in Backend/,
+    # not the repo root. Without rootDir, Render would run buildCommand/
+    # startCommand from the repo root, where neither requirements.txt nor the
+    # app package exist, and the deploy would fail outright.
+    rootDir: Backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:

@@ -4,7 +4,13 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-    base: '/AI_Beauty/',
+    // Was hardcoded to '/AI_Beauty/', which only works when the app is
+    // deployed under that exact subpath (e.g. GitHub Pages). Any other host
+    // (Render/Vercel/custom domain at the root, or a different subpath)
+    // would have every asset URL silently 404 since they'd all be prefixed
+    // with /AI_Beauty/. Now configurable via VITE_BASE_PATH, defaulting to
+    // '/' so local development works seamlessly.
+    base: process.env.VITE_BASE_PATH || '/',
     plugins: [react()],
     resolve: {
         alias: {

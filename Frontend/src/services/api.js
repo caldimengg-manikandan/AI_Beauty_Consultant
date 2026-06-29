@@ -19,32 +19,75 @@ export const resolveImageUrl = (url) => {
 
 const api = axios.create({
   baseURL: API_BASE,
+  withCredentials: true,
 });
+
+let accessToken = null;
+export const setApiToken = (token) => {
+  accessToken = token;
+};
 
 // ✅ Add Interceptor to automatically add Token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// ✅ Response Interceptor: auto-logout on 401 (expired/invalid token)
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+// ✅ Response Interceptor: auto-refresh on 401
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("email");
-      localStorage.removeItem("role");
-      localStorage.removeItem("account_type");
-      // Redirect to login only if not already there
-      if (!window.location.pathname.startsWith("/login")) {
-        window.location.href = "/login";
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = 'Bearer ' + token;
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const res = await axios.post(`${API_BASE}/api/auth/refresh`, {}, { withCredentials: true });
+        const newToken = res.data.access_token;
+        setApiToken(newToken);
+        originalRequest.headers.Authorization = 'Bearer ' + newToken;
+        processQueue(null, newToken);
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        if (!window.location.pathname.startsWith("/login")) {
+          window.location.href = "/login";
+        }
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
     return Promise.reject(error);
@@ -63,12 +106,35 @@ export const login = async (data) => {
   return res.data;
 };
 
-// ANALYZE
-// We don't need to pass token explicitly anymore
-export const analyzeImage = async (formData) => {
-  const res = await api.post("/analyze", formData);
-  return res.data;
+// ANALYZE — job queue pattern
+// POST /analyze returns HTTP 202 + {job_id}.  We then poll
+// GET /analyze/status/{job_id} every 2 seconds until the job is "done" or "error".
+// The returned promise resolves with the final result object (same shape as before),
+// so callers (AnalyzePage.js, LiveAnalyzePage.js) need no logic changes.
+export const pollAnalysisStatus = async (jobId, { intervalMs = 2000, timeoutMs = 120000 } = {}) => {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const res = await api.get(`/analyze/status/${jobId}`);
+    const { status, result, error } = res.data;
+    if (status === "done")  return result;
+    if (status === "error") throw new Error(error || "Analysis failed on the server.");
+    // pending or running — wait then poll again
+    await new Promise(resolve => setTimeout(resolve, intervalMs));
+  }
+  throw new Error("Analysis timed out. Please try again.");
 };
+
+export const analyzeImage = async (formData) => {
+  // Submit the image — backend returns 202 + {job_id} immediately
+  const submitRes = await api.post("/analyze", formData);
+  if (submitRes.status !== 202 || !submitRes.data?.job_id) {
+    // Fallback: old synchronous response (should not happen in production)
+    return submitRes.data;
+  }
+  // Poll until the background job finishes
+  return await pollAnalysisStatus(submitRes.data.job_id);
+};
+
 
 export const getHistory = async () => {
   const res = await api.get("/history");

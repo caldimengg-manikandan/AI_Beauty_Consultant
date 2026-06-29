@@ -1,16 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * Enterprise Loading Component — GlowAI Design System v2
  * Usage: <Loader variant="spinner" message="Analyzing your image..." />
  * Variants: spinner | dots | progress | pulse | ai-analysis
+ *
+ * Optional (additive, backward-compatible): for variant="ai-analysis", pass
+ * a `stages` array of short labels (e.g. mirroring the backend's actual
+ * processing order) and the component will auto-advance through them every
+ * `stageDurationMs` (default 1800ms) to give better perceived-progress
+ * feedback during the analysis call. If `stages` is omitted, the component
+ * renders exactly as before (static 3-step display).
  */
 
 const BRAND = '#5B4FF7';
 const BRAND_LIGHT = 'rgba(91,79,247,0.15)';
 
-const Loader = ({ variant = 'spinner', message = 'Loading...', size = 'md' }) => {
+const Loader = ({ variant = 'spinner', message = 'Loading...', size = 'md', stages, stageDurationMs = 1800 }) => {
   const sizeMap = { sm: 'w-6 h-6', md: 'w-10 h-10', lg: 'w-16 h-16' };
+
+  // Hooks must run unconditionally regardless of `variant`, per React rules.
+  // No-ops when `stages` isn't provided, so all other variants/usages are unaffected.
+  const [activeStageIdx, setActiveStageIdx] = useState(0);
+  useEffect(() => {
+    if (!stages || stages.length === 0) return;
+    setActiveStageIdx(0);
+    const id = setInterval(() => {
+      setActiveStageIdx((i) => Math.min(i + 1, stages.length - 1));
+    }, stageDurationMs);
+    return () => clearInterval(id);
+  }, [stages, stageDurationMs]);
 
   /* ── Spinner (Default) ── */
   if (variant === 'spinner') {
@@ -118,27 +137,47 @@ const Loader = ({ variant = 'spinner', message = 'Loading...', size = 'md' }) =>
         </div>
 
         <div className="mt-6 text-center">
-          <p className="text-[15px] font-bold text-slate-800 mb-1">{message || 'Analyzing Your Face...'}</p>
+          <p className="text-[15px] font-bold text-slate-800 mb-1">
+            {stages && stages.length > 0 ? (stages[activeStageIdx] || message || 'Analyzing Your Face...') : (message || 'Analyzing Your Face...')}
+          </p>
           <p className="text-[13px] text-slate-400">This may take a few seconds</p>
         </div>
 
         {/* Steps */}
-        <div className="mt-5 flex items-center gap-2 text-[11px] text-slate-400">
-          <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
-            Detecting face
-          </span>
-          <span aria-hidden="true">›</span>
-          <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: BRAND }} aria-hidden="true" />
-            Analyzing features
-          </span>
-          <span aria-hidden="true">›</span>
-          <span className="flex items-center gap-1 opacity-50">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-300" aria-hidden="true" />
-            Generating insights
-          </span>
-        </div>
+        {stages && stages.length > 0 ? (
+          <div className="mt-5 flex items-center gap-2 text-[11px] text-slate-400 flex-wrap justify-center" role="list" aria-label="Analysis progress stages">
+            {stages.map((stage, i) => (
+              <React.Fragment key={stage + i}>
+                <span className={`flex items-center gap-1 ${i > activeStageIdx ? 'opacity-50' : ''}`} role="listitem">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${i <= activeStageIdx ? 'animate-pulse' : ''}`}
+                    style={{ backgroundColor: i < activeStageIdx ? '#10B981' : (i === activeStageIdx ? BRAND : '#CBD5E1') }}
+                    aria-hidden="true"
+                  />
+                  {stage}
+                </span>
+                {i < stages.length - 1 && <span aria-hidden="true">›</span>}
+              </React.Fragment>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-5 flex items-center gap-2 text-[11px] text-slate-400">
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
+              Detecting face
+            </span>
+            <span aria-hidden="true">›</span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: BRAND }} aria-hidden="true" />
+              Analyzing features
+            </span>
+            <span aria-hidden="true">›</span>
+            <span className="flex items-center gap-1 opacity-50">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" aria-hidden="true" />
+              Generating insights
+            </span>
+          </div>
+        )}
       </div>
     );
   }

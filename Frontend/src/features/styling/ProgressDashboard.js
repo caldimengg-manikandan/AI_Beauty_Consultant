@@ -3,7 +3,7 @@ import {
     FaChartLine, FaArrowUp, FaArrowDown,
     FaStar, FaShieldAlt, FaMagic
 } from 'react-icons/fa';
-import axios from 'axios';
+import api from '../../services/api';
 import ComparisonSlider from './ComparisonSlider';
 
 const ProgressDashboard = () => {
@@ -11,17 +11,12 @@ const ProgressDashboard = () => {
     const [timeline, setTimeline] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const API_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/progress`;
-
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const token = localStorage.getItem('token');
-                const headers = { Authorization: `Bearer ${token} ` };
-
                 const [progRes, timeRes] = await Promise.all([
-                    axios.get(`${API_URL}/comparison`, { headers }),
-                    axios.get(`${API_URL}/timeline`, { headers })
+                    api.get(`/api/progress/comparison`),
+                    api.get(`/api/progress/timeline`)
                 ]);
 
                 setProgress(progRes.data);

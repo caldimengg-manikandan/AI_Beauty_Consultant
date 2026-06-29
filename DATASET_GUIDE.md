@@ -1,5 +1,21 @@
 # Dataset Preparation Guide for DenseNet-201
 
+> **Current state of this repo**: a trained checkpoint already exists at
+> `Backend/app/models/densenet_skin_best.h5` and a real dataset is already
+> present at `Backend/data/skin_dataset/` (train: ~2,200 acne, ~2,200 normal,
+> ~2,002 oily). This guide is for anyone who wants to retrain or extend that
+> model — it is not describing a placeholder/future feature.
+>
+> **Honesty note**: the skin model only classifies **3 classes** —
+> `acne`, `normal`, `oily`. There is currently no labeled dataset for
+> `dry` or `combination` skin, so the app cannot truthfully claim to detect
+> those via the CNN. Likewise, concerns shown elsewhere in the UI (dark
+> spots, fine lines, wrinkles, redness, sensitivity) are **not** produced by
+> this model — they come from separate OpenCV heuristics. If you add
+> labeled data for any of those, update `SKIN_CLASS_ORDER` in
+> `Backend/app/ml/skin_model_loader.py` and retrain accordingly, then update
+> this guide and the README's "Honesty note" to match.
+
 ## Required Structure
 ```
 data/skin_dataset/

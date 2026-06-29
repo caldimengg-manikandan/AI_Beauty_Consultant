@@ -9,7 +9,7 @@ import {
   FaChartBar, FaTag, FaBullhorn, FaBoxOpen, FaTruck, FaWpforms,
   FaChevronDown, FaChevronRight, FaWarehouse, FaNetworkWired,
   FaUsersCog, FaLayerGroup, FaConciergeBell, FaPassport,
-  FaFlask, FaBrain, FaExclamationTriangle,
+  FaFlask, FaBrain, FaExclamationTriangle, FaPalette,
 } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
@@ -75,6 +75,8 @@ const NavSection = ({ title, color = "text-zinc-400", children, collapsible = fa
         className={`flex items-center justify-between w-full text-[10px] font-semibold uppercase tracking-[0.08em] px-3 mb-1 ${color} ${
           collapsible ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"
         }`}
+        aria-expanded={collapsible ? open : undefined}
+        aria-label={collapsible ? `${title} section` : undefined}
       >
         <span>{title}</span>
         {collapsible && (
@@ -120,6 +122,11 @@ const UserNav = ({ can, profile, role, t }) => {
         {can("ingredient_conflict") && (
           <NavItem to="/dashboard/conflict-checker" icon={<FaFlask />} label="Conflict Checker" badge="AI" badgeColor="bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" />
         )}
+      </NavSection>
+
+      <NavSection title="Styling Studio" collapsible>
+        {can("hair_styling") && <NavItem to="/dashboard/hair-styling" icon={<FaCut />} label="Hair Styling" />}
+        {can("virtual_studio") && <NavItem to="/dashboard/virtual-studio" icon={<FaPalette />} label="Virtual Studio" badge="AR" badgeColor="bg-pink-50 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400" />}
       </NavSection>
 
       <NavSection title="Marketplace" collapsible>
