@@ -93,15 +93,14 @@ const PaymentButton = ({
         },
         handler: async (response) => {
           try {
-            const { data: verified } = await axios.post(
-              `${API_BASE}/api/payments/verify`,
+            const { data: verified } = await api.post(
+              `/api/payments/verify`,
               {
                 booking_id: bookingId,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
-              },
-              { headers }
+              }
             );
             onSuccess?.(verified);
           } catch (verifyError) {

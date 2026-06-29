@@ -280,7 +280,7 @@ async def request_refund(
     if payment_id.startswith("demo_") or payment_id == "mock_payment":
         # Demo refund
         slot_bookings_collection.update_one(
-            {"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}]},
+            {"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}], "user_id": current_user.get("sub")},
             {"$set": {"payment_status": "refunded", "status": "cancelled"}}
         )
         return {"status": "success", "message": "Refund processed (Demo mode)", "booking_id": req.booking_id}
@@ -295,7 +295,7 @@ async def request_refund(
             "notes": {"reason": req.reason, "booking_id": req.booking_id}
         })
         slot_bookings_collection.update_one(
-            {"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}]},
+            {"$or": [{"id": req.booking_id}, {"booking_ref": req.booking_id}], "user_id": current_user.get("sub")},
             {"$set": {
                 "payment_status": "refunded",
                 "status": "cancelled",
