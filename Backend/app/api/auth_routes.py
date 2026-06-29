@@ -291,10 +291,8 @@ def refresh_access_token(req: Request):
         "role": db_user.get("role", "user")
     })
     
-    response = Response(status_code=200)
-    import json
-    response.body = json.dumps({"access_token": new_access, "token_type": "bearer"}).encode("utf-8")
-    response.headers["Content-Type"] = "application/json"
+    from fastapi.responses import JSONResponse
+    response = JSONResponse(content={"access_token": new_access, "token_type": "bearer"})
     
     response.set_cookie(
         key="refresh_token",
@@ -308,10 +306,8 @@ def refresh_access_token(req: Request):
 
 @router.post("/logout")
 def logout():
-    response = Response(status_code=200)
-    import json
-    response.body = json.dumps({"message": "Logged out successfully"}).encode("utf-8")
-    response.headers["Content-Type"] = "application/json"
+    from fastapi.responses import JSONResponse
+    response = JSONResponse(content={"message": "Logged out successfully"})
     response.delete_cookie(
         key="refresh_token",
         httponly=True,
